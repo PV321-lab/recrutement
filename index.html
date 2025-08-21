@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Enregistrement des invités</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
+  <!-- Intégration de Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <style>
+    :root{
+      --c1:#007bff; --bg:#f0f2f5; --ok:#0f9d58; --warn:#f4b400; --err:#d93025; --info:#4285f4;
+    }
+    body { font-family: Arial, sans-serif; margin: 16px; background: var(--bg); }
+    h2 { text-align: center; margin: 8px 0 16px; }
+    .card { background:#fff; padding:16px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.12); margin-bottom:16px; }
+    label { font-weight:600; display:block; margin-top:10px; }
+    input, button, select { font-size:16px; }
+    input, select { width:100%; padding:10px; margin-top:6px; border:1px solid #ccc; border-radius:8px; }
+    input[readonly]{ background:#e9ecef; }
+    button { margin-top:14px; padding:10px 14px; border:none; border-radius:10px; background:var(--c1); color:#fff; cursor:pointer; }
+    button:disabled{ opacity:.6; cursor:not-allowed; }
+    table { width:100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border:1px solid #e5e7eb; padding:8px; text-align:center; }
+    th { background:var(--c1); color:#fff; }
+    .hidden{ display:none !important; }
+    .row { display:flex; gap:12px; flex-wrap:wrap; }
+    .col { flex:1 1 220px; min-width:220px; }
+    .banner{ padding:10px 12px; border-radius:10px; margin-bottom:12px; font-weight:600; }
+    .banner.info{ background:#e8f0fe; color:#174ea6; border:1px solid #c6dafc; }
+    .banner.ok{ background:#e6f4ea; color:#137333; border:1px solid #cce8d3; }
+    .banner.warn{ background:#fef7e0; color:#a66300; border:1px solid #fde293; }
+    .banner.err{ background:#fce8e6; color:#a50e0e; border:1px solid #f7b9b4; }
+    .toolbar{ display:flex; gap:10px; justify-content:space-between; align-items:center; flex-wrap:wrap; }
+    .note{ font-size:13px; opacity:.8; }
+    .qrwrap{ display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap; }
+    .recap{ background:#fafafa; border:1px dashed #ccc; padding:10px; border-radius:8px; min-width:240px; }
+    .person-group { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #e9ecef; }
+    .person-group h4 { margin: 0 0 10px 0; color: #1E40AF; }
+    .consent-container { margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6; }
+    .consent-text { max-height: 150px; overflow-y: auto; padding: 10px; background: white; border-radius: 5px; border: 1px solid #ced4da; margin: 10px 0; }
+  </style>
+</head>
+<body>
+
+<h2>Enregistrement des invités</h2>
+
+  <div id="banner" class="banner info hidden"></div>
+
+  <!-- Connexion -->
+  <div id="loginCard" class="card">
+    <div class="toolbar">
+      <div><strong>Connexion</strong></div>
+      <div class="note">Veuillez entrer vos identifiants</div>
+    </div>
+    <label>Utilisateur</label>
+    <input type="text" id="loginUser" autocomplete="username" placeholder="Identifiant" required />
+    <label>Mot de passe</label>
+    <input type="password" id="loginPass" autocomplete="current-password" placeholder="Mot de passe" required />
+    <button id="btnLogin" onclick="login()">Connexion</button>
+    <p id="loginMsg" class="banner err hidden"></p>
+  </div>
+
+  <!-- Interface Admin -->
+  <div id="adminPanel" class="hidden">
+    <div class="toolbar card">
+      <div><strong>Panneau administrateur</strong></div>
+      <div>
+        <button onclick="logout()">Déconnexion</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="toolbar">
+        <div><strong>Gestion des utilisateurs</strong></div>
+      </div>
+      <div class="row">
+        <div class="col">
+          <label>Appartement</label>
+          <input type="text" id="appartAdmin" placeholder="Ex: 12" />
+        </div>
+        <div class="col">
+          <label>Immeuble</label>
+          <input type="text" id="batAdmin" placeholder="Ex: A" />
+        </div>
+        <div class="col">
+          <label>Mot de passe</label>
+          <input type="text" id="passAdmin" placeholder="Mot de passe" />
+        </div>
+        <div class="col">
+          <label>Numéro WhatsApp</label>
+          <input type="text" id="whatsappAdmin" placeholder="Ex: 212612345678" />
+        </div>
+      </div>
+      <button onclick="creerUtilisateur()">Créer utilisateur</button>
+      <p id="userWarn" class="banner warn hidden"></p>
+    </div>
+
+    <div class="card">
+      <div class="toolbar">
+        <div><strong>Utilisateurs existants</strong></div>
+      </div>
+      <table id="tableUsers">
+        <thead>
+          <tr><th>ID</th><th>Appartement</th><th>Immeuble</th><th>Mot de passe</th><th>WhatsApp</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="toolbar">
+        <div><strong>Enregistrements des invités</strong></div>
+      </div>
+      <table id="tableAdmin">
+        <thead>
+          <tr>
+            <th>ID</th><th>Appart.</th><th>Immeuble</th><th>Nom</th><th>Document</th>
+            <th>Nb Pers.</th><th>Personnes</th><th>Date</th><th>Action</th><th>Statut</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Interface Utilisateur -->
+  <div id="userPanel" class="hidden">
+    <div class="toolbar card">
+      <div><strong>Mon espace</strong></div>
+      <div><button onclick="logout()">Déconnexion</button></div>
+    </div>
+
+    <div class="card">
+      <div class="toolbar">
+        <div><strong>Paramétrage WhatsApp</strong></div>
+      </div>
+      <label>Numéro WhatsApp pour recevoir les notifications</label>
+      <div class="row">
+        <div class="col">
+          <select id="whatsappPrefix">
+            <option value="212">Maroc (+212)</option>
+            <option value="33">France (+33)</option>
+            <option value="1">États-Unis/Canada (+1)</option>
+            <option value="32">Belgique (+32)</option>
+            <option value="41">Suisse (+41)</option>
+          </select>
+        </div>
+        <div class="col">
+          <input type="text" id="whatsappNumber" placeholder="Numéro sans indicatif" />
+        </div>
+      </div>
+      <button onclick="updateWhatsApp()">Enregistrer le numéro</button>
+      <p id="whatsappMsg" class="banner info hidden"></p>
+    </div>
+
+    <div class="card">
+      <div class="toolbar">
+        <div><strong>Générer un lien d'invitation</strong></div>
+      </div>
+      <button onclick="genererLien()">Générer le lien</button>
+      <p id="lienInvite"></p>
+    </div>
+
+    <div class="card">
+      <div class="toolbar">
+        <div><strong>Mes enregistrements</strong></div>
+      </div>
+      <table id="tableUser">
+        <thead>
+          <tr>
+            <th>ID</th><th>Nom</th><th>Document</th><th>Nb Pers.</th><th>Personnes</th><th>Date</th><th>Statut</th><th>Action</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- NOUVEAU Formulaire d'invité (via lien) -->
+  <div id="invitePanel" class="hidden">
+    <div class="guest-form-container">
+      <div class="toolbar" style="margin-bottom: 20px;">
+        <h3 style="margin: 0; flex-grow: 1;">Enregistrement Invité</h3>
+      </div>
+
+      <div class="card">
+        <form id="guestForm">
+          <div class="row">
+            <div class="col">
+              <label>Appartement</label>
+              <input type="text" id="invAppart" readonly />
+            </div>
+            <div class="col">
+              <label>Immeuble</label>
+              <input type="text" id="invBat" readonly />
+            </div>
+          </div>
+
+          <label>Date d'arrivée *</label>
+          <input type="date" id="dateArrivee" required class="guest-input" />
+
+          <label>Nombre des invités *</label>
+          <input type="number" id="nbPers" min="1" value="1" onchange="genererChamps()" required class="guest-input" />
+
+          <label>Nom et Prénom de la personne principale *</label>
+          <input type="text" id="nomPrincipal" required placeholder="Nom complet" class="guest-input" />
+
+          <label>Numéro de passeport / CNI de la personne principale *</label>
+          <input type="text" id="docPrincipal" required placeholder="N° de document" class="guest-input" />
+
+          <div id="personnes"></div>
+
+          <div class="consent-container">
+            <h4>Consentement à la collecte de données</h4>
+            <div class="consent-text">
+              <p>En acceptant, vous consentez à la collecte de vos informations personnelles. Conformément à la législation marocaine, ces données seront conservées temporairement et supprimées une fois leur utilisation terminée.</p>
+            </div>
+            <label style="display: flex; align-items: center; margin-top: 10px;">
+              <input type="checkbox" id="consentCheckbox" required style="margin-right: 10px; width: auto;">
+              <span>J'accepte les conditions de traitement des données</span>
+            </label>
+          </div>
+
+          <button type="submit">Enregistrer</button>
+        </form>
+      </div>
+
+      <div id="successMessage" class="banner ok hidden">
+        Enregistrement réussi ! Vous pouvez télécharger le QR Code et le présenter à l'accueil.
+        <br><br>
+        <strong>Note importante :</strong> En cas de demande des agents de sécurité, présentez ce QR code.
+        Seules les personnes enregistrées dans cette réservation sont autorisées à entrer.
+      </div>
+
+      <div id="qrcodeContainer" class="card hidden">
+        <div class="toolbar">
+          <div><strong>QR Code de l'invité</strong></div>
+          <button id="downloadBtn">Télécharger QR Code</button>
+        </div>
+        <div id="qrcode"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* =======================
+       CONFIGURATION FIREBASE
+    ======================== */
+    const firebaseConfig = {
+      databaseURL: "https://dddiii-2b58b-default-rtdb.asia-southeast1.firebasedatabase.app/"
+    };
+    
+    // Initialiser Firebase
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    /* =======================
+       ÉTAT / CONSTANTES
+    ======================== */
+    let currentUser = null;
+    const SESSION_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
+    let sessionTimer = null;
+    let qrCode = null;
+
+    // Banner helpers
+    function showBanner(type, text){
+      const b = document.getElementById('banner');
+      b.className = 'banner ' + type;
+      b.textContent = text;
+      b.classList.remove('hidden');
+    }
+    function hideBanner(){ document.getElementById('banner').classList.add('hidden'); }
+
+    function showInlineMsg(elId, type, text){
+      const el = document.getElementById(elId);
+      el.textContent = text;
+      el.className = 'banner ' + type;
+      el.classList.remove('hidden');
+    }
+    function hideInlineMsg(elId){
+      const el = document.getElementById(elId);
+      el.classList.add('hidden');
+    }
+
+    /* =======================
+       SESSION / SÉCURITÉ
+    ======================== */
+    function startSessionTimer(){
+      stopSessionTimer();
+      sessionTimer = setTimeout(()=>{
+        logout(true);
+        showBanner('warn', "Session expirée (inactivité). Veuillez vous reconnecter.");
+      }, SESSION_TIMEOUT_MS);
+    }
+    function stopSessionTimer(){
+      if(sessionTimer){ clearTimeout(sessionTimer); sessionTimer = null; }
+    }
+    function resetSessionTimer(){
+      if(currentUser) startSessionTimer();
+    }
+    ['click','keydown','touchstart'].forEach(evt=>{
+      document.addEventListener(evt, resetSessionTimer, {passive:true});
+    });
+
+    function logout(expired=false){
+      currentUser = null;
+      stopSessionTimer();
+      // UI reset
+      document.getElementById('adminPanel').classList.add('hidden');
+      document.getElementById('userPanel').classList.add('hidden');
+      document.getElementById('invitePanel').classList.add('hidden');
+      document.getElementById('loginCard').classList.remove('hidden');
+      if(!expired) showBanner('info', "Vous êtes déconnecté.");
+    }
+
+    function retourAccueil(){
+      window.history.replaceState({}, document.title, location.pathname); // nettoie ?invite
+      logout(false);
+    }
+
+    /* =======================
+       AUTH
+    ======================== */
+    async function login(){
+      hideInlineMsg('loginMsg');
+      const u = document.getElementById('loginUser').value.trim();
+      const p = document.getElementById('loginPass').value.trim();
+
+      if(!u || !p){
+        showInlineMsg('loginMsg','err',"Saisissez l'utilisateur et le mot de passe.");
+        return;
+      }
+
+      if(u === 'admin' && p === 'admin'){
+        currentUser = { role:'admin' };
+        document.getElementById('loginCard').classList.add('hidden');
+        document.getElementById('adminPanel').classList.remove('hidden');
+        showBanner('ok', "Connecté en tant qu'administrateur.");
+        startSessionTimer();
+        refreshAdmin();
+        return;
+      }
+
+      // Vérifier l'utilisateur dans Firebase
+      try {
+        const snapshot = await database.ref('users/' + u).once('value');
+        const user = snapshot.val();
+        
+        if(user && user.pass === p){
+          currentUser = { role:'user', id:u, appart:user.appart, bat:user.bat, whatsapp: user.whatsapp || '' };
+          document.getElementById('loginCard').classList.add('hidden');
+          document.getElementById('userPanel').classList.remove('hidden');
+          showBanner('ok', `Connecté. Appartement ${user.appart} / Immeuble ${user.bat}.`);
+          
+          // Pré-remplir le champ WhatsApp si disponible
+          if (user.whatsapp) {
+            const prefix = user.whatsapp.substring(0, 3);
+            const number = user.whatsapp.substring(3);
+            document.getElementById('whatsappPrefix').value = prefix;
+            document.getElementById('whatsappNumber').value = number;
+          }
+          
+          startSessionTimer();
+          refreshUser();
+        } else {
+          showInlineMsg('loginMsg','err',"Identifiants incorrects.");
+        }
+      } catch (error) {
+        showInlineMsg('loginMsg','err',"Erreur d'accès à la base de données.");
+      }
+    }
+
+    /* =======================
+       ADMIN : UTILISATEURS
+    ======================== */
+    async function creerUtilisateur(){
+      hideInlineMsg('userWarn');
+      const appart = (document.getElementById('appartAdmin').value || '').trim();
+      const bat = (document.getElementById('batAdmin').value || '').trim();
+      const pass = (document.getElementById('passAdmin').value || '').trim();
+      const whatsapp = (document.getElementById('whatsappAdmin').value || '').trim();
+      
+      if(!appart || !bat || !pass){
+        showInlineMsg('userWarn','warn',"Tous les champs utilisateur sont obligatoires.");
+        return;
+      }
+      
+      const userId = appart + bat;
+      
+      try {
+        // Vérifier si l'utilisateur existe déjà
+        const snapshot = await database.ref('users/' + userId).once('value');
+        
+        if(snapshot.exists()){
+          showInlineMsg('userWarn','warn',`L'utilisateur ${userId} existe déjà.`);
+        } else {
+          // Créer le nouvel utilisateur
+          await database.ref('users/' + userId).set({
+            user: userId,
+            appart: appart,
+            bat: bat,
+            pass: pass,
+            whatsapp: whatsapp
+          });
+          
+          showBanner('ok', `Utilisateur ${userId} créé.`);
+          refreshAdmin();
+        }
+      } catch (error) {
+        showInlineMsg('userWarn','err',"Erreur lors de la création de l'utilisateur.");
+      }
+    }
+
+    async function refreshAdmin(){
+      // Liste utilisateurs
+      const tbodyU = document.querySelector('#tableUsers tbody');
+      tbodyU.innerHTML = '';
+      
+      try {
+        const usersSnapshot = await database.ref('users').once('value');
+        const users = usersSnapshot.val() || {};
+        
+        Object.values(users).forEach(u => {
+          tbodyU.insertAdjacentHTML('beforeend',
+            `<tr><td>${u.user}</td><td>${u.appart}</td><td>${u.bat}</td><td>${u.pass}</td><td>${u.whatsapp || 'Non configuré'}</td></tr>`);
+        });
+      } catch (error) {
+        showBanner('err', "Erreur lors du chargement des utilisateurs.");
+      }
+
+      // Enregistrements
+      const tbody = document.querySelector('#tableAdmin tbody');
+      tbody.innerHTML = '';
+      
+      try {
+        const recordsSnapshot = await database.ref('records').once('value');
+        const records = recordsSnapshot.val() || {};
+        
+        Object.entries(records).slice(-200).forEach(([id, r]) => {
+          const personnesList = r.personnes ? Object.values(r.personnes).map(p => `${p.nom} - ${p.doc}`).join(', ') : '';
+          const sendBtn = `<button onclick="envoyerWhatsApp('${id}')">Envoyer</button>`;
+          
+          tbody.insertAdjacentHTML('beforeend',
+            `<tr>
+              <td>${id}</td>
+              <td>${r.appart}</td>
+              <td>${r.bat}</td>
+              <td>${r.nom}</td>
+              <td>${r.doc}</td>
+              <td>${r.personnes ? Object.keys(r.personnes).length + 1 : 1}</td>
+              <td>${personnesList}</td>
+              <td>${r.date}</td>
+              <td>${sendBtn}</td>
+              <td>${r.sent ? "Envoyé" : "Non envoyé"}</td>
+            </tr>`);
+        });
+      } catch (error) {
+        showBanner('err', "Erreur lors du chargement des enregistrements.");
+      }
+    }
+
+    /* =======================
+       UTILISATEUR : MES ENREG.
+    ======================== */
+    async function refreshUser(){
+      const tbody = document.querySelector('#tableUser tbody');
+      tbody.innerHTML = '';
+      
+      try {
+        const recordsSnapshot = await database.ref('records').once('value');
+        const records = recordsSnapshot.val() || {};
+        
+        Object.entries(records)
+          .filter(([id, r]) => r.appart === currentUser.appart && r.bat === currentUser.bat)
+          .slice(-200)
+          .forEach(([id, r]) => {
+            const personnesList = r.personnes ? Object.values(r.personnes).map(p => `${p.nom} - ${p.doc}`).join(', ') : '';
+            const sendBtn = `<button onclick="envoyerWhatsApp('${id}')">Envoyer</button>`;
+            
+            tbody.insertAdjacentHTML('beforeend',
+              `<tr>
+                <td>${id}</td>
+                <td>${r.nom}</td>
+                <td>${r.doc}</td>
+                <td>${r.personnes ? Object.keys(r.personnes).length + 1 : 1}</td>
+                <td>${personnesList}</td>
+                <td>${r.date}</td>
+                <td>${r.sent ? "Envoyé" : "Non envoyé"}</td>
+                <td>${sendBtn}</td>
+              </tr>`);
+          });
+      } catch (error) {
+        showBanner('err', "Erreur de lecture des enregistrements.");
+      }
+    }
+
+    async function updateWhatsApp() {
+      const prefix = document.getElementById('whatsappPrefix').value;
+      const number = document.getElementById('whatsappNumber').value.trim();
+      
+      if (!number) {
+        showInlineMsg('whatsappMsg', 'warn', 'Veuillez saisir un numéro de téléphone');
+        return;
+      }
+      
+      const fullNumber = prefix + number;
+      
+      try {
+        await database.ref('users/' + currentUser.id).update({
+          whatsapp: fullNumber
+        });
+        
+        currentUser.whatsapp = fullNumber;
+        showInlineMsg('whatsappMsg', 'ok', 'Numéro WhatsApp enregistré avec succès');
+      } catch (error) {
+        showInlineMsg('whatsappMsg', 'err', 'Erreur lors de la mise à jour du numéro');
+      }
+    }
+
+    function genererLien(){
+      const base = location.href.split('?')[0];
+      const lien = `${base}?invite=${encodeURIComponent(currentUser.id)}`;
+      const p = document.getElementById('lienInvite');
+      p.innerHTML = `Lien pour vos invités : <a href="${lien}" target="_blank">${lien}</a>`;
+      showBanner('info', "Copiez/partagez ce lien avec vos invités.");
+    }
+
+    /* =======================
+       MODE INVITÉ
+    ======================== */
+    async function enterInviteMode(userId){
+      try {
+        const snapshot = await database.ref('users/' + userId).once('value');
+        const user = snapshot.val();
+        
+        if(!user){
+          showBanner('err',"Lien invalide ou utilisateur introuvable.");
+          return;
+        }
+        
+        document.getElementById('loginCard').classList.add('hidden');
+        document.getElementById('invitePanel').classList.remove('hidden');
+        document.getElementById('invAppart').value = user.appart;
+        document.getElementById('invBat').value = user.bat;
+        genererChamps(); // init 1 personne
+        hideBanner();
+        
+        // Initialiser QR Code Styling
+        qrCode = new QRCodeStyling({
+          width: 250,
+          height: 250,
+          margin: 10,
+          qrOptions: { typeNumber: 0, mode: "Byte", errorCorrectionLevel: "H" },
+          dotsOptions: { color: "#1E40AF", type: "rounded" },
+          backgroundOptions: { color: "#FFFFFF" },
+          cornersSquareOptions: { type: "extra-rounded", color: "#1E40AF" },
+          cornersDotOptions: { type: "dot", color: "#1E40AF" }
+        });
+        
+        // Ajouter les gestionnaires d'événements
+        document.getElementById('guestForm').addEventListener('submit', function(e) {
+          e.preventDefault();
+          enregistrer(user);
+        });
+        
+        document.getElementById('downloadBtn').addEventListener('click', function() {
+          if(qrCode) {
+            qrCode.download({ name: "Guest_QR_Code", extension: "png" });
+          }
+        });
+      } catch (error) {
+        showBanner('err', "Erreur lors du chargement des données utilisateur.");
+      }
+    }
+
+    function genererChamps(){
+      const nb = Math.max(1, parseInt(document.getElementById('nbPers').value || '1', 10));
+      const cont = document.getElementById('personnes');
+      cont.innerHTML = '';
+      
+      for(let i=2; i<=nb; i++){
+        const group = document.createElement('div');
+        group.className = 'person-group';
+        
+        const title = document.createElement('h4');
+        title.textContent = `Personne ${i}`;
+        title.style.marginBottom = '10px';
+        title.style.fontWeight = 'bold';
+        group.appendChild(title);
+        
+        const nomLab = document.createElement('label');
+        nomLab.textContent = 'Nom & Prénom';
+        group.appendChild(nomLab);
+        
+        const nomInp = document.createElement('input');
+        nomInp.type = 'text';
+        nomInp.id = `pers${i}Nom`;
+        nomInp.required = true;
+        nomInp.className = 'guest-input';
+        nomInp.placeholder = `Nom complet personne ${i}`;
+        group.appendChild(nomInp);
+        
+        const docLab = document.createElement('label');
+        docLab.textContent = 'Numéro de passeport / CNI';
+        docLab.style.marginTop = '10px';
+        group.appendChild(docLab);
+        
+        const docInp = document.createElement('input');
+        docInp.type = 'text';
+        docInp.id = `pers${i}Doc`;
+        docInp.required = true;
+        docInp.className = 'guest-input';
+        docInp.placeholder = `Document personne ${i}`;
+        group.appendChild(docInp);
+        
+        cont.appendChild(group);
+      }
+    }
+
+    function buildMessage(rec){
+      const nb = rec.personnes ? Object.keys(rec.personnes).length + 1 : 1;
+      const nomPrincipal = rec.nom;
+      const docPrincipal = rec.doc;
+      const autres = rec.personnes ? Object.values(rec.personnes).map(p => `${p.nom} - ${p.doc}`) : [];
+      
+      let message = `Salam :
+      
+Arrivée: ${rec.date}
+Appartement: ${rec.appart}
+Imm: ${rec.bat}
+Nombre de personnes: ${nb} personnes
+
+Réservation au nom de:
+Nom et Prénom: ${nomPrincipal}
+Numéro de passeport: ${docPrincipal}
+`;
+
+      if (autres.length > 0) {
+        message += "\nAutres personnes:\n";
+        autres.forEach((personne, index) => {
+          message += `${index + 1}. ${personne}\n`;
+        });
+      }
+
+      message += `
+NB : Svp pas d'autres personnes autorisées seul Les personnes figurent dans la réservation.
+
+Merci
+------------------------------------------
+السلام عليكم:
+
+الوصول: ${rec.date}
+الشقة: ${rec.appart}
+رقم العمارة: ${rec.bat}
+عدد الأشخاص: ${nb} أشخاص
+
+الحجز باسم:
+الإسم و اللقب: ${nomPrincipal}
+رقم جواز السفر: ${docPrincipal}
+`;
+
+      if (autres.length > 0) {
+        message += "\nأشخاص آخرون:\n";
+        autres.forEach((personne, index) => {
+          message += `${index + 1}. ${personne}\n`;
+        });
+      }
+
+      message += `
+ملاحظة: الرجاء عدم السماح لأي أشخاص آخرين، فقط الأشخاص المذكورين في الحجز.
+
+شكرًا.`;
+
+      return message;
+    }
+
+    async function enregistrer(userData){
+      // Vérifier la case d'acceptation
+      if(!document.getElementById('consentCheckbox').checked){
+        showBanner('warn', "Veuillez accepter les conditions de traitement des données.");
+        return;
+      }
+
+      // validations
+      const nom = (document.getElementById('nomPrincipal').value || '').trim();
+      const doc = (document.getElementById('docPrincipal').value || '').trim();
+      const nb = parseInt(document.getElementById('nbPers').value || '0', 10);
+      const date = document.getElementById('dateArrivee').value;
+
+      if(!nom || !doc || !date || !Number.isInteger(nb) || nb < 1){
+        showBanner('warn',"Tous les champs sont obligatoires.");
+        return;
+      }
+
+      const personnes = {};
+      for(let i=2; i<=nb; i++){
+        const nomVal = (document.getElementById(`pers${i}Nom`)?.value || '').trim();
+        const docVal = (document.getElementById(`pers${i}Doc`)?.value || '').trim();
+        
+        if(!nomVal || !docVal){
+          showBanner('warn',`Merci de renseigner tous les champs pour la personne ${i}.`);
+          return;
+        }
+        
+        personnes[`pers${i-1}`] = { nom: nomVal, doc: docVal };
+      }
+
+      const appart = document.getElementById('invAppart').value;
+      const bat = document.getElementById('invBat').value;
+
+      const rec = { 
+        appart, 
+        bat, 
+        nom, 
+        doc, 
+        personnes, 
+        date, 
+        sent: false,
+        timestamp: new Date().toISOString()
+      };
+      
+      const msg = buildMessage(rec);
+
+      try {
+        // Ajouter l'enregistrement à Firebase
+        const newRecordRef = database.ref('records').push();
+        await newRecordRef.set(rec);
+        
+        // Récupérer l'ID généré
+        const id = newRecordRef.key;
+        rec.id = id;
+        
+        // Envoyer automatiquement le message WhatsApp si configuré
+        if (userData.whatsapp) {
+          await envoyerWhatsAppAutomatique(id, userData.whatsapp);
+        }
+        
+        // Afficher le message de succès et le QR code
+        document.getElementById('successMessage').classList.remove('hidden');
+        document.getElementById('qrcodeContainer').classList.remove('hidden');
+        
+        // Générer le QR Code avec le même message
+        if(qrCode) {
+          qrCode.update({ data: msg });
+          document.getElementById('qrcode').innerHTML = '';
+          qrCode.append(document.getElementById('qrcode'));
+        }
+
+        // Masquer le formulaire
+        document.getElementById('guestForm').style.display = 'none';
+      } catch (error) {
+        showBanner('err',"Erreur lors de l'enregistrement. Réessayez.");
+      }
+    }
+
+    async function envoyerWhatsAppAutomatique(id, whatsappNumber) {
+      try {
+        const snapshot = await database.ref('records/' + id).once('value');
+        const r = snapshot.val();
+        
+        if(!r){ 
+          console.error("Enregistrement introuvable pour envoi automatique.");
+          return; 
+        }
+        
+        const msg = buildMessage(r);
+        const url = "https://wa.me/" + whatsappNumber + "?text=" + encodeURIComponent(msg);
+        
+        // Ouvrir WhatsApp dans une nouvelle fenêtre
+        window.open(url, "_blank");
+        
+        // Marquer comme envoyé
+        await database.ref('records/' + id).update({ sent: true });
+      } catch (error) {
+        console.error("Erreur lors de l'envoi automatique WhatsApp:", error);
+      }
+    }
+
+    /* =======================
+       ADMIN : ENVOI WHATSAPP
+    ======================== */
+    async function envoyerWhatsApp(id){
+      try {
+        const snapshot = await database.ref('records/' + id).once('value');
+        const r = snapshot.val();
+        
+        if(!r){ 
+          showBanner('err',"Enregistrement introuvable."); 
+          return; 
+        }
+        
+        const msg = buildMessage(r);
+        const url = "https://wa.me/?text=" + encodeURIComponent(msg);
+        window.open(url, "_blank");
+        
+        // marquer envoyé
+        await database.ref('records/' + id).update({ sent: true });
+        
+        if(currentUser.role === 'admin') refreshAdmin();
+        else refreshUser();
+      } catch (error) {
+        showBanner('err',"Erreur de lecture de l'enregistrement.");
+      }
+    }
+
+    /* =======================
+       DÉMARRAGE
+    ======================== */
+    // Initialisation du bouton de connexion
+    document.getElementById('btnLogin').disabled = false;
+    
+    // Vérifier si on a un paramètre invite dans l'URL
+    const params = new URLSearchParams(location.search);
+    if(params.has("invite")) {
+      // Ouvrir directement le formulaire d'invité sans bouton retour
+      enterInviteMode(params.get("invite"));
+    }
+  </script>
+
+</body>
+</html>
