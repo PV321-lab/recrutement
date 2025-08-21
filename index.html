@@ -36,137 +36,13 @@
     .note{ font-size:13px; opacity:.8; }
     .qrwrap{ display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap; }
     .recap{ background:#fafafa; border:1px dashed #ccc; padding:10px; border-radius:8px; min-width:240px; }
-    
-    /* Nouveaux styles pour la partie invité */
-    .guest-form-container { 
-      background: white;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-      border-radius: 16px;
-      padding: 24px;
-      max-width: 600px;
-      margin: 0 auto;
-    }
-    .guest-form-title {
-      font-size: 1.75rem;
-      font-weight: bold;
-      text-align: center;
-      margin-bottom: 24px;
-      color: #1e293b;
-    }
-    .guest-input {
-      width: 100%;
-      padding: 12px 16px;
-      border: 1px solid #cbd5e1;
-      border-radius: 10px;
-      font-size: 1rem;
-      margin-top: 8px;
-      background: #f8fafc;
-    }
-    .guest-input:focus {
-      outline: none;
-      border-color: #60a5fa;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-    }
-    .guest-button {
-      background: #3b82f6;
-      color: white;
-      border: none;
-      padding: 14px;
-      border-radius: 10px;
-      font-size: 1.1rem;
-      font-weight: 600;
-      cursor: pointer;
-      width: 100%;
-      transition: background 0.2s;
-    }
-    .guest-button:hover {
-      background: #2563eb;
-    }
-    .success-message {
-      background: #dcfce7;
-      color: #166534;
-      padding: 16px;
-      border-radius: 10px;
-      text-align: center;
-      font-weight: 600;
-      margin-top: 20px;
-      display: none;
-    }
-    .qrcode-container {
-      margin-top: 30px;
-      display: none;
-    }
-    .qrcode-header {
-      font-size: 1.25rem;
-      font-weight: 600;
-      text-align: center;
-      margin-bottom: 20px;
-      color: #1e293b;
-    }
-    .qrcode-warning {
-      background: #fffbeb;
-      color: #854d0e;
-      padding: 16px;
-      border-radius: 10px;
-      margin-bottom: 20px;
-      font-size: 0.9rem;
-      text-align: center;
-      border: 1px solid #fcd34d;
-    }
-    .download-button {
-      background: #22c55e;
-      color: white;
-      border: none;
-      padding: 12px 20px;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-      margin-top: 20px;
-      display: block;
-      width: 100%;
-      transition: background 0.2s;
-    }
-    .download-button:hover {
-      background: #16a34a;
-    }
-    .person-label {
-      font-weight: 600;
-      margin-top: 20px;
-      display: block;
-    }
-    .person-group {
-      background: #f8fafc;
-      padding: 12px;
-      border-radius: 8px;
-      margin-bottom: 12px;
-      border: 1px solid #e5e7eb;
-    }
-    .notification {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      padding: 15px 20px;
-      border-radius: 8px;
-      color: white;
-      background-color: var(--ok);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      z-index: 1000;
-      opacity: 0;
-      transform: translateX(100%);
-      transition: all 0.3s ease;
-    }
-    .notification.show {
-      opacity: 1;
-      transform: translateX(0);
-    }
   </style>
 </head>
 <body>
 
-  <h2>Enregistrement des invités</h2>
+<h2>Enregistrement des invités</h2>
 
   <div id="banner" class="banner info hidden"></div>
-  <div id="notification" class="notification hidden"></div>
 
   <!-- Connexion -->
   <div id="loginCard" class="card">
@@ -192,46 +68,52 @@
     </div>
 
     <div class="card">
-      <h3>Gestion des utilisateurs</h3>
+      <div class="toolbar">
+        <div><strong>Gestion des utilisateurs</strong></div>
+      </div>
       <div class="row">
         <div class="col">
           <label>Appartement</label>
-          <input type="text" id="appartAdmin" inputmode="numeric" required />
+          <input type="text" id="appartAdmin" placeholder="Ex: 12" />
         </div>
         <div class="col">
-          <label>Bâtiment</label>
-          <input type="text" id="batAdmin" required />
+          <label>Immeuble</label>
+          <input type="text" id="batAdmin" placeholder="Ex: A" />
         </div>
         <div class="col">
           <label>Mot de passe</label>
-          <input type="text" id="passAdmin" required />
+          <input type="text" id="passAdmin" placeholder="Mot de passe" />
         </div>
       </div>
       <button onclick="creerUtilisateur()">Créer utilisateur</button>
-      <p class="note">L'identifiant utilisateur sera <i>Appartement+Bâtiment</i> (ex. 6 et 6 → <b>66</b>).</p>
-      <div id="userWarn" class="banner warn hidden"></div>
+      <p id="userWarn" class="banner warn hidden"></p>
     </div>
 
     <div class="card">
-      <h3>Liste des utilisateurs</h3>
+      <div class="toolbar">
+        <div><strong>Utilisateurs existants</strong></div>
+      </div>
       <table id="tableUsers">
-        <thead><tr><th>Utilisateur</th><th>Appartement</th><th>Bâtiment</th><th>Mot de passe</th></tr></thead>
+        <thead>
+          <tr><th>ID</th><th>Appartement</th><th>Immeuble</th><th>Mot de passe</th></tr>
+        </thead>
         <tbody></tbody>
       </table>
     </div>
 
     <div class="card">
-      <h3>Tous les enregistrements</h3>
+      <div class="toolbar">
+        <div><strong>Enregistrements des invités</strong></div>
+      </div>
       <table id="tableAdmin">
         <thead>
           <tr>
-            <th>ID</th><th>Appartement</th><th>Bâtiment</th><th>Nom principal</th>
-            <th>Document</th><th>Total personnes</th><th>Liste personnes</th><th>Date</th><th>Email</th><th>Status</th>
+            <th>ID</th><th>Appart.</th><th>Immeuble</th><th>Nom</th><th>Document</th>
+            <th>Nb Pers.</th><th>Personnes</th><th>Date</th><th>Action</th><th>Statut</th>
           </tr>
         </thead>
         <tbody></tbody>
       </table>
-      <p class="note">Astuce : pour des bases énormes, ajoute un filtrage/pagination si besoin.</p>
     </div>
   </div>
 
@@ -243,18 +125,35 @@
     </div>
 
     <div class="card">
-      <h3>Mes enregistrements</h3>
+      <div class="toolbar">
+        <div><strong>Configuration email</strong></div>
+      </div>
+      <label>Email pour les notifications</label>
+      <input type="email" id="userEmail" placeholder="Votre email" />
+      <button onclick="saveUserEmail()">Enregistrer l'email</button>
+      <p id="emailMsg" class="banner info hidden"></p>
+    </div>
+
+    <div class="card">
+      <div class="toolbar">
+        <div><strong>Générer un lien d'invitation</strong></div>
+      </div>
+      <button onclick="genererLien()">Générer le lien</button>
+      <p id="lienInvite"></p>
+    </div>
+
+    <div class="card">
+      <div class="toolbar">
+        <div><strong>Mes enregistrements</strong></div>
+      </div>
       <table id="tableUser">
         <thead>
           <tr>
-            <th>ID</th><th>Nom principal</th><th>Document</th><th>Total personnes</th>
-            <th>Liste personnes</th><th>Date</th><th>Status</th><th>Action</th>
+            <th>ID</th><th>Nom</th><th>Document</th><th>Nb Pers.</th><th>Personnes</th><th>Date</th><th>Statut</th><th>Action</th>
           </tr>
         </thead>
         <tbody></tbody>
       </table>
-      <button onclick="genererLien()">Générer le lien d'enregistrement invité</button>
-      <p id="lienInvite" class="note"></p>
     </div>
   </div>
 
@@ -265,58 +164,56 @@
         <h3 style="margin: 0; flex-grow: 1;">Enregistrement Invité</h3>
         <button onclick="retourAccueil()" style="background: #6b7280;">Retour</button>
       </div>
-      
-      <form id="guestForm" class="space-y-4">
-        <div class="row">
-          <div class="col">
-            <label>Appartement</label>
-            <input type="text" id="invAppart" readonly class="guest-input" />
+
+      <div class="card">
+        <form id="guestForm">
+          <div class="row">
+            <div class="col">
+              <label>Appartement</label>
+              <input type="text" id="invAppart" readonly />
+            </div>
+            <div class="col">
+              <label>Immeuble</label>
+              <input type="text" id="invBat" readonly />
+            </div>
           </div>
-          <div class="col">
-            <label>Bâtiment</label>
-            <input type="text" id="invBat" readonly class="guest-input" />
-          </div>
-        </div>
 
-        <label>Date d'arrivée</label>
-        <input type="date" id="dateArrivee" required class="guest-input" />
+          <label>Nom et Prénom de la personne principale *</label>
+          <input type="text" id="nomPrincipal" required placeholder="Nom complet" class="guest-input" />
 
-        <label>Nombre total de personnes</label>
-        <input type="number" id="nbPers" min="1" value="1" required class="guest-input" onchange="genererChamps()" />
+          <label>Passeport / CNI de la personne principale *</label>
+          <input type="text" id="docPrincipal" required placeholder="N° de document" class="guest-input" />
 
-        <!-- Personne principale -->
-        <div class="person-group">
-          <label>Personne principale - Nom & Prénom</label>
-          <input type="text" id="nomPrincipal" required class="guest-input" />
-          
-          <label>Personne principale - Passeport / CNI</label>
-          <input type="text" id="docPrincipal" required class="guest-input" />
-        </div>
+          <label>Date d'arrivée *</label>
+          <input type="date" id="dateArrivee" required class="guest-input" />
 
-        <div id="personnes"></div>
+          <label>Nombre total de personnes *</label>
+          <input type="number" id="nbPers" min="1" value="1" onchange="genererChamps()" required class="guest-input" />
 
-        <button type="submit" class="guest-button">Enregistrer</button>
-      </form>
+          <div id="personnes"></div>
 
-      <div id="successMessage" class="success-message">
-        ✅ Informations enregistrées avec succès !
+          <button type="submit">Enregistrer</button>
+        </form>
       </div>
 
-      <div id="qrcodeContainer" class="qrcode-container">
-        <div class="qrcode-warning">
-          ⚠️ Seules les voyageurs qui sont enregistrés dans la réservation et dans ce formulaire seront autorisés. 
-          En cas de demande de ce code, merci de le présenter aux agents de sécurité.
+      <div id="successMessage" class="banner ok hidden">
+        Enregistrement réussi ! Un email de notification a été envoyé. Vous pouvez télécharger le QR Code et le présenter à l'accueil.
+      </div>
+
+      <div id="qrcodeContainer" class="card hidden">
+        <div class="toolbar">
+          <div><strong>QR Code de l'invité</strong></div>
+          <button id="downloadBtn">Télécharger QR Code</button>
         </div>
-        
-        <div class="qrcode-header">Votre QR Code</div>
-        <div id="qrcode" style="display: flex; justify-content: center;"></div>
-        <button id="downloadBtn" class="download-button">Télécharger le QR Code</button>
+        <div id="qrcode"></div>
       </div>
     </div>
   </div>
 
   <script>
-    // Configuration et initialisation de Firebase
+    /* =======================
+       CONFIGURATION FIREBASE
+    ======================== */
     const firebaseConfig = {
       databaseURL: "https://dddiii-2b58b-default-rtdb.asia-southeast1.firebasedatabase.app/"
     };
@@ -329,8 +226,13 @@
        ÉTAT / CONSTANTES
     ======================== */
     let currentUser = null;
+    const SESSION_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
+    let sessionTimer = null;
     let qrCode = null;
-    let lastRecordId = null;
+    const EMAIL_CONFIG = {
+      from: "Textilleinnov@outlook.fr",
+      password: "TEXTILEINNOV04"
+    };
 
     // Banner helpers
     function showBanner(type, text){
@@ -352,47 +254,29 @@
       el.classList.add('hidden');
     }
 
-    // Fonction pour afficher les notifications
-    function showNotification(message, type = 'ok') {
-      const notification = document.getElementById('notification');
-      notification.textContent = message;
-      notification.className = `notification ${type}`;
-      notification.classList.remove('hidden');
-      
-      setTimeout(() => {
-        notification.classList.add('show');
-      }, 10);
-      
-      setTimeout(() => {
-        notification.classList.remove('show');
-        setTimeout(() => {
-          notification.classList.add('hidden');
-        }, 300);
-      }, 3000);
-    }
-
     /* =======================
        SESSION / SÉCURITÉ
     ======================== */
-    function saveSession(user) {
-      localStorage.setItem('currentUser', JSON.stringify(user));
+    function startSessionTimer(){
+      stopSessionTimer();
+      sessionTimer = setTimeout(()=>{
+        logout(true);
+        showBanner('warn', "Session expirée (inactivité). Veuillez vous reconnecter.");
+      }, SESSION_TIMEOUT_MS);
     }
-
-    function loadSession() {
-      const userData = localStorage.getItem('currentUser');
-      if (userData) {
-        return JSON.parse(userData);
-      }
-      return null;
+    function stopSessionTimer(){
+      if(sessionTimer){ clearTimeout(sessionTimer); sessionTimer = null; }
     }
-
-    function clearSession() {
-      localStorage.removeItem('currentUser');
+    function resetSessionTimer(){
+      if(currentUser) startSessionTimer();
     }
+    ['click','keydown','touchstart'].forEach(evt=>{
+      document.addEventListener(evt, resetSessionTimer, {passive:true});
+    });
 
     function logout(expired=false){
       currentUser = null;
-      clearSession();
+      stopSessionTimer();
       // UI reset
       document.getElementById('adminPanel').classList.add('hidden');
       document.getElementById('userPanel').classList.add('hidden');
@@ -421,10 +305,10 @@
 
       if(u === 'admin' && p === 'admin'){
         currentUser = { role:'admin' };
-        saveSession(currentUser);
         document.getElementById('loginCard').classList.add('hidden');
         document.getElementById('adminPanel').classList.remove('hidden');
         showBanner('ok', "Connecté en tant qu'administrateur.");
+        startSessionTimer();
         refreshAdmin();
         return;
       }
@@ -435,18 +319,18 @@
         const user = snapshot.val();
         
         if(user && user.pass === p){
-          currentUser = { role:'user', id:user.user, appart:user.appart, bat:user.bat };
-          saveSession(currentUser);
+          currentUser = { role:'user', id:u, appart:user.appart, bat:user.bat };
           document.getElementById('loginCard').classList.add('hidden');
           document.getElementById('userPanel').classList.remove('hidden');
           showBanner('ok', `Connecté. Appartement ${user.appart} / Immeuble ${user.bat}.`);
+          startSessionTimer();
           refreshUser();
+          loadUserEmail();
         } else {
           showInlineMsg('loginMsg','err',"Identifiants incorrects.");
         }
       } catch (error) {
         showInlineMsg('loginMsg','err',"Erreur d'accès à la base de données.");
-        console.error("Erreur Firebase:", error);
       }
     }
 
@@ -486,7 +370,6 @@
         }
       } catch (error) {
         showInlineMsg('userWarn','err',"Erreur lors de la création de l'utilisateur.");
-        console.error("Erreur Firebase:", error);
       }
     }
 
@@ -505,7 +388,6 @@
         });
       } catch (error) {
         showBanner('err', "Erreur lors du chargement des utilisateurs.");
-        console.error("Erreur Firebase:", error);
       }
 
       // Enregistrements
@@ -516,9 +398,9 @@
         const recordsSnapshot = await database.ref('records').once('value');
         const records = recordsSnapshot.val() || {};
         
-        Object.entries(records).forEach(([id, r]) => {
-          const personnesList = r.personnes.map(p => `${p.nom} (${p.doc})`).join(', ');
-          const sendBtn = `<button onclick="envoyerEmail('${id}')">Envoyer</button>`;
+        Object.entries(records).slice(-200).forEach(([id, r]) => {
+          const personnesList = r.personnes ? Object.values(r.personnes).map(p => p.nom).join(', ') : '';
+          const sendBtn = `<button onclick="envoyerWhatsApp('${id}')">Envoyer</button>`;
           
           tbody.insertAdjacentHTML('beforeend',
             `<tr>
@@ -527,7 +409,7 @@
               <td>${r.bat}</td>
               <td>${r.nom}</td>
               <td>${r.doc}</td>
-              <td>${r.personnes.length}</td>
+              <td>${r.personnes ? Object.keys(r.personnes).length + 1 : 1}</td>
               <td>${personnesList}</td>
               <td>${r.date}</td>
               <td>${sendBtn}</td>
@@ -536,7 +418,6 @@
         });
       } catch (error) {
         showBanner('err', "Erreur lors du chargement des enregistrements.");
-        console.error("Erreur Firebase:", error);
       }
     }
 
@@ -548,28 +429,30 @@
       tbody.innerHTML = '';
       
       try {
-        const recordsSnapshot = await database.ref('records').orderByChild('unit').equalTo(currentUser.appart + '_' + currentUser.bat).once('value');
+        const recordsSnapshot = await database.ref('records').once('value');
         const records = recordsSnapshot.val() || {};
         
-        Object.entries(records).forEach(([id, r]) => {
-          const personnesList = r.personnes.map(p => `${p.nom} (${p.doc})`).join(', ');
-          const sendBtn = `<button onclick="envoyerEmail('${id}')">Envoyer</button>`;
-          
-          tbody.insertAdjacentHTML('beforeend',
-            `<tr>
-              <td>${id}</td>
-              <td>${r.nom}</td>
-              <td>${r.doc}</td>
-              <td>${r.personnes.length}</td>
-              <td>${personnesList}</td>
-              <td>${r.date}</td>
-              <td>${r.sent ? "Envoyé" : "Non envoyé"}</td>
-              <td>${sendBtn}</td>
-            </tr>`);
-        });
+        Object.entries(records)
+          .filter(([id, r]) => r.appart === currentUser.appart && r.bat === currentUser.bat)
+          .slice(-200)
+          .forEach(([id, r]) => {
+            const personnesList = r.personnes ? Object.values(r.personnes).map(p => p.nom).join(', ') : '';
+            const sendBtn = `<button onclick="envoyerWhatsApp('${id}')">Envoyer</button>`;
+            
+            tbody.insertAdjacentHTML('beforeend',
+              `<tr>
+                <td>${id}</td>
+                <td>${r.nom}</td>
+                <td>${r.doc}</td>
+                <td>${r.personnes ? Object.keys(r.personnes).length + 1 : 1}</td>
+                <td>${personnesList}</td>
+                <td>${r.date}</td>
+                <td>${r.sent ? "Envoyé" : "Non envoyé"}</td>
+                <td>${sendBtn}</td>
+              </tr>`);
+          });
       } catch (error) {
-        showBanner('err',"Erreur de lecture des enregistrements.");
-        console.error("Erreur Firebase:", error);
+        showBanner('err', "Erreur de lecture des enregistrements.");
       }
     }
 
@@ -579,6 +462,76 @@
       const p = document.getElementById('lienInvite');
       p.innerHTML = `Lien pour vos invités : <a href="${lien}" target="_blank">${lien}</a>`;
       showBanner('info', "Copiez/partagez ce lien avec vos invités.");
+    }
+
+    async function loadUserEmail() {
+      try {
+        const snapshot = await database.ref('userEmails/' + currentUser.id).once('value');
+        const email = snapshot.val();
+        if (email) {
+          document.getElementById('userEmail').value = email;
+        }
+      } catch (error) {
+        console.error("Erreur lors du chargement de l'email:", error);
+      }
+    }
+
+    async function saveUserEmail() {
+      const email = document.getElementById('userEmail').value.trim();
+      if (!email) {
+        showInlineMsg('emailMsg', 'warn', "Veuillez entrer une adresse email valide.");
+        return;
+      }
+      
+      try {
+        await database.ref('userEmails/' + currentUser.id).set(email);
+        showInlineMsg('emailMsg', 'ok', "Email enregistré avec succès.");
+      } catch (error) {
+        showInlineMsg('emailMsg', 'err', "Erreur lors de l'enregistrement de l'email.");
+      }
+    }
+
+    /* =======================
+       ENVOI D'EMAIL
+    ======================== */
+    async function sendEmailNotification(record) {
+      try {
+        // Récupérer l'email de l'utilisateur
+        let userEmail = "";
+        if (currentUser && currentUser.id) {
+          const snapshot = await database.ref('userEmails/' + currentUser.id).once('value');
+          userEmail = snapshot.val() || "";
+        }
+        
+        // Si l'utilisateur n'a pas configuré d'email, on n'envoie pas de notification
+        if (!userEmail) return;
+        
+        // Construire le sujet et le corps de l'email
+        const subject = `Nouvel invité enregistré - ${record.nom}`;
+        const body = `
+Nouvel invité enregistré pour l'appartement ${record.appart}, immeuble ${record.bat}.
+
+Détails de l'enregistrement:
+- Nom principal: ${record.nom}
+- Document: ${record.doc}
+- Date d'arrivée: ${record.date}
+- Nombre de personnes: ${record.personnes ? Object.keys(record.personnes).length + 1 : 1}
+
+Personnes supplémentaires:
+${record.personnes ? Object.values(record.personnes).map(p => `- ${p.nom} (${p.doc})`).join('\n') : 'Aucune'}
+
+Cet enregistrement a été effectué via le système de gestion des invités.
+        `;
+        
+        // Préparer l'URL pour envoyer l'email
+        const mailtoLink = `mailto:${userEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        
+        // Ouvrir le client email par défaut
+        window.open(mailtoLink, '_blank');
+        
+      } catch (error) {
+        console.error("Erreur lors de l'envoi de l'email:", error);
+      }
     }
 
     /* =======================
@@ -626,7 +579,6 @@
         });
       } catch (error) {
         showBanner('err', "Erreur lors du chargement des données utilisateur.");
-        console.error("Erreur Firebase:", error);
       }
     }
 
@@ -675,12 +627,11 @@
     }
 
     function buildMessage(rec){
-      const nb = rec.personnes.length;
+      const nb = rec.personnes ? Object.keys(rec.personnes).length + 1 : 1;
       const nomPrincipal = rec.nom;
       const docPrincipal = rec.doc;
-      const autres = rec.personnes.map(p => `${p.nom} (${p.doc})`);
-      const autresFR = autres.length ? autres.join(", ") : "0";
-      const autresAR = autres.length ? autres.join(", ") : "0";
+      const autres = rec.personnes ? Object.values(rec.personnes).map(p => `${p.nom} (${p.doc})`) : [];
+      const autresFR = autres.length ? autres.join(", ") : "Aucune";
 
       return `Salam :
 Arrivée: ${rec.date}
@@ -705,7 +656,7 @@ Merci
 الحجز باسم: ${nomPrincipal} (${docPrincipal})
 
 أشخاص آخرون:
-${autresAR}
+${autresFR}
 
 ملاحظة: الرجاء عدم السماح لأي أشخاص آخرين، فقط الأشخاص المذكورين في الحجز.
 
@@ -724,7 +675,7 @@ ${autresAR}
         return;
       }
 
-      const personnes = [];
+      const personnes = {};
       for(let i=2; i<=nb; i++){
         const nomVal = (document.getElementById(`pers${i}Nom`)?.value || '').trim();
         const docVal = (document.getElementById(`pers${i}Doc`)?.value || '').trim();
@@ -734,7 +685,7 @@ ${autresAR}
           return;
         }
         
-        personnes.push({ nom: nomVal, doc: docVal });
+        personnes[`pers${i-1}`] = { nom: nomVal, doc: docVal };
       }
 
       const appart = document.getElementById('invAppart').value;
@@ -747,23 +698,26 @@ ${autresAR}
         doc, 
         personnes, 
         date, 
-        sent: false,
-        unit: appart + '_' + bat  // Champ pour faciliter les requêtes
+        sent:false 
       };
       
       const msg = buildMessage(rec);
 
       try {
-        // Enregistrer dans Firebase
+        // Ajouter l'enregistrement à Firebase
         const newRecordRef = database.ref('records').push();
         await newRecordRef.set(rec);
         
+        // Récupérer l'ID généré
         const id = newRecordRef.key;
-        rec.id = id; // pour usage immédiat (affichage)
+        rec.id = id;
+        
+        // Envoyer l'email de notification
+        await sendEmailNotification(rec);
         
         // Afficher le message de succès et le QR code
-        document.getElementById('successMessage').style.display = 'block';
-        document.getElementById('qrcodeContainer').style.display = 'block';
+        document.getElementById('successMessage').classList.remove('hidden');
+        document.getElementById('qrcodeContainer').classList.remove('hidden');
         
         // Générer le QR Code
         if(qrCode) {
@@ -776,74 +730,34 @@ ${autresAR}
         document.getElementById('guestForm').style.display = 'none';
       } catch (error) {
         showBanner('err',"Erreur lors de l'enregistrement. Réessayez.");
-        console.error("Erreur Firebase:", error);
       }
     }
 
     /* =======================
-       ENVOI PAR EMAIL
+       ADMIN : ENVOI WHATSAPP
     ======================== */
-    async function envoyerEmail(id){
+    async function envoyerWhatsApp(id){
       try {
         const snapshot = await database.ref('records/' + id).once('value');
         const r = snapshot.val();
         
         if(!r){ 
-          showNotification("Enregistrement introuvable.", "err");
+          showBanner('err',"Enregistrement introuvable."); 
           return; 
         }
         
         const msg = buildMessage(r);
+        const url = "https://wa.me/?text=" + encodeURIComponent(msg);
+        window.open(url, "_blank");
         
-        // Préparer les données pour l'envoi par email
-        const emailData = {
-          to_email: "Textilleinnov@outlook.fr",
-          from_name: "Système d'enregistrement",
-          subject: `Enregistrement Invité - ${r.nom}`,
-          message: msg,
-          appart: r.appart,
-          batiment: r.bat,
-          date_arrivee: r.date,
-          nombre_personnes: r.personnes.length,
-          nom_principal: r.nom,
-          doc_principal: r.doc
-        };
-
-        // Simuler l'envoi d'email (à remplacer par un vrai service d'envoi d'email)
-        showNotification("Envoi de l'email en cours...", "info");
+        // marquer envoyé
+        await database.ref('records/' + id).update({ sent: true });
         
-        setTimeout(() => {
-          showNotification("Email envoyé avec succès à Textilleinnov@outlook.fr");
-          
-          // Marquer comme envoyé dans la base de données
-          database.ref('records/' + id).update({ sent: true });
-          
-          // Actualiser les tableaux
-          if(currentUser.role === 'admin') refreshAdmin();
-          else refreshUser();
-        }, 1500);
-        
+        if(currentUser.role === 'admin') refreshAdmin();
+        else refreshUser();
       } catch (error) {
-        showNotification("Erreur lors de l'envoi de l'email: " + error.message, "err");
+        showBanner('err',"Erreur de lecture de l'enregistrement.");
       }
-    }
-
-    /* =======================
-       SURVEILLANCE DES NOUVEAUX ENREGISTREMENTS
-    ======================== */
-    function setupRecordListener() {
-      // Écouter les nouveaux enregistrements
-      database.ref('records').orderByKey().limitToLast(1).on('child_added', (snapshot) => {
-        const newRecord = snapshot.val();
-        const recordId = snapshot.key;
-        
-        // Éviter les notifications pour les enregistrements existants au chargement initial
-        if (lastRecordId && recordId !== lastRecordId) {
-          showNotification(`Nouvel enregistrement: ${newRecord.nom} (${newRecord.appart}/${newRecord.bat})`);
-        }
-        
-        lastRecordId = recordId;
-      });
     }
 
     /* =======================
@@ -852,27 +766,10 @@ ${autresAR}
     // Initialisation du bouton de connexion
     document.getElementById('btnLogin').disabled = false;
     
-    // Vérifier si une session existe déjà
-    const savedUser = loadSession();
-    if (savedUser) {
-      currentUser = savedUser;
-      document.getElementById('loginCard').classList.add('hidden');
-      
-      if (currentUser.role === 'admin') {
-        document.getElementById('adminPanel').classList.remove('hidden');
-        refreshAdmin();
-      } else {
-        document.getElementById('userPanel').classList.remove('hidden');
-        refreshUser();
-      }
-    }
-    
-    // Si lien invité présent, basculer en mode invité
+    // Vérifier si on a un paramètre invite dans l'URL
     const params = new URLSearchParams(location.search);
     if(params.has("invite")) enterInviteMode(params.get("invite"));
-    
-    // Configurer l'écouteur pour les nouveaux enregistrements
-    setupRecordListener();
   </script>
+
 </body>
 </html>
