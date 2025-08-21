@@ -8,6 +8,8 @@
   <!-- Intégration de Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <!-- Intégration de EmailJS -->
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <style>
     :root{
       --c1:#007bff; --bg:#f0f2f5; --ok:#0f9d58; --warn:#f4b400; --err:#d93025; --info:#4285f4;
@@ -16,8 +18,8 @@
     h2 { text-align: center; margin: 8px 0 16px; }
     .card { background:#fff; padding:16px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.12); margin-bottom:16px; }
     label { font-weight:600; display:block; margin-top:10px; }
-    input, button { font-size:16px; }
-    input { width:100%; padding:10px; margin-top:6px; border:1px solid #ccc; border-radius:8px; }
+    input, button, select { font-size:16px; }
+    input, select { width:100%; padding:10px; margin-top:6px; border:1px solid #ccc; border-radius:8px; }
     input[readonly]{ background:#e9ecef; }
     button { margin-top:14px; padding:10px 14px; border:none; border-radius:10px; background:var(--c1); color:#fff; cursor:pointer; }
     button:disabled{ opacity:.6; cursor:not-allowed; }
@@ -36,6 +38,9 @@
     .note{ font-size:13px; opacity:.8; }
     .qrwrap{ display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap; }
     .recap{ background:#fafafa; border:1px dashed #ccc; padding:10px; border-radius:8px; min-width:240px; }
+    .loading { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s ease-in-out infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .person-group { background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #eee; }
   </style>
 </head>
 <body>
@@ -157,7 +162,7 @@
     </div>
   </div>
 
-  <!-- NOUVEAU Formulaire d'invité (via lien) -->
+  <!-- Formulaire d'invité (via lien) -->
   <div id="invitePanel" class="hidden">
     <div class="guest-form-container">
       <div class="toolbar" style="margin-bottom: 20px;">
@@ -181,7 +186,15 @@
           <label>Nom et Prénom de la personne principale *</label>
           <input type="text" id="nomPrincipal" required placeholder="Nom complet" class="guest-input" />
 
-          <label>Passeport / CNI de la personne principale *</label>
+          <label>Type de document *</label>
+          <select id="typeDocPrincipal" required class="guest-input">
+            <option value="">Sélectionner</option>
+            <option value="Passeport">Passeport</option>
+            <option value="CNI">Carte Nationale d'Identité</option>
+            <option value="Permis">Permis de conduire</option>
+          </select>
+
+          <label>Numéro de document *</label>
           <input type="text" id="docPrincipal" required placeholder="N° de document" class="guest-input" />
 
           <label>Date d'arrivée *</label>
@@ -192,7 +205,7 @@
 
           <div id="personnes"></div>
 
-          <button type="submit">Enregistrer</button>
+          <button type="submit" id="submitBtn">Enregistrer</button>
         </form>
       </div>
 
@@ -223,6 +236,14 @@
     const database = firebase.database();
 
     /* =======================
+       CONFIGURATION EMAILJS
+    ======================== */
+    // Initialiser EmailJS avec votre public key
+    (function(){
+      emailjs.init("YOUR_PUBLIC_KEY"); // Remplacez par votre public key d'EmailJS
+    })();
+
+    /* =======================
        ÉTAT / CONSTANTES
     ======================== */
     let currentUser = null;
@@ -230,8 +251,8 @@
     let sessionTimer = null;
     let qrCode = null;
     const EMAIL_CONFIG = {
-      from: "Textilleinnov@outlook.fr",
-      password: "TEXTILEINNOV04"
+      serviceId: "YOUR_SERVICE_ID", // Remplacez par votre Service ID d'EmailJS
+      templateId: "YOUR_TEMPLATE_ID" // Remplacez par votre Template ID d'EmailJS
     };
 
     // Banner helpers
@@ -408,7 +429,7 @@
               <td>${r.appart}</td>
               <td>${r.bat}</td>
               <td>${r.nom}</td>
-              <td>${r.doc}</td>
+              <td>${r.typeDoc}: ${r.doc}</td>
               <td>${r.personnes ? Object.keys(r.personnes).length + 1 : 1}</td>
               <td>${personnesList}</td>
               <td>${r.date}</td>
@@ -443,7 +464,7 @@
               `<tr>
                 <td>${id}</td>
                 <td>${r.nom}</td>
-                <td>${r.doc}</td>
+                <td>${r.typeDoc}: ${r.doc}</td>
                 <td>${r.personnes ? Object.keys(r.personnes).length + 1 : 1}</td>
                 <td>${personnesList}</td>
                 <td>${r.date}</td>
@@ -504,33 +525,38 @@
         }
         
         // Si l'utilisateur n'a pas configuré d'email, on n'envoie pas de notification
-        if (!userEmail) return;
+        if (!userEmail) return false;
         
         // Construire le sujet et le corps de l'email
         const subject = `Nouvel invité enregistré - ${record.nom}`;
-        const body = `
-Nouvel invité enregistré pour l'appartement ${record.appart}, immeuble ${record.bat}.
-
-Détails de l'enregistrement:
-- Nom principal: ${record.nom}
-- Document: ${record.doc}
-- Date d'arrivée: ${record.date}
-- Nombre de personnes: ${record.personnes ? Object.keys(record.personnes).length + 1 : 1}
-
-Personnes supplémentaires:
-${record.personnes ? Object.values(record.personnes).map(p => `- ${p.nom} (${p.doc})`).join('\n') : 'Aucune'}
-
-Cet enregistrement a été effectué via le système de gestion des invités.
-        `;
+        const personnesList = record.personnes ? Object.values(record.personnes).map(p => `- ${p.nom} (${p.typeDoc}: ${p.doc})`).join('<br>') : 'Aucune';
         
-        // Préparer l'URL pour envoyer l'email
-        const mailtoLink = `mailto:${userEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        const templateParams = {
+          to_email: userEmail,
+          from_name: "Système de gestion des invités",
+          to_name: "Utilisateur",
+          subject: subject,
+          message: `
+            <p>Nouvel invité enregistré pour l'appartement ${record.appart}, immeuble ${record.bat}.</p>
+            <p><strong>Détails de l'enregistrement:</strong></p>
+            <ul>
+              <li>Nom principal: ${record.nom}</li>
+              <li>Document: ${record.typeDoc}: ${record.doc}</li>
+              <li>Date d'arrivée: ${record.date}</li>
+              <li>Nombre de personnes: ${record.personnes ? Object.keys(record.personnes).length + 1 : 1}</li>
+            </ul>
+            <p><strong>Personnes supplémentaires:</strong><br>${personnesList}</p>
+            <p>Cet enregistrement a été effectué via le système de gestion des invités.</p>
+          `
+        };
         
-        // Ouvrir le client email par défaut
-        window.open(mailtoLink, '_blank');
+        // Envoyer l'email via EmailJS
+        const response = await emailjs.send(EMAIL_CONFIG.serviceId, EMAIL_CONFIG.templateId, templateParams);
         
+        return response.status === 200;
       } catch (error) {
         console.error("Erreur lors de l'envoi de l'email:", error);
+        return false;
       }
     }
 
@@ -609,8 +635,25 @@ Cet enregistrement a été effectué via le système de gestion des invités.
         nomInp.placeholder = `Nom complet personne ${i}`;
         group.appendChild(nomInp);
         
+        const typeDocLab = document.createElement('label');
+        typeDocLab.textContent = 'Type de document';
+        typeDocLab.style.marginTop = '10px';
+        group.appendChild(typeDocLab);
+        
+        const typeDocSelect = document.createElement('select');
+        typeDocSelect.id = `pers${i}TypeDoc`;
+        typeDocSelect.required = true;
+        typeDocSelect.className = 'guest-input';
+        typeDocSelect.innerHTML = `
+          <option value="">Sélectionner</option>
+          <option value="Passeport">Passeport</option>
+          <option value="CNI">Carte Nationale d'Identité</option>
+          <option value="Permis">Permis de conduire</option>
+        `;
+        group.appendChild(typeDocSelect);
+        
         const docLab = document.createElement('label');
-        docLab.textContent = 'Passeport / CNI';
+        docLab.textContent = 'Numéro de document';
         docLab.style.marginTop = '10px';
         group.appendChild(docLab);
         
@@ -629,8 +672,8 @@ Cet enregistrement a été effectué via le système de gestion des invités.
     function buildMessage(rec){
       const nb = rec.personnes ? Object.keys(rec.personnes).length + 1 : 1;
       const nomPrincipal = rec.nom;
-      const docPrincipal = rec.doc;
-      const autres = rec.personnes ? Object.values(rec.personnes).map(p => `${p.nom} (${p.doc})`) : [];
+      const docPrincipal = `${rec.typeDoc}: ${rec.doc}`;
+      const autres = rec.personnes ? Object.values(rec.personnes).map(p => `${p.nom} (${p.typeDoc}: ${p.doc})`) : [];
       const autresFR = autres.length ? autres.join(", ") : "Aucune";
 
       return `Salam :
@@ -664,28 +707,40 @@ ${autresFR}
     }
 
     async function enregistrer(){
+      // Afficher l'indicateur de chargement
+      const submitBtn = document.getElementById('submitBtn');
+      const originalText = submitBtn.textContent;
+      submitBtn.innerHTML = '<span class="loading"></span> Enregistrement en cours...';
+      submitBtn.disabled = true;
+      
       // validations
       const nom = (document.getElementById('nomPrincipal').value || '').trim();
+      const typeDoc = document.getElementById('typeDocPrincipal').value;
       const doc = (document.getElementById('docPrincipal').value || '').trim();
       const nb = parseInt(document.getElementById('nbPers').value || '0', 10);
       const date = document.getElementById('dateArrivee').value;
 
-      if(!nom || !doc || !date || !Number.isInteger(nb) || nb < 1){
+      if(!nom || !typeDoc || !doc || !date || !Number.isInteger(nb) || nb < 1){
         showBanner('warn',"Tous les champs sont obligatoires (y compris le nombre total de personnes).");
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
         return;
       }
 
       const personnes = {};
       for(let i=2; i<=nb; i++){
         const nomVal = (document.getElementById(`pers${i}Nom`)?.value || '').trim();
+        const typeDocVal = document.getElementById(`pers${i}TypeDoc`)?.value;
         const docVal = (document.getElementById(`pers${i}Doc`)?.value || '').trim();
         
-        if(!nomVal || !docVal){
+        if(!nomVal || !typeDocVal || !docVal){
           showBanner('warn',`Merci de renseigner tous les champs pour la personne ${i}.`);
+          submitBtn.textContent = originalText;
+          submitBtn.disabled = false;
           return;
         }
         
-        personnes[`pers${i-1}`] = { nom: nomVal, doc: docVal };
+        personnes[`pers${i-1}`] = { nom: nomVal, typeDoc: typeDocVal, doc: docVal };
       }
 
       const appart = document.getElementById('invAppart').value;
@@ -695,6 +750,7 @@ ${autresFR}
         appart, 
         bat, 
         nom, 
+        typeDoc,
         doc, 
         personnes, 
         date, 
@@ -713,7 +769,11 @@ ${autresFR}
         rec.id = id;
         
         // Envoyer l'email de notification
-        await sendEmailNotification(rec);
+        const emailSent = await sendEmailNotification(rec);
+        
+        if (!emailSent) {
+          console.warn("L'email n'a pas pu être envoyé");
+        }
         
         // Afficher le message de succès et le QR code
         document.getElementById('successMessage').classList.remove('hidden');
@@ -730,6 +790,9 @@ ${autresFR}
         document.getElementById('guestForm').style.display = 'none';
       } catch (error) {
         showBanner('err',"Erreur lors de l'enregistrement. Réessayez.");
+      } finally {
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
       }
     }
 
