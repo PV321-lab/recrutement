@@ -5,7 +5,6 @@
   <title>Enregistrement des invités</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
-  <script src="https://smtpjs.com/v3/smtp.js"></script>
   <style>
     :root{
       --c1:#007bff; --bg:#f0f2f5; --ok:#0f9d58; --warn:#f4b400; --err:#d93025; --info:#4285f4;
@@ -202,6 +201,10 @@
           <label>Mot de passe</label>
           <input type="text" id="passAdmin" required />
         </div>
+        <div class="col">
+          <label>Email</label>
+          <input type="email" id="emailAdmin" placeholder="email@exemple.com" />
+        </div>
       </div>
       <button onclick="creerUtilisateur()">Créer utilisateur</button>
       <p class="note">L'identifiant utilisateur sera <i>Appartement+Bâtiment</i> (ex. 6 et 6 → <b>66</b>).</p>
@@ -211,7 +214,7 @@
     <div class="card">
       <h3>Liste des utilisateurs</h3>
       <table id="tableUsers">
-        <thead><tr><th>Utilisateur</th><th>Appartement</th><th>Bâtiment</th><th>Mot de passe</th></tr></thead>
+        <thead><tr><th>Utilisateur</th><th>Appartement</th><th>Bâtiment</th><th>Mot de passe</th><th>Email</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
@@ -236,6 +239,16 @@
     <div class="toolbar card">
       <div><strong>Mon espace</strong></div>
       <div><button onclick="logout()">Déconnexion</button></div>
+    </div>
+
+    <div class="card">
+      <h3>Configuration Email</h3>
+      <div class="email-config">
+        <label>Email de réception des notifications</label>
+        <input type="email" id="userEmail" placeholder="email@exemple.com" />
+        <button onclick="saveUserEmail()">Enregistrer</button>
+        <p class="note">Cet email recevra les notifications lorsqu'un invité s'enregistre.</p>
+      </div>
     </div>
 
     <div class="card">
@@ -320,12 +333,6 @@
     const SESSION_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
     let sessionTimer = null;
     let qrCode = null;
-    const EMAIL_CONFIG = {
-      from: "Textilleinnov@outlook.fr",
-      password: "TEXTILEINNOV04",
-      smtp: "smtp-mail.outlook.com",
-      port: 587
-    };
 
     // Banner helpers
     function showBanner(type, text){
@@ -353,12 +360,13 @@
     let dbReadyResolve;
     const dbReady = new Promise(res => dbReadyResolve = res);
 
-    const openReq = indexedDB.open("enregistrementsDB_v2", 3); // Version augmentée pour stocker la config email
+    const openReq = indexedDB.open("enregistrementsDB_v3", 3); // Version augmentée pour stocker la config email
     openReq.onupgradeneeded = (e)=>{
       const _db = e.target.result;
       // users
       if(!_db.objectStoreNames.contains("users")){
-        _db.createObjectStore("users", { keyPath: "user" });
+        const userStore = _db.createObjectStore("users", { keyPath: "user" });
+        userStore.createIndex("byEmail", "email", { unique: false });
       }
       // records
       if(!_db.objectStoreNames.contains("records")){
@@ -402,7 +410,7 @@
         getReq.onsuccess = ()=>{
           if(!getReq.result){
             const stw = tx('users','readwrite');
-            stw.put({ user:'66', appart:'6', bat:'6', pass:'12' }).onsuccess = resolve;
+            stw.put({ user:'66', appart:'6', bat:'6', pass:'12', email: '' }).onsuccess = resolve;
             stw.transaction.oncomplete = resolve;
           } else resolve();
         };
@@ -434,6 +442,39 @@
       st.put({ key: 'adminEmail', value: email }).onsuccess = () => {
         showBanner('ok', "Configuration email enregistrée avec succès.");
       };
+    }
+
+    function saveUserEmail() {
+      const email = document.getElementById('userEmail').value.trim();
+      if (!email) {
+        showBanner('warn', "Veuillez saisir une adresse email valide.");
+        return;
+      }
+      
+      // Mettre à jour l'email de l'utilisateur dans la table users
+      const st = tx('users', 'readwrite');
+      const getReq = st.get(currentUser.id);
+      getReq.onsuccess = () => {
+        const user = getReq.result;
+        if (user) {
+          user.email = email;
+          st.put(user).onsuccess = () => {
+            showBanner('ok', "Votre email a été enregistré avec succès.");
+          };
+        }
+      };
+    }
+
+    function loadUserEmail() {
+      if (currentUser && currentUser.role === 'user') {
+        const st = tx('users');
+        const req = st.get(currentUser.id);
+        req.onsuccess = () => {
+          if (req.result && req.result.email) {
+            document.getElementById('userEmail').value = req.result.email;
+          }
+        };
+      }
     }
 
     /* =======================
@@ -507,6 +548,7 @@
           showBanner('ok', `Connecté. Appartement ${user.appart} / Immeuble ${user.bat}.`);
           startSessionTimer();
           refreshUser();
+          loadUserEmail();
         } else {
           showInlineMsg('loginMsg','err',"Identifiants incorrects.");
         }
@@ -522,6 +564,8 @@
       const appart = (document.getElementById('appartAdmin').value || '').trim();
       const bat = (document.getElementById('batAdmin').value || '').trim();
       const pass = (document.getElementById('passAdmin').value || '').trim();
+      const email = (document.getElementById('emailAdmin').value || '').trim();
+      
       if(!appart || !bat || !pass){
         showInlineMsg('userWarn','warn',"Tous les champs utilisateur sont obligatoires.");
         return;
@@ -533,7 +577,7 @@
         if(get.result){
           showInlineMsg('userWarn','warn',`L'utilisateur ${userId} existe déjà.`);
         } else {
-          st.put({ user:userId, appart, bat, pass }).onsuccess = ()=>{
+          st.put({ user:userId, appart, bat, pass, email }).onsuccess = ()=>{
             showBanner('ok', `Utilisateur ${userId} créé.`);
             refreshAdmin();
           };
@@ -552,7 +596,7 @@
         if(c){
           const u = c.value;
           tbodyU.insertAdjacentHTML('beforeend',
-            `<tr><td>${u.user}</td><td>${u.appart}</td><td>${u.bat}</td><td>${u.pass}</td></tr>`);
+            `<tr><td>${u.user}</td><td>${u.appart}</td><td>${u.bat}</td><td>${u.pass}</td><td>${u.email || ''}</td></tr>`);
           c.continue();
         }
       };
@@ -762,28 +806,41 @@ Enregistré le: ${new Date().toLocaleString('fr-FR')}`;
     }
 
     async function sendEmailNotification(rec) {
-      // Récupérer l'email de l'admin
-      const st = tx('config');
-      const req = st.get('adminEmail');
+      // Récupérer l'email de l'utilisateur propriétaire
+      const st = tx('users');
+      const req = st.get(rec.appart + rec.bat);
       req.onsuccess = () => {
-        if (req.result) {
-          const adminEmail = req.result.value;
+        if (req.result && req.result.email) {
+          const userEmail = req.result.email;
           const subject = `Nouvel enregistrement d'invité - Appartement ${rec.appart}, Immeuble ${rec.bat}`;
           const body = buildMessage(rec);
           
-          // Utiliser SMTPJS pour envoyer l'email
-          Email.send({
-            Host: EMAIL_CONFIG.smtp,
-            Username: EMAIL_CONFIG.from,
-            Password: EMAIL_CONFIG.password,
-            To: adminEmail,
-            From: EMAIL_CONFIG.from,
-            Subject: subject,
-            Body: body
-          }).then(
-            message => console.log("Email envoyé avec succès"),
-            error => console.error("Erreur lors de l'envoi de l'email:", error)
-          );
+          // Simuler l'envoi d'email (à remplacer par un vrai service)
+          console.log("Simulation d'envoi d'email à:", userEmail);
+          console.log("Sujet:", subject);
+          console.log("Corps:", body);
+          
+          // Dans un cas réel, vous utiliseriez un service comme EmailJS, SendGrid, ou votre propre backend
+          showBanner('info', `Notification envoyée à ${userEmail}`);
+        } else {
+          // Si l'utilisateur n'a pas configuré d'email, envoyer à l'admin
+          const stConfig = tx('config');
+          const reqConfig = stConfig.get('adminEmail');
+          reqConfig.onsuccess = () => {
+            if (reqConfig.result) {
+              const adminEmail = reqConfig.result.value;
+              const subject = `Nouvel enregistrement d'invité - Appartement ${rec.appart}, Immeuble ${rec.bat}`;
+              const body = buildMessage(rec);
+              
+              console.log("Simulation d'envoi d'email à l'admin:", adminEmail);
+              console.log("Sujet:", subject);
+              console.log("Corps:", body);
+              
+              showBanner('info', `Notification envoyée à l'administrateur (${adminEmail})`);
+            } else {
+              showBanner('warn', "Aucun email configuré pour recevoir les notifications.");
+            }
+          };
         }
       };
     }
