@@ -5,11 +5,7 @@
   <title>Enregistrement des invités</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
-  <!-- Intégration de Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-  <!-- Intégration de EmailJS -->
-  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script src="https://smtpjs.com/v3/smtp.js"></script>
   <style>
     :root{
       --c1:#007bff; --bg:#f0f2f5; --ok:#0f9d58; --warn:#f4b400; --err:#d93025; --info:#4285f4;
@@ -38,14 +34,123 @@
     .note{ font-size:13px; opacity:.8; }
     .qrwrap{ display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap; }
     .recap{ background:#fafafa; border:1px dashed #ccc; padding:10px; border-radius:8px; min-width:240px; }
-    .loading { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s ease-in-out infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .person-group { background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #eee; }
+    
+    /* Nouveaux styles pour la partie invité */
+    .guest-form-container { 
+      background: white;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+      border-radius: 16px;
+      padding: 24px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .guest-form-title {
+      font-size: 1.75rem;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 24px;
+      color: #1e293b;
+    }
+    .guest-input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      font-size: 1rem;
+      margin-top: 8px;
+      background: #f8fafc;
+    }
+    .guest-input:focus {
+      outline: none;
+      border-color: #60a5fa;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    }
+    .guest-button {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 14px;
+      border-radius: 10px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      transition: background 0.2s;
+    }
+    .guest-button:hover {
+      background: #2563eb;
+    }
+    .success-message {
+      background: #dcfce7;
+      color: #166534;
+      padding: 16px;
+      border-radius: 10px;
+      text-align: center;
+      font-weight: 600;
+      margin-top: 20px;
+      display: none;
+    }
+    .qrcode-container {
+      margin-top: 30px;
+      display: none;
+    }
+    .qrcode-header {
+      font-size: 1.25rem;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 20px;
+      color: #1e293b;
+    }
+    .qrcode-warning {
+      background: #fffbeb;
+      color: #854d0e;
+      padding: 16px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      font-size: 0.9rem;
+      text-align: center;
+      border: 1px solid #fcd34d;
+    }
+    .download-button {
+      background: #22c55e;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 20px;
+      display: block;
+      width: 100%;
+      transition: background 0.2s;
+    }
+    .download-button:hover {
+      background: #16a34a;
+    }
+    .person-label {
+      font-weight: 600;
+      margin-top: 20px;
+      display: block;
+    }
+    .person-group {
+      background: #f8fafc;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      border: 1px solid #e5e7eb;
+    }
+    .email-config {
+      background: #f1f8ff;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      border: 1px solid #c8e1ff;
+    }
   </style>
 </head>
 <body>
 
-<h2>Enregistrement des invités</h2>
+  <h2>Enregistrement des invités</h2>
 
   <div id="banner" class="banner info hidden"></div>
 
@@ -73,52 +178,56 @@
     </div>
 
     <div class="card">
-      <div class="toolbar">
-        <div><strong>Gestion des utilisateurs</strong></div>
+      <h3>Configuration Email</h3>
+      <div class="email-config">
+        <label>Email de réception des notifications</label>
+        <input type="email" id="adminEmail" placeholder="email@exemple.com" />
+        <button onclick="saveEmailConfig()">Enregistrer</button>
+        <p class="note">Cet email recevra les notifications lorsqu'un invité s'enregistre.</p>
       </div>
-      <div class="row">
-        <div class="col">
-          <label>Appartement</label>
-          <input type="text" id="appartAdmin" placeholder="Ex: 12" />
-        </div>
-        <div class="col">
-          <label>Immeuble</label>
-          <input type="text" id="batAdmin" placeholder="Ex: A" />
-        </div>
-        <div class="col">
-          <label>Mot de passe</label>
-          <input type="text" id="passAdmin" placeholder="Mot de passe" />
-        </div>
-      </div>
-      <button onclick="creerUtilisateur()">Créer utilisateur</button>
-      <p id="userWarn" class="banner warn hidden"></p>
     </div>
 
     <div class="card">
-      <div class="toolbar">
-        <div><strong>Utilisateurs existants</strong></div>
+      <h3>Gestion des utilisateurs</h3>
+      <div class="row">
+        <div class="col">
+          <label>Appartement</label>
+          <input type="text" id="appartAdmin" inputmode="numeric" required />
+        </div>
+        <div class="col">
+          <label>Bâtiment</label>
+          <input type="text" id="batAdmin" required />
+        </div>
+        <div class="col">
+          <label>Mot de passe</label>
+          <input type="text" id="passAdmin" required />
+        </div>
       </div>
+      <button onclick="creerUtilisateur()">Créer utilisateur</button>
+      <p class="note">L'identifiant utilisateur sera <i>Appartement+Bâtiment</i> (ex. 6 et 6 → <b>66</b>).</p>
+      <div id="userWarn" class="banner warn hidden"></div>
+    </div>
+
+    <div class="card">
+      <h3>Liste des utilisateurs</h3>
       <table id="tableUsers">
-        <thead>
-          <tr><th>ID</th><th>Appartement</th><th>Immeuble</th><th>Mot de passe</th></tr>
-        </thead>
+        <thead><tr><th>Utilisateur</th><th>Appartement</th><th>Bâtiment</th><th>Mot de passe</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
 
     <div class="card">
-      <div class="toolbar">
-        <div><strong>Enregistrements des invités</strong></div>
-      </div>
+      <h3>Tous les enregistrements</h3>
       <table id="tableAdmin">
         <thead>
           <tr>
-            <th>ID</th><th>Appart.</th><th>Immeuble</th><th>Nom</th><th>Document</th>
-            <th>Nb Pers.</th><th>Personnes</th><th>Date</th><th>Action</th><th>Statut</th>
+            <th>ID</th><th>Appartement</th><th>Bâtiment</th><th>Nom principal</th>
+            <th>Document</th><th>Total personnes</th><th>Liste personnes</th><th>Date</th><th>WhatsApp</th><th>Status</th>
           </tr>
         </thead>
         <tbody></tbody>
       </table>
+      <p class="note">Astuce : pour des bases énormes, ajoute un filtrage/pagination si besoin.</p>
     </div>
   </div>
 
@@ -130,129 +239,92 @@
     </div>
 
     <div class="card">
-      <div class="toolbar">
-        <div><strong>Configuration email</strong></div>
-      </div>
-      <label>Email pour les notifications</label>
-      <input type="email" id="userEmail" placeholder="Votre email" />
-      <button onclick="saveUserEmail()">Enregistrer l'email</button>
-      <p id="emailMsg" class="banner info hidden"></p>
-    </div>
-
-    <div class="card">
-      <div class="toolbar">
-        <div><strong>Générer un lien d'invitation</strong></div>
-      </div>
-      <button onclick="genererLien()">Générer le lien</button>
-      <p id="lienInvite"></p>
-    </div>
-
-    <div class="card">
-      <div class="toolbar">
-        <div><strong>Mes enregistrements</strong></div>
-      </div>
+      <h3>Mes enregistrements</h3>
       <table id="tableUser">
         <thead>
           <tr>
-            <th>ID</th><th>Nom</th><th>Document</th><th>Nb Pers.</th><th>Personnes</th><th>Date</th><th>Statut</th><th>Action</th>
+            <th>ID</th><th>Nom principal</th><th>Document</th><th>Total personnes</th>
+            <th>Liste personnes</th><th>Date</th><th>Status</th><th>Action</th>
           </tr>
         </thead>
         <tbody></tbody>
       </table>
+      <button onclick="genererLien()">Générer le lien d'enregistrement invité</button>
+      <p id="lienInvite" class="note"></p>
     </div>
   </div>
 
-  <!-- Formulaire d'invité (via lien) -->
+  <!-- NOUVEAU Formulaire d'invité (via lien) -->
   <div id="invitePanel" class="hidden">
     <div class="guest-form-container">
       <div class="toolbar" style="margin-bottom: 20px;">
         <h3 style="margin: 0; flex-grow: 1;">Enregistrement Invité</h3>
         <button onclick="retourAccueil()" style="background: #6b7280;">Retour</button>
       </div>
-
-      <div class="card">
-        <form id="guestForm">
-          <div class="row">
-            <div class="col">
-              <label>Appartement</label>
-              <input type="text" id="invAppart" readonly />
-            </div>
-            <div class="col">
-              <label>Immeuble</label>
-              <input type="text" id="invBat" readonly />
-            </div>
+      
+      <form id="guestForm" class="space-y-4">
+        <div class="row">
+          <div class="col">
+            <label>Appartement</label>
+            <input type="text" id="invAppart" readonly class="guest-input" />
           </div>
-
-          <label>Nom et Prénom de la personne principale *</label>
-          <input type="text" id="nomPrincipal" required placeholder="Nom complet" class="guest-input" />
-
-          <label>Type de document *</label>
-          <select id="typeDocPrincipal" required class="guest-input">
-            <option value="">Sélectionner</option>
-            <option value="Passeport">Passeport</option>
-            <option value="CNI">Carte Nationale d'Identité</option>
-            <option value="Permis">Permis de conduire</option>
-          </select>
-
-          <label>Numéro de document *</label>
-          <input type="text" id="docPrincipal" required placeholder="N° de document" class="guest-input" />
-
-          <label>Date d'arrivée *</label>
-          <input type="date" id="dateArrivee" required class="guest-input" />
-
-          <label>Nombre total de personnes *</label>
-          <input type="number" id="nbPers" min="1" value="1" onchange="genererChamps()" required class="guest-input" />
-
-          <div id="personnes"></div>
-
-          <button type="submit" id="submitBtn">Enregistrer</button>
-        </form>
-      </div>
-
-      <div id="successMessage" class="banner ok hidden">
-        Enregistrement réussi ! Un email de notification a été envoyé. Vous pouvez télécharger le QR Code et le présenter à l'accueil.
-      </div>
-
-      <div id="qrcodeContainer" class="card hidden">
-        <div class="toolbar">
-          <div><strong>QR Code de l'invité</strong></div>
-          <button id="downloadBtn">Télécharger QR Code</button>
+          <div class="col">
+            <label>Bâtiment</label>
+            <input type="text" id="invBat" readonly class="guest-input" />
+          </div>
         </div>
-        <div id="qrcode"></div>
+
+        <label>Date d'arrivée</label>
+        <input type="date" id="dateArrivee" required class="guest-input" />
+
+        <label>Nombre total de personnes</label>
+        <input type="number" id="nbPers" min="1" value="1" required class="guest-input" onchange="genererChamps()" />
+
+        <!-- Personne principale -->
+        <div class="person-group">
+          <label>Personne principale - Nom & Prénom</label>
+          <input type="text" id="nomPrincipal" required class="guest-input" />
+          
+          <label>Personne principale - Passeport / CNI</label>
+          <input type="text" id="docPrincipal" required class="guest-input" />
+        </div>
+
+        <div id="personnes"></div>
+
+        <button type="submit" class="guest-button">Enregistrer</button>
+      </form>
+
+      <div id="successMessage" class="success-message">
+        ✅ Informations enregistrées avec succès !
+      </div>
+
+      <div id="qrcodeContainer" class="qrcode-container">
+        <div class="qrcode-warning">
+          ⚠️ Seules les voyageurs qui sont enregistrés dans la réservation et dans ce formulaire seront autorisés. 
+          En cas de demande de ce code, merci de le présenter aux agents de sécurité.
+        </div>
+        
+        <div class="qrcode-header">Votre QR Code</div>
+        <div id="qrcode" style="display: flex; justify-content: center;"></div>
+        <button id="downloadBtn" class="download-button">Télécharger le QR Code</button>
       </div>
     </div>
   </div>
 
   <script>
     /* =======================
-       CONFIGURATION FIREBASE
-    ======================== */
-    const firebaseConfig = {
-      databaseURL: "https://dddiii-2b58b-default-rtdb.asia-southeast1.firebasedatabase.app/"
-    };
-    
-    // Initialiser Firebase
-    firebase.initializeApp(firebaseConfig);
-    const database = firebase.database();
-
-    /* =======================
-       CONFIGURATION EMAILJS
-    ======================== */
-    // Initialiser EmailJS avec votre public key
-    (function(){
-      emailjs.init("YOUR_PUBLIC_KEY"); // Remplacez par votre public key d'EmailJS
-    })();
-
-    /* =======================
        ÉTAT / CONSTANTES
     ======================== */
+    let db;
     let currentUser = null;
     const SESSION_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
     let sessionTimer = null;
     let qrCode = null;
     const EMAIL_CONFIG = {
-      serviceId: "YOUR_SERVICE_ID", // Remplacez par votre Service ID d'EmailJS
-      templateId: "YOUR_TEMPLATE_ID" // Remplacez par votre Template ID d'EmailJS
+      from: "Textilleinnov@outlook.fr",
+      password: "TEXTILEINNOV04",
+      smtp: "smtp-mail.outlook.com",
+      port: 587
     };
 
     // Banner helpers
@@ -273,6 +345,95 @@
     function hideInlineMsg(elId){
       const el = document.getElementById(elId);
       el.classList.add('hidden');
+    }
+
+    /* =======================
+       INDEXEDDB (grandes données)
+    ======================== */
+    let dbReadyResolve;
+    const dbReady = new Promise(res => dbReadyResolve = res);
+
+    const openReq = indexedDB.open("enregistrementsDB_v2", 3); // Version augmentée pour stocker la config email
+    openReq.onupgradeneeded = (e)=>{
+      const _db = e.target.result;
+      // users
+      if(!_db.objectStoreNames.contains("users")){
+        _db.createObjectStore("users", { keyPath: "user" });
+      }
+      // records
+      if(!_db.objectStoreNames.contains("records")){
+        const st = _db.createObjectStore("records", { keyPath: "id", autoIncrement: true });
+        st.createIndex("byUnit", ["appart","bat"], { unique:false });
+        st.createIndex("byDate", "date", { unique:false });
+      } else {
+        const st = e.target.transaction.objectStore("records");
+        if(!st.indexNames.contains("byUnit")) st.createIndex("byUnit", ["appart","bat"], { unique:false });
+        if(!st.indexNames.contains("byDate")) st.createIndex("byDate", "date", { unique:false });
+      }
+      // config
+      if(!_db.objectStoreNames.contains("config")){
+        _db.createObjectStore("config", { keyPath: "key" });
+      }
+    };
+    openReq.onsuccess = async (e)=>{
+      db = e.target.result;
+      await seedDefaultUser(); // crée 66/12 si absent
+      document.getElementById('btnLogin').disabled = false;
+      dbReadyResolve();
+      // Si lien invité présent, basculer en mode invité
+      const params = new URLSearchParams(location.search);
+      if(params.has("invite")) enterInviteMode(params.get("invite"));
+      
+      // Charger la configuration email
+      loadEmailConfig();
+    };
+    openReq.onerror = ()=>{
+      showBanner('err', "Erreur d'ouverture de la base locale. Réessaie après avoir vidé le stockage du navigateur.");
+    };
+
+    function tx(storeName, mode='readonly'){
+      return db.transaction(storeName, mode).objectStore(storeName);
+    }
+
+    async function seedDefaultUser(){
+      return new Promise((resolve)=>{
+        const st = tx('users');
+        const getReq = st.get('66');
+        getReq.onsuccess = ()=>{
+          if(!getReq.result){
+            const stw = tx('users','readwrite');
+            stw.put({ user:'66', appart:'6', bat:'6', pass:'12' }).onsuccess = resolve;
+            stw.transaction.oncomplete = resolve;
+          } else resolve();
+        };
+        getReq.onerror = resolve;
+      });
+    }
+
+    /* =======================
+       CONFIGURATION EMAIL
+    ======================== */
+    function loadEmailConfig() {
+      const st = tx('config');
+      const req = st.get('adminEmail');
+      req.onsuccess = () => {
+        if (req.result) {
+          document.getElementById('adminEmail').value = req.result.value;
+        }
+      };
+    }
+
+    function saveEmailConfig() {
+      const email = document.getElementById('adminEmail').value.trim();
+      if (!email) {
+        showBanner('warn', "Veuillez saisir une adresse email valide.");
+        return;
+      }
+      
+      const st = tx('config', 'readwrite');
+      st.put({ key: 'adminEmail', value: email }).onsuccess = () => {
+        showBanner('ok', "Configuration email enregistrée avec succès.");
+      };
     }
 
     /* =======================
@@ -316,6 +477,7 @@
     ======================== */
     async function login(){
       hideInlineMsg('loginMsg');
+      await dbReady;
       const u = document.getElementById('loginUser').value.trim();
       const p = document.getElementById('loginPass').value.trim();
 
@@ -334,147 +496,127 @@
         return;
       }
 
-      // Vérifier l'utilisateur dans Firebase
-      try {
-        const snapshot = await database.ref('users/' + u).once('value');
-        const user = snapshot.val();
-        
+      const st = tx('users');
+      const req = st.get(u);
+      req.onsuccess = ()=>{
+        const user = req.result;
         if(user && user.pass === p){
-          currentUser = { role:'user', id:u, appart:user.appart, bat:user.bat };
+          currentUser = { role:'user', id:user.user, appart:user.appart, bat:user.bat };
           document.getElementById('loginCard').classList.add('hidden');
           document.getElementById('userPanel').classList.remove('hidden');
           showBanner('ok', `Connecté. Appartement ${user.appart} / Immeuble ${user.bat}.`);
           startSessionTimer();
           refreshUser();
-          loadUserEmail();
         } else {
           showInlineMsg('loginMsg','err',"Identifiants incorrects.");
         }
-      } catch (error) {
-        showInlineMsg('loginMsg','err',"Erreur d'accès à la base de données.");
-      }
+      };
+      req.onerror = ()=> showInlineMsg('loginMsg','err',"Erreur d'accès à la base locale.");
     }
 
     /* =======================
        ADMIN : UTILISATEURS
     ======================== */
-    async function creerUtilisateur(){
+    function creerUtilisateur(){
       hideInlineMsg('userWarn');
       const appart = (document.getElementById('appartAdmin').value || '').trim();
       const bat = (document.getElementById('batAdmin').value || '').trim();
       const pass = (document.getElementById('passAdmin').value || '').trim();
-      
       if(!appart || !bat || !pass){
         showInlineMsg('userWarn','warn',"Tous les champs utilisateur sont obligatoires.");
         return;
       }
-      
       const userId = appart + bat;
-      
-      try {
-        // Vérifier si l'utilisateur existe déjà
-        const snapshot = await database.ref('users/' + userId).once('value');
-        
-        if(snapshot.exists()){
+      const st = tx('users','readwrite');
+      const get = st.get(userId);
+      get.onsuccess = ()=>{
+        if(get.result){
           showInlineMsg('userWarn','warn',`L'utilisateur ${userId} existe déjà.`);
         } else {
-          // Créer le nouvel utilisateur
-          await database.ref('users/' + userId).set({
-            user: userId,
-            appart: appart,
-            bat: bat,
-            pass: pass
-          });
-          
-          showBanner('ok', `Utilisateur ${userId} créé.`);
-          refreshAdmin();
+          st.put({ user:userId, appart, bat, pass }).onsuccess = ()=>{
+            showBanner('ok', `Utilisateur ${userId} créé.`);
+            refreshAdmin();
+          };
+          st.transaction.onerror = ()=> showInlineMsg('userWarn','err',"Erreur lors de la création de l'utilisateur.");
         }
-      } catch (error) {
-        showInlineMsg('userWarn','err',"Erreur lors de la création de l'utilisateur.");
-      }
+      };
+      get.onerror = ()=> showInlineMsg('userWarn','err',"Erreur d'accès à la base locale.");
     }
 
-    async function refreshAdmin(){
+    function refreshAdmin(){
       // Liste utilisateurs
       const tbodyU = document.querySelector('#tableUsers tbody');
       tbodyU.innerHTML = '';
-      
-      try {
-        const usersSnapshot = await database.ref('users').once('value');
-        const users = usersSnapshot.val() || {};
-        
-        Object.values(users).forEach(u => {
+      tx('users').openCursor().onsuccess = (e)=>{
+        const c = e.target.result;
+        if(c){
+          const u = c.value;
           tbodyU.insertAdjacentHTML('beforeend',
             `<tr><td>${u.user}</td><td>${u.appart}</td><td>${u.bat}</td><td>${u.pass}</td></tr>`);
-        });
-      } catch (error) {
-        showBanner('err', "Erreur lors du chargement des utilisateurs.");
-      }
+          c.continue();
+        }
+      };
 
-      // Enregistrements
+      // Enregistrements (affiche les 200 derniers max pour rester fluide)
       const tbody = document.querySelector('#tableAdmin tbody');
       tbody.innerHTML = '';
-      
-      try {
-        const recordsSnapshot = await database.ref('records').once('value');
-        const records = recordsSnapshot.val() || {};
-        
-        Object.entries(records).slice(-200).forEach(([id, r]) => {
-          const personnesList = r.personnes ? Object.values(r.personnes).map(p => p.nom).join(', ') : '';
-          const sendBtn = `<button onclick="envoyerWhatsApp('${id}')">Envoyer</button>`;
-          
-          tbody.insertAdjacentHTML('beforeend',
-            `<tr>
-              <td>${id}</td>
-              <td>${r.appart}</td>
-              <td>${r.bat}</td>
-              <td>${r.nom}</td>
-              <td>${r.typeDoc}: ${r.doc}</td>
-              <td>${r.personnes ? Object.keys(r.personnes).length + 1 : 1}</td>
-              <td>${personnesList}</td>
-              <td>${r.date}</td>
-              <td>${sendBtn}</td>
-              <td>${r.sent ? "Envoyé" : "Non envoyé"}</td>
-            </tr>`);
-        });
-      } catch (error) {
-        showBanner('err', "Erreur lors du chargement des enregistrements.");
-      }
+      const all = [];
+      tx('records').openCursor(null, 'next').onsuccess = (e)=>{
+        const c = e.target.result;
+        if(c){ all.push(c.value); c.continue(); }
+        else {
+          const last = all.slice(-200); // limiter l'affichage
+          last.forEach(r=>{
+            const id = r.id ?? '';
+            const sendBtn = `<button onclick="envoyerWhatsApp(${id})">Envoyer</button>`;
+            const personnesList = r.personnes.join(', ');
+            
+            tbody.insertAdjacentHTML('beforeend',
+              `<tr>
+                <td>${id}</td>
+                <td>${r.appart}</td>
+                <td>${r.bat}</td>
+                <td>${r.nom}</td>
+                <td>${r.doc}</td>
+                <td>${r.personnes.length}</td>
+                <td>${personnesList}</td>
+                <td>${r.date}</td>
+                <td>${sendBtn}</td>
+                <td>${r.sent ? "Envoyé" : "Non envoyé"}</td>
+              </tr>`);
+          });
+        }
+      };
     }
 
     /* =======================
        UTILISATEUR : MES ENREG.
     ======================== */
-    async function refreshUser(){
+    function refreshUser(){
       const tbody = document.querySelector('#tableUser tbody');
       tbody.innerHTML = '';
-      
-      try {
-        const recordsSnapshot = await database.ref('records').once('value');
-        const records = recordsSnapshot.val() || {};
-        
-        Object.entries(records)
-          .filter(([id, r]) => r.appart === currentUser.appart && r.bat === currentUser.bat)
-          .slice(-200)
-          .forEach(([id, r]) => {
-            const personnesList = r.personnes ? Object.values(r.personnes).map(p => p.nom).join(', ') : '';
-            const sendBtn = `<button onclick="envoyerWhatsApp('${id}')">Envoyer</button>`;
-            
-            tbody.insertAdjacentHTML('beforeend',
-              `<tr>
-                <td>${id}</td>
-                <td>${r.nom}</td>
-                <td>${r.typeDoc}: ${r.doc}</td>
-                <td>${r.personnes ? Object.keys(r.personnes).length + 1 : 1}</td>
-                <td>${personnesList}</td>
-                <td>${r.date}</td>
-                <td>${r.sent ? "Envoyé" : "Non envoyé"}</td>
-                <td>${sendBtn}</td>
-              </tr>`);
-          });
-      } catch (error) {
-        showBanner('err', "Erreur de lecture des enregistrements.");
-      }
+      const idx = tx('records').index('byUnit');
+      const req = idx.getAll([currentUser.appart, currentUser.bat]);
+      req.onsuccess = ()=>{
+        const arr = req.result || [];
+        arr.slice(-200).forEach(r=>{
+          const personnesList = r.personnes.join(', ');
+          const sendBtn = `<button onclick="envoyerWhatsApp(${r.id})">Envoyer</button>`;
+          
+          tbody.insertAdjacentHTML('beforeend',
+            `<tr>
+              <td>${r.id ?? ''}</td>
+              <td>${r.nom}</td>
+              <td>${r.doc}</td>
+              <td>${r.personnes.length}</td>
+              <td>${personnesList}</td>
+              <td>${r.date}</td>
+              <td>${r.sent ? "Envoyé" : "Non envoyé"}</td>
+              <td>${sendBtn}</td>
+            </tr>`);
+        });
+      };
+      req.onerror = ()=> showBanner('err',"Erreur de lecture des enregistrements.");
     }
 
     function genererLien(){
@@ -485,94 +627,18 @@
       showBanner('info', "Copiez/partagez ce lien avec vos invités.");
     }
 
-    async function loadUserEmail() {
-      try {
-        const snapshot = await database.ref('userEmails/' + currentUser.id).once('value');
-        const email = snapshot.val();
-        if (email) {
-          document.getElementById('userEmail').value = email;
-        }
-      } catch (error) {
-        console.error("Erreur lors du chargement de l'email:", error);
-      }
-    }
-
-    async function saveUserEmail() {
-      const email = document.getElementById('userEmail').value.trim();
-      if (!email) {
-        showInlineMsg('emailMsg', 'warn', "Veuillez entrer une adresse email valide.");
-        return;
-      }
-      
-      try {
-        await database.ref('userEmails/' + currentUser.id).set(email);
-        showInlineMsg('emailMsg', 'ok', "Email enregistré avec succès.");
-      } catch (error) {
-        showInlineMsg('emailMsg', 'err', "Erreur lors de l'enregistrement de l'email.");
-      }
-    }
-
-    /* =======================
-       ENVOI D'EMAIL
-    ======================== */
-    async function sendEmailNotification(record) {
-      try {
-        // Récupérer l'email de l'utilisateur
-        let userEmail = "";
-        if (currentUser && currentUser.id) {
-          const snapshot = await database.ref('userEmails/' + currentUser.id).once('value');
-          userEmail = snapshot.val() || "";
-        }
-        
-        // Si l'utilisateur n'a pas configuré d'email, on n'envoie pas de notification
-        if (!userEmail) return false;
-        
-        // Construire le sujet et le corps de l'email
-        const subject = `Nouvel invité enregistré - ${record.nom}`;
-        const personnesList = record.personnes ? Object.values(record.personnes).map(p => `- ${p.nom} (${p.typeDoc}: ${p.doc})`).join('<br>') : 'Aucune';
-        
-        const templateParams = {
-          to_email: userEmail,
-          from_name: "Système de gestion des invités",
-          to_name: "Utilisateur",
-          subject: subject,
-          message: `
-            <p>Nouvel invité enregistré pour l'appartement ${record.appart}, immeuble ${record.bat}.</p>
-            <p><strong>Détails de l'enregistrement:</strong></p>
-            <ul>
-              <li>Nom principal: ${record.nom}</li>
-              <li>Document: ${record.typeDoc}: ${record.doc}</li>
-              <li>Date d'arrivée: ${record.date}</li>
-              <li>Nombre de personnes: ${record.personnes ? Object.keys(record.personnes).length + 1 : 1}</li>
-            </ul>
-            <p><strong>Personnes supplémentaires:</strong><br>${personnesList}</p>
-            <p>Cet enregistrement a été effectué via le système de gestion des invités.</p>
-          `
-        };
-        
-        // Envoyer l'email via EmailJS
-        const response = await emailjs.send(EMAIL_CONFIG.serviceId, EMAIL_CONFIG.templateId, templateParams);
-        
-        return response.status === 200;
-      } catch (error) {
-        console.error("Erreur lors de l'envoi de l'email:", error);
-        return false;
-      }
-    }
-
     /* =======================
        MODE INVITÉ
     ======================== */
     async function enterInviteMode(userId){
-      try {
-        const snapshot = await database.ref('users/' + userId).once('value');
-        const user = snapshot.val();
-        
+      await dbReady;
+      const st = tx('users');
+      st.get(userId).onsuccess = (e)=>{
+        const user = e.target.result;
         if(!user){
           showBanner('err',"Lien invalide ou utilisateur introuvable.");
           return;
         }
-        
         document.getElementById('loginCard').classList.add('hidden');
         document.getElementById('invitePanel').classList.remove('hidden');
         document.getElementById('invAppart').value = user.appart;
@@ -603,9 +669,7 @@
             qrCode.download({ name: "Guest_QR_Code", extension: "png" });
           }
         });
-      } catch (error) {
-        showBanner('err', "Erreur lors du chargement des données utilisateur.");
-      }
+      };
     }
 
     function genererChamps(){
@@ -635,25 +699,8 @@
         nomInp.placeholder = `Nom complet personne ${i}`;
         group.appendChild(nomInp);
         
-        const typeDocLab = document.createElement('label');
-        typeDocLab.textContent = 'Type de document';
-        typeDocLab.style.marginTop = '10px';
-        group.appendChild(typeDocLab);
-        
-        const typeDocSelect = document.createElement('select');
-        typeDocSelect.id = `pers${i}TypeDoc`;
-        typeDocSelect.required = true;
-        typeDocSelect.className = 'guest-input';
-        typeDocSelect.innerHTML = `
-          <option value="">Sélectionner</option>
-          <option value="Passeport">Passeport</option>
-          <option value="CNI">Carte Nationale d'Identité</option>
-          <option value="Permis">Permis de conduire</option>
-        `;
-        group.appendChild(typeDocSelect);
-        
         const docLab = document.createElement('label');
-        docLab.textContent = 'Numéro de document';
+        docLab.textContent = 'Passeport / CNI';
         docLab.style.marginTop = '10px';
         group.appendChild(docLab);
         
@@ -670,77 +717,100 @@
     }
 
     function buildMessage(rec){
-      const nb = rec.personnes ? Object.keys(rec.personnes).length + 1 : 1;
+      const nb = rec.personnes.length;
       const nomPrincipal = rec.nom;
-      const docPrincipal = `${rec.typeDoc}: ${rec.doc}`;
-      const autres = rec.personnes ? Object.values(rec.personnes).map(p => `${p.nom} (${p.typeDoc}: ${p.doc})`) : [];
-      const autresFR = autres.length ? autres.join(", ") : "Aucune";
+      const docPrincipal = rec.doc;
+      const autres = rec.personnes.map(p => `${p.nom} (${p.doc})`);
+      const autresFR = autres.length ? autres.join(", ") : "0";
 
-      return `Salam :
-Arrivée: ${rec.date}
+      return `Nouvel enregistrement d'invité:
+      
+Date d'arrivée: ${rec.date}
 Appartement: ${rec.appart}
-Imm: ${rec.bat}
+Immeuble: ${rec.bat}
 Nombre de personnes: ${nb} personnes
-Réservation au nom de:
+
+Personne principale:
 ${nomPrincipal} (${docPrincipal})
 
 Autres personnes:
 ${autresFR}
 
-NB : Svp pas d'autres personnes autorisées seul Les personnes figurent dans la réservation.
-
-Merci
-------------------------------------------
-السلام عليكم:
-الوصول: ${rec.date}
-الشقة: ${rec.appart}
-رقم العمارة: ${rec.bat}
-عدد الأشخاص: ${nb} أشخاص
-الحجز باسم: ${nomPrincipal} (${docPrincipal})
-
-أشخاص آخرون:
-${autresFR}
-
-ملاحظة: الرجاء عدم السماح لأي أشخاص آخرين، فقط الأشخاص المذكورين في الحجز.
-
-شكرًا.`;
+Date d'enregistrement: ${new Date().toLocaleString('fr-FR')}`;
     }
 
-    async function enregistrer(){
-      // Afficher l'indicateur de chargement
-      const submitBtn = document.getElementById('submitBtn');
-      const originalText = submitBtn.textContent;
-      submitBtn.innerHTML = '<span class="loading"></span> Enregistrement en cours...';
-      submitBtn.disabled = true;
-      
+    function buildQRContent(rec) {
+      const nb = rec.personnes.length;
+      const nomPrincipal = rec.nom;
+      const docPrincipal = rec.doc;
+      const autres = rec.personnes.map(p => `${p.nom} (${p.doc})`);
+      const autresFR = autres.length ? autres.join(", ") : "0";
+
+      return `ENREGISTREMENT VALIDE
+Appartement: ${rec.appart}
+Immeuble: ${rec.bat}
+Date d'arrivée: ${rec.date}
+Nombre de personnes: ${nb}
+
+Personne principale:
+${nomPrincipal} (${docPrincipal})
+
+Autres personnes:
+${autresFR}
+
+Enregistré le: ${new Date().toLocaleString('fr-FR')}`;
+    }
+
+    async function sendEmailNotification(rec) {
+      // Récupérer l'email de l'admin
+      const st = tx('config');
+      const req = st.get('adminEmail');
+      req.onsuccess = () => {
+        if (req.result) {
+          const adminEmail = req.result.value;
+          const subject = `Nouvel enregistrement d'invité - Appartement ${rec.appart}, Immeuble ${rec.bat}`;
+          const body = buildMessage(rec);
+          
+          // Utiliser SMTPJS pour envoyer l'email
+          Email.send({
+            Host: EMAIL_CONFIG.smtp,
+            Username: EMAIL_CONFIG.from,
+            Password: EMAIL_CONFIG.password,
+            To: adminEmail,
+            From: EMAIL_CONFIG.from,
+            Subject: subject,
+            Body: body
+          }).then(
+            message => console.log("Email envoyé avec succès"),
+            error => console.error("Erreur lors de l'envoi de l'email:", error)
+          );
+        }
+      };
+    }
+
+    function enregistrer(){
       // validations
       const nom = (document.getElementById('nomPrincipal').value || '').trim();
-      const typeDoc = document.getElementById('typeDocPrincipal').value;
       const doc = (document.getElementById('docPrincipal').value || '').trim();
       const nb = parseInt(document.getElementById('nbPers').value || '0', 10);
       const date = document.getElementById('dateArrivee').value;
 
-      if(!nom || !typeDoc || !doc || !date || !Number.isInteger(nb) || nb < 1){
+      if(!nom || !doc || !date || !Number.isInteger(nb) || nb < 1){
         showBanner('warn',"Tous les champs sont obligatoires (y compris le nombre total de personnes).");
-        submitBtn.textContent = originalText;
-        submitBtn.disabled = false;
         return;
       }
 
-      const personnes = {};
+      const personnes = [];
       for(let i=2; i<=nb; i++){
         const nomVal = (document.getElementById(`pers${i}Nom`)?.value || '').trim();
-        const typeDocVal = document.getElementById(`pers${i}TypeDoc`)?.value;
         const docVal = (document.getElementById(`pers${i}Doc`)?.value || '').trim();
         
-        if(!nomVal || !typeDocVal || !docVal){
+        if(!nomVal || !docVal){
           showBanner('warn',`Merci de renseigner tous les champs pour la personne ${i}.`);
-          submitBtn.textContent = originalText;
-          submitBtn.disabled = false;
           return;
         }
         
-        personnes[`pers${i-1}`] = { nom: nomVal, typeDoc: typeDocVal, doc: docVal };
+        personnes.push({ nom: nomVal, doc: docVal });
       }
 
       const appart = document.getElementById('invAppart').value;
@@ -750,89 +820,66 @@ ${autresFR}
         appart, 
         bat, 
         nom, 
-        typeDoc,
         doc, 
         personnes, 
         date, 
         sent:false 
       };
       
-      const msg = buildMessage(rec);
+      const qrContent = buildQRContent(rec);
 
-      try {
-        // Ajouter l'enregistrement à Firebase
-        const newRecordRef = database.ref('records').push();
-        await newRecordRef.set(rec);
-        
-        // Récupérer l'ID généré
-        const id = newRecordRef.key;
-        rec.id = id;
+      const st = tx('records','readwrite');
+      const addReq = st.add(rec);
+      addReq.onsuccess = (e)=>{
+        const id = e.target.result;
+        rec.id = id; // pour usage immédiat (affichage)
         
         // Envoyer l'email de notification
-        const emailSent = await sendEmailNotification(rec);
-        
-        if (!emailSent) {
-          console.warn("L'email n'a pas pu être envoyé");
-        }
+        sendEmailNotification(rec);
         
         // Afficher le message de succès et le QR code
-        document.getElementById('successMessage').classList.remove('hidden');
-        document.getElementById('qrcodeContainer').classList.remove('hidden');
+        document.getElementById('successMessage').style.display = 'block';
+        document.getElementById('qrcodeContainer').style.display = 'block';
         
         // Générer le QR Code
         if(qrCode) {
-          qrCode.update({ data: msg });
+          qrCode.update({ data: qrContent });
           document.getElementById('qrcode').innerHTML = '';
           qrCode.append(document.getElementById('qrcode'));
         }
 
         // Masquer le formulaire
         document.getElementById('guestForm').style.display = 'none';
-      } catch (error) {
-        showBanner('err',"Erreur lors de l'enregistrement. Réessayez.");
-      } finally {
-        submitBtn.textContent = originalText;
-        submitBtn.disabled = false;
-      }
+      };
+      addReq.onerror = ()=>{
+        showBanner('err',"Erreur lors de l'enregistrement. Réessaie.");
+      };
     }
 
     /* =======================
-       ADMIN : ENVOI WHATSAPP
+       WHATSAPP
     ======================== */
-    async function envoyerWhatsApp(id){
-      try {
-        const snapshot = await database.ref('records/' + id).once('value');
-        const r = snapshot.val();
-        
-        if(!r){ 
-          showBanner('err',"Enregistrement introuvable."); 
-          return; 
-        }
-        
-        const msg = buildMessage(r);
-        const url = "https://wa.me/?text=" + encodeURIComponent(msg);
-        window.open(url, "_blank");
-        
-        // marquer envoyé
-        await database.ref('records/' + id).update({ sent: true });
-        
-        if(currentUser.role === 'admin') refreshAdmin();
-        else refreshUser();
-      } catch (error) {
-        showBanner('err',"Erreur de lecture de l'enregistrement.");
-      }
+    function envoyerWhatsApp(id){
+      const st = tx('records');
+      const req = st.get(id);
+      req.onsuccess = ()=>{
+        const rec = req.result;
+        if(!rec) return;
+        const msg = encodeURIComponent(buildMessage(rec));
+        const whatsappURL = `https://wa.me/?text=${msg}`;
+        window.open(whatsappURL, '_blank');
+        // marquer comme envoyé
+        rec.sent = true;
+        const stw = tx('records','readwrite');
+        stw.put(rec);
+      };
     }
 
-    /* =======================
-       DÉMARRAGE
-    ======================== */
-    // Initialisation du bouton de connexion
-    document.getElementById('btnLogin').disabled = false;
-    
-    // Vérifier si on a un paramètre invite dans l'URL
-    const params = new URLSearchParams(location.search);
-    if(params.has("invite")) enterInviteMode(params.get("invite"));
+    // Initialisation
+    window.onload = ()=>{
+      document.getElementById('btnLogin').disabled = true;
+      showBanner('info', "Bienvenue. Veuillez vous connecter.");
+    };
   </script>
-
 </body>
 </html>
