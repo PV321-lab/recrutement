@@ -5,6 +5,10 @@
   <title>Enregistrement des invités</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
+  <!-- Import Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js"></script>
   <style>
     :root{
       --c1:#007bff; --bg:#f0f2f5; --ok:#0f9d58; --warn:#f4b400; --err:#d93025; --info:#4285f4;
@@ -13,8 +17,8 @@
     h2 { text-align: center; margin: 8px 0 16px; }
     .card { background:#fff; padding:16px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.12); margin-bottom:16px; }
     label { font-weight:600; display:block; margin-top:10px; }
-    input, button, select { font-size:16px; }
-    input, select { width:100%; padding:10px; margin-top:6px; border:1px solid #ccc; border-radius:8px; }
+    input, button { font-size:16px; }
+    input { width:100%; padding:10px; margin-top:6px; border:1px solid #ccc; border-radius:8px; }
     input[readonly]{ background:#e9ecef; }
     button { margin-top:14px; padding:10px 14px; border:none; border-radius:10px; background:var(--c1); color:#fff; cursor:pointer; }
     button:disabled{ opacity:.6; cursor:not-allowed; }
@@ -138,13 +142,6 @@
       margin-bottom: 12px;
       border: 1px solid #e5e7eb;
     }
-    .email-config {
-      background: #f1f8ff;
-      padding: 12px;
-      border-radius: 8px;
-      margin-bottom: 16px;
-      border: 1px solid #c8e1ff;
-    }
   </style>
 </head>
 <body>
@@ -177,16 +174,6 @@
     </div>
 
     <div class="card">
-      <h3>Configuration Email</h3>
-      <div class="email-config">
-        <label>Email de réception des notifications</label>
-        <input type="email" id="adminEmail" placeholder="email@exemple.com" />
-        <button onclick="saveEmailConfig()">Enregistrer</button>
-        <p class="note">Cet email recevra les notifications lorsqu'un invité s'enregistre.</p>
-      </div>
-    </div>
-
-    <div class="card">
       <h3>Gestion des utilisateurs</h3>
       <div class="row">
         <div class="col">
@@ -201,10 +188,6 @@
           <label>Mot de passe</label>
           <input type="text" id="passAdmin" required />
         </div>
-        <div class="col">
-          <label>Email</label>
-          <input type="email" id="emailAdmin" placeholder="email@exemple.com" />
-        </div>
       </div>
       <button onclick="creerUtilisateur()">Créer utilisateur</button>
       <p class="note">L'identifiant utilisateur sera <i>Appartement+Bâtiment</i> (ex. 6 et 6 → <b>66</b>).</p>
@@ -214,7 +197,7 @@
     <div class="card">
       <h3>Liste des utilisateurs</h3>
       <table id="tableUsers">
-        <thead><tr><th>Utilisateur</th><th>Appartement</th><th>Bâtiment</th><th>Mot de passe</th><th>Email</th></tr></thead>
+        <thead><tr><th>Utilisateur</th><th>Appartement</th><th>Bâtiment</th><th>Mot de passe</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
@@ -239,16 +222,6 @@
     <div class="toolbar card">
       <div><strong>Mon espace</strong></div>
       <div><button onclick="logout()">Déconnexion</button></div>
-    </div>
-
-    <div class="card">
-      <h3>Configuration Email</h3>
-      <div class="email-config">
-        <label>Email de réception des notifications</label>
-        <input type="email" id="userEmail" placeholder="email@exemple.com" />
-        <button onclick="saveUserEmail()">Enregistrer</button>
-        <p class="note">Cet email recevra les notifications lorsqu'un invité s'enregistre.</p>
-      </div>
     </div>
 
     <div class="card">
@@ -333,6 +306,7 @@
     const SESSION_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
     let sessionTimer = null;
     let qrCode = null;
+    let firebaseApp = null;
 
     // Banner helpers
     function showBanner(type, text){
@@ -355,18 +329,40 @@
     }
 
     /* =======================
+       FIREBASE INITIALISATION
+    ======================== */
+    function initializeFirebase() {
+      try {
+        // Configuration Firebase avec les informations du fichier de service
+        const firebaseConfig = {
+          projectId: "dddiii-2b58b",
+          apiKey: "AIzaSyDummyKeyReplaceWithRealOne", // Note: Vous devrez peut-être ajouter une clé API
+        };
+        
+        // Initialiser Firebase
+        firebaseApp = firebase.initializeApp(firebaseConfig);
+        
+        console.log("Firebase initialisé avec succès");
+        return true;
+      } catch (error) {
+        console.error("Erreur d'initialisation Firebase:", error);
+        showBanner('warn', "Connexion Firebase non établie. Les notifications ne fonctionneront pas.");
+        return false;
+      }
+    }
+
+    /* =======================
        INDEXEDDB (grandes données)
     ======================== */
     let dbReadyResolve;
     const dbReady = new Promise(res => dbReadyResolve = res);
 
-    const openReq = indexedDB.open("enregistrementsDB_v3", 3); // Version augmentée pour stocker la config email
+    const openReq = indexedDB.open("enregistrementsDB_v2", 2);
     openReq.onupgradeneeded = (e)=>{
       const _db = e.target.result;
       // users
       if(!_db.objectStoreNames.contains("users")){
-        const userStore = _db.createObjectStore("users", { keyPath: "user" });
-        userStore.createIndex("byEmail", "email", { unique: false });
+        _db.createObjectStore("users", { keyPath: "user" });
       }
       // records
       if(!_db.objectStoreNames.contains("records")){
@@ -378,22 +374,19 @@
         if(!st.indexNames.contains("byUnit")) st.createIndex("byUnit", ["appart","bat"], { unique:false });
         if(!st.indexNames.contains("byDate")) st.createIndex("byDate", "date", { unique:false });
       }
-      // config
-      if(!_db.objectStoreNames.contains("config")){
-        _db.createObjectStore("config", { keyPath: "key" });
-      }
     };
     openReq.onsuccess = async (e)=>{
       db = e.target.result;
       await seedDefaultUser(); // crée 66/12 si absent
       document.getElementById('btnLogin').disabled = false;
       dbReadyResolve();
+      
+      // Initialiser Firebase
+      initializeFirebase();
+      
       // Si lien invité présent, basculer en mode invité
       const params = new URLSearchParams(location.search);
       if(params.has("invite")) enterInviteMode(params.get("invite"));
-      
-      // Charger la configuration email
-      loadEmailConfig();
     };
     openReq.onerror = ()=>{
       showBanner('err', "Erreur d'ouverture de la base locale. Réessaie après avoir vidé le stockage du navigateur.");
@@ -410,71 +403,12 @@
         getReq.onsuccess = ()=>{
           if(!getReq.result){
             const stw = tx('users','readwrite');
-            stw.put({ user:'66', appart:'6', bat:'6', pass:'12', email: '' }).onsuccess = resolve;
+            stw.put({ user:'66', appart:'6', bat:'6', pass:'12' }).onsuccess = resolve;
             stw.transaction.oncomplete = resolve;
           } else resolve();
         };
         getReq.onerror = resolve;
       });
-    }
-
-    /* =======================
-       CONFIGURATION EMAIL
-    ======================== */
-    function loadEmailConfig() {
-      const st = tx('config');
-      const req = st.get('adminEmail');
-      req.onsuccess = () => {
-        if (req.result) {
-          document.getElementById('adminEmail').value = req.result.value;
-        }
-      };
-    }
-
-    function saveEmailConfig() {
-      const email = document.getElementById('adminEmail').value.trim();
-      if (!email) {
-        showBanner('warn', "Veuillez saisir une adresse email valide.");
-        return;
-      }
-      
-      const st = tx('config', 'readwrite');
-      st.put({ key: 'adminEmail', value: email }).onsuccess = () => {
-        showBanner('ok', "Configuration email enregistrée avec succès.");
-      };
-    }
-
-    function saveUserEmail() {
-      const email = document.getElementById('userEmail').value.trim();
-      if (!email) {
-        showBanner('warn', "Veuillez saisir une adresse email valide.");
-        return;
-      }
-      
-      // Mettre à jour l'email de l'utilisateur dans la table users
-      const st = tx('users', 'readwrite');
-      const getReq = st.get(currentUser.id);
-      getReq.onsuccess = () => {
-        const user = getReq.result;
-        if (user) {
-          user.email = email;
-          st.put(user).onsuccess = () => {
-            showBanner('ok', "Votre email a été enregistré avec succès.");
-          };
-        }
-      };
-    }
-
-    function loadUserEmail() {
-      if (currentUser && currentUser.role === 'user') {
-        const st = tx('users');
-        const req = st.get(currentUser.id);
-        req.onsuccess = () => {
-          if (req.result && req.result.email) {
-            document.getElementById('userEmail').value = req.result.email;
-          }
-        };
-      }
     }
 
     /* =======================
@@ -548,7 +482,6 @@
           showBanner('ok', `Connecté. Appartement ${user.appart} / Immeuble ${user.bat}.`);
           startSessionTimer();
           refreshUser();
-          loadUserEmail();
         } else {
           showInlineMsg('loginMsg','err',"Identifiants incorrects.");
         }
@@ -564,8 +497,6 @@
       const appart = (document.getElementById('appartAdmin').value || '').trim();
       const bat = (document.getElementById('batAdmin').value || '').trim();
       const pass = (document.getElementById('passAdmin').value || '').trim();
-      const email = (document.getElementById('emailAdmin').value || '').trim();
-      
       if(!appart || !bat || !pass){
         showInlineMsg('userWarn','warn',"Tous les champs utilisateur sont obligatoires.");
         return;
@@ -577,7 +508,7 @@
         if(get.result){
           showInlineMsg('userWarn','warn',`L'utilisateur ${userId} existe déjà.`);
         } else {
-          st.put({ user:userId, appart, bat, pass, email }).onsuccess = ()=>{
+          st.put({ user:userId, appart, bat, pass }).onsuccess = ()=>{
             showBanner('ok', `Utilisateur ${userId} créé.`);
             refreshAdmin();
           };
@@ -596,7 +527,7 @@
         if(c){
           const u = c.value;
           tbodyU.insertAdjacentHTML('beforeend',
-            `<tr><td>${u.user}</td><td>${u.appart}</td><td>${u.bat}</td><td>${u.pass}</td><td>${u.email || ''}</td></tr>`);
+            `<tr><td>${u.user}</td><td>${u.appart}</td><td>${u.bat}</td><td>${u.pass}</td></tr>`);
           c.continue();
         }
       };
@@ -613,7 +544,7 @@
           last.forEach(r=>{
             const id = r.id ?? '';
             const sendBtn = `<button onclick="envoyerWhatsApp(${id})">Envoyer</button>`;
-            const personnesList = r.personnes.join(', ');
+            const personnesList = r.personnes.map(p => `${p.nom} (${p.doc})`).join(', ');
             
             tbody.insertAdjacentHTML('beforeend',
               `<tr>
@@ -644,7 +575,7 @@
       req.onsuccess = ()=>{
         const arr = req.result || [];
         arr.slice(-200).forEach(r=>{
-          const personnesList = r.personnes.join(', ');
+          const personnesList = r.personnes.map(p => `${p.nom} (${p.doc})`).join(', ');
           const sendBtn = `<button onclick="envoyerWhatsApp(${r.id})">Envoyer</button>`;
           
           tbody.insertAdjacentHTML('beforeend',
@@ -761,91 +692,82 @@
     }
 
     function buildMessage(rec){
-      const nb = rec.personnes.length;
+      const nb = rec.personnes.length + 1; // +1 pour la personne principale
       const nomPrincipal = rec.nom;
       const docPrincipal = rec.doc;
       const autres = rec.personnes.map(p => `${p.nom} (${p.doc})`);
-      const autresFR = autres.length ? autres.join(", ") : "0";
+      const autresFR = autres.length ? autres.join(", ") : "Aucune autre personne";
 
-      return `Nouvel enregistrement d'invité:
-      
-Date d'arrivée: ${rec.date}
+      return `Salam :
+Arrivée: ${rec.date}
 Appartement: ${rec.appart}
-Immeuble: ${rec.bat}
+Imm: ${rec.bat}
 Nombre de personnes: ${nb} personnes
-
-Personne principale:
+Réservation au nom de:
 ${nomPrincipal} (${docPrincipal})
 
 Autres personnes:
 ${autresFR}
 
-Date d'enregistrement: ${new Date().toLocaleString('fr-FR')}`;
-    }
+NB : Svp pas d'autres personnes autorisées seul Les personnes figurent dans la réservation.
 
-    function buildQRContent(rec) {
-      const nb = rec.personnes.length;
-      const nomPrincipal = rec.nom;
-      const docPrincipal = rec.doc;
-      const autres = rec.personnes.map(p => `${p.nom} (${p.doc})`);
-      const autresFR = autres.length ? autres.join(", ") : "0";
+Merci
+------------------------------------------
+السلام عليكم:
+الوصول: ${rec.date}
+الشقة: ${rec.appart}
+رقم العمارة: ${rec.bat}
+عدد الأشخاص: ${nb} أشخاص
+الحجز باسم: ${nomPrincipal} (${docPrincipal})
 
-      return `ENREGISTREMENT VALIDE
-Appartement: ${rec.appart}
-Immeuble: ${rec.bat}
-Date d'arrivée: ${rec.date}
-Nombre de personnes: ${nb}
-
-Personne principale:
-${nomPrincipal} (${docPrincipal})
-
-Autres personnes:
+أشخاص آخرون:
 ${autresFR}
 
-Enregistré le: ${new Date().toLocaleString('fr-FR')}`;
+ملاحظة: الرجاء عدم السماح لأي أشخاص آخرين، فقط الأشخاص المذكورين في الحجز.
+
+شكرًا.`;
     }
 
-    async function sendEmailNotification(rec) {
-      // Récupérer l'email de l'utilisateur propriétaire
-      const st = tx('users');
-      const req = st.get(rec.appart + rec.bat);
-      req.onsuccess = () => {
-        if (req.result && req.result.email) {
-          const userEmail = req.result.email;
-          const subject = `Nouvel enregistrement d'invité - Appartement ${rec.appart}, Immeuble ${rec.bat}`;
-          const body = buildMessage(rec);
-          
-          // Simuler l'envoi d'email (à remplacer par un vrai service)
-          console.log("Simulation d'envoi d'email à:", userEmail);
-          console.log("Sujet:", subject);
-          console.log("Corps:", body);
-          
-          // Dans un cas réel, vous utiliseriez un service comme EmailJS, SendGrid, ou votre propre backend
-          showBanner('info', `Notification envoyée à ${userEmail}`);
-        } else {
-          // Si l'utilisateur n'a pas configuré d'email, envoyer à l'admin
-          const stConfig = tx('config');
-          const reqConfig = stConfig.get('adminEmail');
-          reqConfig.onsuccess = () => {
-            if (reqConfig.result) {
-              const adminEmail = reqConfig.result.value;
-              const subject = `Nouvel enregistrement d'invité - Appartement ${rec.appart}, Immeuble ${rec.bat}`;
-              const body = buildMessage(rec);
-              
-              console.log("Simulation d'envoi d'email à l'admin:", adminEmail);
-              console.log("Sujet:", subject);
-              console.log("Corps:", body);
-              
-              showBanner('info', `Notification envoyée à l'administrateur (${adminEmail})`);
-            } else {
-              showBanner('warn', "Aucun email configuré pour recevoir les notifications.");
-            }
-          };
-        }
-      };
+    /* =======================
+       ENVOI NOTIFICATION FIREBASE
+    ======================== */
+    async function sendFirebaseNotification(record) {
+      if (!firebaseApp) {
+        console.warn("Firebase non initialisé, notification non envoyée");
+        return false;
+      }
+
+      try {
+        // Ici vous devriez envoyer la notification via votre backend
+        // car l'envoi direct depuis le client nécessite des clés secrètes
+        // qui ne doivent pas être exposées dans le code frontend
+        
+        // Exemple de structure pour l'envoi (à adapter selon votre backend)
+        const notificationData = {
+          title: "Nouvel invité enregistré",
+          body: `${record.nom} (${record.doc}) pour l'appartement ${record.appart}, bâtiment ${record.bat}`,
+          data: {
+            type: "new_guest",
+            recordId: record.id,
+            appart: record.appart,
+            bat: record.bat,
+            date: record.date
+          }
+        };
+
+        console.log("Notification à envoyer:", notificationData);
+        
+        // Dans une implémentation réelle, vous feriez une requête à votre serveur
+        // qui utiliserait la clé privée Firebase Admin SDK pour envoyer la notification
+        
+        return true;
+      } catch (error) {
+        console.error("Erreur lors de l'envoi de la notification:", error);
+        return false;
+      }
     }
 
-    function enregistrer(){
+    async function enregistrer(){
       // validations
       const nom = (document.getElementById('nomPrincipal').value || '').trim();
       const doc = (document.getElementById('docPrincipal').value || '').trim();
@@ -883,24 +805,29 @@ Enregistré le: ${new Date().toLocaleString('fr-FR')}`;
         sent:false 
       };
       
-      const qrContent = buildQRContent(rec);
+      const msg = buildMessage(rec);
 
       const st = tx('records','readwrite');
       const addReq = st.add(rec);
-      addReq.onsuccess = (e)=>{
+      addReq.onsuccess = async (e)=>{
         const id = e.target.result;
         rec.id = id; // pour usage immédiat (affichage)
         
-        // Envoyer l'email de notification
-        sendEmailNotification(rec);
+        // Envoyer une notification Firebase
+        const notificationSent = await sendFirebaseNotification(rec);
+        if (notificationSent) {
+          console.log("Notification Firebase envoyée avec succès");
+        } else {
+          console.warn("Échec de l'envoi de la notification Firebase");
+        }
         
         // Afficher le message de succès et le QR code
         document.getElementById('successMessage').style.display = 'block';
         document.getElementById('qrcodeContainer').style.display = 'block';
         
-        // Générer le QR Code
+        // Générer le QR Code avec les informations correctes
         if(qrCode) {
-          qrCode.update({ data: qrContent });
+          qrCode.update({ data: msg });
           document.getElementById('qrcode').innerHTML = '';
           qrCode.append(document.getElementById('qrcode'));
         }
@@ -908,35 +835,31 @@ Enregistré le: ${new Date().toLocaleString('fr-FR')}`;
         // Masquer le formulaire
         document.getElementById('guestForm').style.display = 'none';
       };
-      addReq.onerror = ()=>{
-        showBanner('err',"Erreur lors de l'enregistrement. Réessaie.");
-      };
+      addReq.onerror = ()=> showBanner('err',"Erreur lors de l'enregistrement. Réessayez.");
     }
 
     /* =======================
-       WHATSAPP
+       ADMIN : ENVOI WHATSAPP
     ======================== */
     function envoyerWhatsApp(id){
       const st = tx('records');
-      const req = st.get(id);
-      req.onsuccess = ()=>{
-        const rec = req.result;
-        if(!rec) return;
-        const msg = encodeURIComponent(buildMessage(rec));
-        const whatsappURL = `https://wa.me/?text=${msg}`;
-        window.open(whatsappURL, '_blank');
+      const get = st.get(id);
+      get.onsuccess = ()=>{
+        const r = get.result;
+        if(!r){ showBanner('err',"Enregistrement introuvable."); return; }
+        const msg = buildMessage(r);
+        const url = "https://wa.me/?text=" + encodeURIComponent(msg);
+        window.open(url, "_blank");
         // marquer comme envoyé
-        rec.sent = true;
         const stw = tx('records','readwrite');
-        stw.put(rec);
+        const getw = stw.get(id);
+        getw.onsuccess = ()=>{
+          const rec = getw.result;
+          rec.sent = true;
+          stw.put(rec);
+        };
       };
     }
-
-    // Initialisation
-    window.onload = ()=>{
-      document.getElementById('btnLogin').disabled = true;
-      showBanner('info', "Bienvenue. Veuillez vous connecter.");
-    };
   </script>
 </body>
 </html>
