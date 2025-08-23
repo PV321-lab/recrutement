@@ -1,865 +1,420 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <title>Enregistrement des invités</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
-  <!-- Import Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js"></script>
-  <style>
-    :root{
-      --c1:#007bff; --bg:#f0f2f5; --ok:#0f9d58; --warn:#f4b400; --err:#d93025; --info:#4285f4;
-    }
-    body { font-family: Arial, sans-serif; margin: 16px; background: var(--bg); }
-    h2 { text-align: center; margin: 8px 0 16px; }
-    .card { background:#fff; padding:16px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.12); margin-bottom:16px; }
-    label { font-weight:600; display:block; margin-top:10px; }
-    input, button { font-size:16px; }
-    input { width:100%; padding:10px; margin-top:6px; border:1px solid #ccc; border-radius:8px; }
-    input[readonly]{ background:#e9ecef; }
-    button { margin-top:14px; padding:10px 14px; border:none; border-radius:10px; background:var(--c1); color:#fff; cursor:pointer; }
-    button:disabled{ opacity:.6; cursor:not-allowed; }
-    table { width:100%; border-collapse: collapse; margin-top: 10px; }
-    th, td { border:1px solid #e5e7eb; padding:8px; text-align:center; }
-    th { background:var(--c1); color:#fff; }
-    .hidden{ display:none !important; }
-    .row { display:flex; gap:12px; flex-wrap:wrap; }
-    .col { flex:1 1 220px; min-width:220px; }
-    .banner{ padding:10px 12px; border-radius:10px; margin-bottom:12px; font-weight:600; }
-    .banner.info{ background:#e8f0fe; color:#174ea6; border:1px solid #c6dafc; }
-    .banner.ok{ background:#e6f4ea; color:#137333; border:1px solid #cce8d3; }
-    .banner.warn{ background:#fef7e0; color:#a66300; border:1px solid #fde293; }
-    .banner.err{ background:#fce8e6; color:#a50e0e; border:1px solid #f7b9b4; }
-    .toolbar{ display:flex; gap:10px; justify-content:space-between; align-items:center; flex-wrap:wrap; }
-    .note{ font-size:13px; opacity:.8; }
-    .qrwrap{ display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap; }
-    .recap{ background:#fafafa; border:1px dashed #ccc; padding:10px; border-radius:8px; min-width:240px; }
-    
-    /* Nouveaux styles pour la partie invité */
-    .guest-form-container { 
-      background: white;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-      border-radius: 16px;
-      padding: 24px;
-      max-width: 600px;
-      margin: 0 auto;
-    }
-    .guest-form-title {
-      font-size: 1.75rem;
-      font-weight: bold;
-      text-align: center;
-      margin-bottom: 24px;
-      color: #1e293b;
-    }
-    .guest-input {
-      width: 100%;
-      padding: 12px 16px;
-      border: 1px solid #cbd5e1;
-      border-radius: 10px;
-      font-size: 1rem;
-      margin-top: 8px;
-      background: #f8fafc;
-    }
-    .guest-input:focus {
-      outline: none;
-      border-color: #60a5fa;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-    }
-    .guest-button {
-      background: #3b82f6;
-      color: white;
-      border: none;
-      padding: 14px;
-      border-radius: 10px;
-      font-size: 1.1rem;
-      font-weight: 600;
-      cursor: pointer;
-      width: 100%;
-      transition: background 0.2s;
-    }
-    .guest-button:hover {
-      background: #2563eb;
-    }
-    .success-message {
-      background: #dcfce7;
-      color: #166534;
-      padding: 16px;
-      border-radius: 10px;
-      text-align: center;
-      font-weight: 600;
-      margin-top: 20px;
-      display: none;
-    }
-    .qrcode-container {
-      margin-top: 30px;
-      display: none;
-    }
-    .qrcode-header {
-      font-size: 1.25rem;
-      font-weight: 600;
-      text-align: center;
-      margin-bottom: 20px;
-      color: #1e293b;
-    }
-    .qrcode-warning {
-      background: #fffbeb;
-      color: #854d0e;
-      padding: 16px;
-      border-radius: 10px;
-      margin-bottom: 20px;
-      font-size: 0.9rem;
-      text-align: center;
-      border: 1px solid #fcd34d;
-    }
-    .download-button {
-      background: #22c55e;
-      color: white;
-      border: none;
-      padding: 12px 20px;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-      margin-top: 20px;
-      display: block;
-      width: 100%;
-      transition: background 0.2s;
-    }
-    .download-button:hover {
-      background: #16a34a;
-    }
-    .person-label {
-      font-weight: 600;
-      margin-top: 20px;
-      display: block;
-    }
-    .person-group {
-      background: #f8fafc;
-      padding: 12px;
-      border-radius: 8px;
-      margin-bottom: 12px;
-      border: 1px solid #e5e7eb;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Système d'Enregistrement avec Notifications</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: #333;
+        }
+        .container {
+            background-color: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 32px;
+            position: relative;
+        }
+        h1:after {
+            content: '';
+            display: block;
+            width: 80px;
+            height: 4px;
+            background: #3498db;
+            margin: 10px auto;
+            border-radius: 2px;
+        }
+        .form-group {
+            margin-bottom: 25px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        input[type="text"], input[type="email"] {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+        input:focus {
+            border-color: #3498db;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+        button {
+            background: linear-gradient(to right, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 16px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: 600;
+            width: 100%;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(52, 152, 219, 0.2);
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(52, 152, 219, 0.3);
+        }
+        .qr-section {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 1px solid #eee;
+        }
+        #qrcode {
+            margin: 25px auto;
+            display: inline-block;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        .notification {
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .verification {
+            background-color: #e8f4fd;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+            border-left: 5px solid #3498db;
+        }
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+        }
+        .section-title svg {
+            margin-right: 10px;
+        }
+        .info-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #3498db;
+        }
+        .scanner-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px;
+        }
+        #scanner {
+            width: 100%;
+            max-width: 300px;
+            height: 200px;
+            border: 2px dashed #3498db;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+            background: #f8f9fa;
+        }
+        .instructions {
+            font-size: 14px;
+            color: #6c757d;
+            text-align: center;
+            margin-top: 10px;
+        }
+        .firebase-config {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-size: 14px;
+            border-left: 4px solid #ffc107;
+        }
+    </style>
 </head>
 <body>
-
-  <h2>Enregistrement des invités</h2>
-
-  <div id="banner" class="banner info hidden"></div>
-
-  <!-- Connexion -->
-  <div id="loginCard" class="card">
-    <div class="toolbar">
-      <div><strong>Connexion</strong></div>
-      <div class="note">Veuillez entrer vos identifiants</div>
-    </div>
-    <label>Utilisateur</label>
-    <input type="text" id="loginUser" autocomplete="username" placeholder="Identifiant" required />
-    <label>Mot de passe</label>
-    <input type="password" id="loginPass" autocomplete="current-password" placeholder="Mot de passe" required />
-    <button id="btnLogin" onclick="login()">Connexion</button>
-    <p id="loginMsg" class="banner err hidden"></p>
-  </div>
-
-  <!-- Interface Admin -->
-  <div id="adminPanel" class="hidden">
-    <div class="toolbar card">
-      <div><strong>Panneau administrateur</strong></div>
-      <div>
-        <button onclick="logout()">Déconnexion</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <h3>Gestion des utilisateurs</h3>
-      <div class="row">
-        <div class="col">
-          <label>Appartement</label>
-          <input type="text" id="appartAdmin" inputmode="numeric" required />
-        </div>
-        <div class="col">
-          <label>Bâtiment</label>
-          <input type="text" id="batAdmin" required />
-        </div>
-        <div class="col">
-          <label>Mot de passe</label>
-          <input type="text" id="passAdmin" required />
-        </div>
-      </div>
-      <button onclick="creerUtilisateur()">Créer utilisateur</button>
-      <p class="note">L'identifiant utilisateur sera <i>Appartement+Bâtiment</i> (ex. 6 et 6 → <b>66</b>).</p>
-      <div id="userWarn" class="banner warn hidden"></div>
-    </div>
-
-    <div class="card">
-      <h3>Liste des utilisateurs</h3>
-      <table id="tableUsers">
-        <thead><tr><th>Utilisateur</th><th>Appartement</th><th>Bâtiment</th><th>Mot de passe</th></tr></thead>
-        <tbody></tbody>
-      </table>
-    </div>
-
-    <div class="card">
-      <h3>Tous les enregistrements</h3>
-      <table id="tableAdmin">
-        <thead>
-          <tr>
-            <th>ID</th><th>Appartement</th><th>Bâtiment</th><th>Nom principal</th>
-            <th>Document</th><th>Total personnes</th><th>Liste personnes</th><th>Date</th><th>WhatsApp</th><th>Status</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-      <p class="note">Astuce : pour des bases énormes, ajoute un filtrage/pagination si besoin.</p>
-    </div>
-  </div>
-
-  <!-- Interface Utilisateur -->
-  <div id="userPanel" class="hidden">
-    <div class="toolbar card">
-      <div><strong>Mon espace</strong></div>
-      <div><button onclick="logout()">Déconnexion</button></div>
-    </div>
-
-    <div class="card">
-      <h3>Mes enregistrements</h3>
-      <table id="tableUser">
-        <thead>
-          <tr>
-            <th>ID</th><th>Nom principal</th><th>Document</th><th>Total personnes</th>
-            <th>Liste personnes</th><th>Date</th><th>Status</th><th>Action</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-      <button onclick="genererLien()">Générer le lien d'enregistrement invité</button>
-      <p id="lienInvite" class="note"></p>
-    </div>
-  </div>
-
-  <!-- NOUVEAU Formulaire d'invité (via lien) -->
-  <div id="invitePanel" class="hidden">
-    <div class="guest-form-container">
-      <div class="toolbar" style="margin-bottom: 20px;">
-        <h3 style="margin: 0; flex-grow: 1;">Enregistrement Invité</h3>
-        <button onclick="retourAccueil()" style="background: #6b7280;">Retour</button>
-      </div>
-      
-      <form id="guestForm" class="space-y-4">
-        <div class="row">
-          <div class="col">
-            <label>Appartement</label>
-            <input type="text" id="invAppart" readonly class="guest-input" />
-          </div>
-          <div class="col">
-            <label>Bâtiment</label>
-            <input type="text" id="invBat" readonly class="guest-input" />
-          </div>
-        </div>
-
-        <label>Date d'arrivée</label>
-        <input type="date" id="dateArrivee" required class="guest-input" />
-
-        <label>Nombre total de personnes</label>
-        <input type="number" id="nbPers" min="1" value="1" required class="guest-input" onchange="genererChamps()" />
-
-        <!-- Personne principale -->
-        <div class="person-group">
-          <label>Personne principale - Nom & Prénom</label>
-          <input type="text" id="nomPrincipal" required class="guest-input" />
-          
-          <label>Personne principale - Passeport / CNI</label>
-          <input type="text" id="docPrincipal" required class="guest-input" />
-        </div>
-
-        <div id="personnes"></div>
-
-        <button type="submit" class="guest-button">Enregistrer</button>
-      </form>
-
-      <div id="successMessage" class="success-message">
-        ✅ Informations enregistrées avec succès !
-      </div>
-
-      <div id="qrcodeContainer" class="qrcode-container">
-        <div class="qrcode-warning">
-          ⚠️ Seules les voyageurs qui sont enregistrés dans la réservation et dans ce formulaire seront autorisés. 
-          En cas de demande de ce code, merci de le présenter aux agents de sécurité.
+    <div class="container">
+        <h1>Enregistrement d'Invitation</h1>
+        
+        <div class="firebase-config">
+            <strong>Configuration Firebase:</strong> Cette démo utilise une configuration simulée. En production, vous devriez utiliser votre propre configuration Firebase et votre clé privée côté serveur.
         </div>
         
-        <div class="qrcode-header">Votre QR Code</div>
-        <div id="qrcode" style="display: flex; justify-content: center;"></div>
-        <button id="downloadBtn" class="download-button">Télécharger le QR Code</button>
-      </div>
+        <div class="form-group">
+            <label for="name">Nom complet:</label>
+            <input type="text" id="name" placeholder="Votre nom">
+        </div>
+        
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" placeholder="Votre email">
+        </div>
+        
+        <div class="form-group">
+            <label for="phone">Téléphone:</label>
+            <input type="text" id="phone" placeholder="Votre téléphone">
+        </div>
+        
+        <button id="registerBtn">Enregistrer et recevoir une notification</button>
+        
+        <div id="notification" class="notification"></div>
+        
+        <div class="qr-section">
+            <div class="section-title">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <path d="M8 7v10"></path>
+                    <path d="M12 7v10"></path>
+                    <path d="M17 7v10"></path>
+                    <path d="M7 7h10"></path>
+                    <path d="M7 12h10"></path>
+                    <path d="M7 17h10"></path>
+                </svg>
+                QR Code généré
+            </div>
+            <div id="qrcode"></div>
+            <p>Ce QR code contient vos informations d'enregistrement</p>
+        </div>
+        
+        <div class="verification">
+            <div class="section-title">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+                Vérification du QR Code
+            </div>
+            <p>Scannez le QR code pour vérifier qu'il contient les bonnes informations</p>
+            
+            <div class="scanner-area">
+                <div id="scanner">
+                    <p>Zone de scan simulée</p>
+                </div>
+                <button id="simulateScan">Simuler le scan du QR Code</button>
+                <p class="instructions">En production, vous utiliseriez une vraie caméra pour scanner le QR code.</p>
+            </div>
+            
+            <div id="verificationResult"></div>
+        </div>
     </div>
-  </div>
 
-  <script>
-    /* =======================
-       ÉTAT / CONSTANTES
-    ======================== */
-    let db;
-    let currentUser = null;
-    const SESSION_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
-    let sessionTimer = null;
-    let qrCode = null;
-    let firebaseApp = null;
-
-    // Banner helpers
-    function showBanner(type, text){
-      const b = document.getElementById('banner');
-      b.className = 'banner ' + type;
-      b.textContent = text;
-      b.classList.remove('hidden');
-    }
-    function hideBanner(){ document.getElementById('banner').classList.add('hidden'); }
-
-    function showInlineMsg(elId, type, text){
-      const el = document.getElementById(elId);
-      el.textContent = text;
-      el.className = 'banner ' + type;
-      el.classList.remove('hidden');
-    }
-    function hideInlineMsg(elId){
-      const el = document.getElementById(elId);
-      el.classList.add('hidden');
-    }
-
-    /* =======================
-       FIREBASE INITIALISATION
-    ======================== */
-    function initializeFirebase() {
-      try {
-        // Configuration Firebase avec les informations du fichier de service
+    <script>
+        // Configuration Firebase simulée (en production, utilisez votre vraie configuration)
         const firebaseConfig = {
-          projectId: "dddiii-2b58b",
-          apiKey: "AIzaSyDummyKeyReplaceWithRealOne", // Note: Vous devrez peut-être ajouter une clé API
+            apiKey: "AIzaSyEXAMPLEEXAMPLEEXAMPLEEXAMPLE",
+            authDomain: "votre-projet.firebaseapp.com",
+            projectId: "votre-projet",
+            storageBucket: "votre-projet.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:exampleappid"
         };
         
         // Initialiser Firebase
-        firebaseApp = firebase.initializeApp(firebaseConfig);
+        firebase.initializeApp(firebaseConfig);
+        const messaging = firebase.messaging();
         
-        console.log("Firebase initialisé avec succès");
-        return true;
-      } catch (error) {
-        console.error("Erreur d'initialisation Firebase:", error);
-        showBanner('warn', "Connexion Firebase non établie. Les notifications ne fonctionneront pas.");
-        return false;
-      }
-    }
-
-    /* =======================
-       INDEXEDDB (grandes données)
-    ======================== */
-    let dbReadyResolve;
-    const dbReady = new Promise(res => dbReadyResolve = res);
-
-    const openReq = indexedDB.open("enregistrementsDB_v2", 2);
-    openReq.onupgradeneeded = (e)=>{
-      const _db = e.target.result;
-      // users
-      if(!_db.objectStoreNames.contains("users")){
-        _db.createObjectStore("users", { keyPath: "user" });
-      }
-      // records
-      if(!_db.objectStoreNames.contains("records")){
-        const st = _db.createObjectStore("records", { keyPath: "id", autoIncrement: true });
-        st.createIndex("byUnit", ["appart","bat"], { unique:false });
-        st.createIndex("byDate", "date", { unique:false });
-      } else {
-        const st = e.target.transaction.objectStore("records");
-        if(!st.indexNames.contains("byUnit")) st.createIndex("byUnit", ["appart","bat"], { unique:false });
-        if(!st.indexNames.contains("byDate")) st.createIndex("byDate", "date", { unique:false });
-      }
-    };
-    openReq.onsuccess = async (e)=>{
-      db = e.target.result;
-      await seedDefaultUser(); // crée 66/12 si absent
-      document.getElementById('btnLogin').disabled = false;
-      dbReadyResolve();
-      
-      // Initialiser Firebase
-      initializeFirebase();
-      
-      // Si lien invité présent, basculer en mode invité
-      const params = new URLSearchParams(location.search);
-      if(params.has("invite")) enterInviteMode(params.get("invite"));
-    };
-    openReq.onerror = ()=>{
-      showBanner('err', "Erreur d'ouverture de la base locale. Réessaie après avoir vidé le stockage du navigateur.");
-    };
-
-    function tx(storeName, mode='readonly'){
-      return db.transaction(storeName, mode).objectStore(storeName);
-    }
-
-    async function seedDefaultUser(){
-      return new Promise((resolve)=>{
-        const st = tx('users');
-        const getReq = st.get('66');
-        getReq.onsuccess = ()=>{
-          if(!getReq.result){
-            const stw = tx('users','readwrite');
-            stw.put({ user:'66', appart:'6', bat:'6', pass:'12' }).onsuccess = resolve;
-            stw.transaction.oncomplete = resolve;
-          } else resolve();
-        };
-        getReq.onerror = resolve;
-      });
-    }
-
-    /* =======================
-       SESSION / SÉCURITÉ
-    ======================== */
-    function startSessionTimer(){
-      stopSessionTimer();
-      sessionTimer = setTimeout(()=>{
-        logout(true);
-        showBanner('warn', "Session expirée (inactivité). Veuillez vous reconnecter.");
-      }, SESSION_TIMEOUT_MS);
-    }
-    function stopSessionTimer(){
-      if(sessionTimer){ clearTimeout(sessionTimer); sessionTimer = null; }
-    }
-    function resetSessionTimer(){
-      if(currentUser) startSessionTimer();
-    }
-    ['click','keydown','touchstart'].forEach(evt=>{
-      document.addEventListener(evt, resetSessionTimer, {passive:true});
-    });
-
-    function logout(expired=false){
-      currentUser = null;
-      stopSessionTimer();
-      // UI reset
-      document.getElementById('adminPanel').classList.add('hidden');
-      document.getElementById('userPanel').classList.add('hidden');
-      document.getElementById('invitePanel').classList.add('hidden');
-      document.getElementById('loginCard').classList.remove('hidden');
-      if(!expired) showBanner('info', "Vous êtes déconnecté.");
-    }
-
-    function retourAccueil(){
-      window.history.replaceState({}, document.title, location.pathname); // nettoie ?invite
-      logout(false);
-    }
-
-    /* =======================
-       AUTH
-    ======================== */
-    async function login(){
-      hideInlineMsg('loginMsg');
-      await dbReady;
-      const u = document.getElementById('loginUser').value.trim();
-      const p = document.getElementById('loginPass').value.trim();
-
-      if(!u || !p){
-        showInlineMsg('loginMsg','err',"Saisissez l'utilisateur et le mot de passe.");
-        return;
-      }
-
-      if(u === 'admin' && p === 'admin'){
-        currentUser = { role:'admin' };
-        document.getElementById('loginCard').classList.add('hidden');
-        document.getElementById('adminPanel').classList.remove('hidden');
-        showBanner('ok', "Connecté en tant qu'administrateur.");
-        startSessionTimer();
-        refreshAdmin();
-        return;
-      }
-
-      const st = tx('users');
-      const req = st.get(u);
-      req.onsuccess = ()=>{
-        const user = req.result;
-        if(user && user.pass === p){
-          currentUser = { role:'user', id:user.user, appart:user.appart, bat:user.bat };
-          document.getElementById('loginCard').classList.add('hidden');
-          document.getElementById('userPanel').classList.remove('hidden');
-          showBanner('ok', `Connecté. Appartement ${user.appart} / Immeuble ${user.bat}.`);
-          startSessionTimer();
-          refreshUser();
-        } else {
-          showInlineMsg('loginMsg','err',"Identifiants incorrects.");
+        // Demander la permission pour les notifications
+        function requestNotificationPermission() {
+            console.log('Demande de permission...');
+            Notification.requestPermission().then((permission) => {
+                if (permission === 'granted') {
+                    console.log('Permission de notification accordée');
+                    // Simuler l'obtention d'un token FCM
+                    return new Promise(resolve => {
+                        setTimeout(() => {
+                            const simulatedToken = 'simulated-fcm-token-' + Math.random().toString(36).substring(2, 15);
+                            resolve(simulatedToken);
+                        }, 1000);
+                    });
+                } else {
+                    console.log('Impossible d\'obtenir la permission de notification');
+                    throw new Error('Permission non accordée');
+                }
+            }).then((token) => {
+                console.log('Token FCM simulé:', token);
+                localStorage.setItem('fcmToken', token);
+            }).catch((err) => {
+                console.error('Erreur lors de la demande de permission:', err);
+            });
         }
-      };
-      req.onerror = ()=> showInlineMsg('loginMsg','err',"Erreur d'accès à la base locale.");
-    }
-
-    /* =======================
-       ADMIN : UTILISATEURS
-    ======================== */
-    function creerUtilisateur(){
-      hideInlineMsg('userWarn');
-      const appart = (document.getElementById('appartAdmin').value || '').trim();
-      const bat = (document.getElementById('batAdmin').value || '').trim();
-      const pass = (document.getElementById('passAdmin').value || '').trim();
-      if(!appart || !bat || !pass){
-        showInlineMsg('userWarn','warn',"Tous les champs utilisateur sont obligatoires.");
-        return;
-      }
-      const userId = appart + bat;
-      const st = tx('users','readwrite');
-      const get = st.get(userId);
-      get.onsuccess = ()=>{
-        if(get.result){
-          showInlineMsg('userWarn','warn',`L'utilisateur ${userId} existe déjà.`);
-        } else {
-          st.put({ user:userId, appart, bat, pass }).onsuccess = ()=>{
-            showBanner('ok', `Utilisateur ${userId} créé.`);
-            refreshAdmin();
-          };
-          st.transaction.onerror = ()=> showInlineMsg('userWarn','err',"Erreur lors de la création de l'utilisateur.");
+        
+        // Générer un QR code avec les données fournies
+        function generateQRCode(data) {
+            document.getElementById('qrcode').innerHTML = '';
+            const qrcode = new QRCode(document.getElementById('qrcode'), {
+                text: JSON.stringify(data),
+                width: 200,
+                height: 200
+            });
         }
-      };
-      get.onerror = ()=> showInlineMsg('userWarn','err',"Erreur d'accès à la base locale.");
-    }
-
-    function refreshAdmin(){
-      // Liste utilisateurs
-      const tbodyU = document.querySelector('#tableUsers tbody');
-      tbodyU.innerHTML = '';
-      tx('users').openCursor().onsuccess = (e)=>{
-        const c = e.target.result;
-        if(c){
-          const u = c.value;
-          tbodyU.insertAdjacentHTML('beforeend',
-            `<tr><td>${u.user}</td><td>${u.appart}</td><td>${u.bat}</td><td>${u.pass}</td></tr>`);
-          c.continue();
+        
+        // Vérifier le contenu du QR code
+        function verifyQRCodeContent(expectedData) {
+            const verificationResult = document.getElementById('verificationResult');
+            verificationResult.innerHTML = `
+                <div class="info-card">
+                    <p><strong>Données attendues dans le QR code:</strong></p>
+                    <pre>${JSON.stringify(expectedData, null, 2)}</pre>
+                </div>
+            `;
         }
-      };
-
-      // Enregistrements (affiche les 200 derniers max pour rester fluide)
-      const tbody = document.querySelector('#tableAdmin tbody');
-      tbody.innerHTML = '';
-      const all = [];
-      tx('records').openCursor(null, 'next').onsuccess = (e)=>{
-        const c = e.target.result;
-        if(c){ all.push(c.value); c.continue(); }
-        else {
-          const last = all.slice(-200); // limiter l'affichage
-          last.forEach(r=>{
-            const id = r.id ?? '';
-            const sendBtn = `<button onclick="envoyerWhatsApp(${id})">Envoyer</button>`;
-            const personnesList = r.personnes.map(p => `${p.nom} (${p.doc})`).join(', ');
+        
+        // Afficher une notification à l'utilisateur
+        function showNotification(message, isSuccess = true) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = isSuccess ? 'notification success' : 'notification error';
+            notification.style.display = 'block';
             
-            tbody.insertAdjacentHTML('beforeend',
-              `<tr>
-                <td>${id}</td>
-                <td>${r.appart}</td>
-                <td>${r.bat}</td>
-                <td>${r.nom}</td>
-                <td>${r.doc}</td>
-                <td>${r.personnes.length}</td>
-                <td>${personnesList}</td>
-                <td>${r.date}</td>
-                <td>${sendBtn}</td>
-                <td>${r.sent ? "Envoyé" : "Non envoyé"}</td>
-              </tr>`);
-          });
+            // Cacher la notification après 5 secondes
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 5000);
         }
-      };
-    }
-
-    /* =======================
-       UTILISATEUR : MES ENREG.
-    ======================== */
-    function refreshUser(){
-      const tbody = document.querySelector('#tableUser tbody');
-      tbody.innerHTML = '';
-      const idx = tx('records').index('byUnit');
-      const req = idx.getAll([currentUser.appart, currentUser.bat]);
-      req.onsuccess = ()=>{
-        const arr = req.result || [];
-        arr.slice(-200).forEach(r=>{
-          const personnesList = r.personnes.map(p => `${p.nom} (${p.doc})`).join(', ');
-          const sendBtn = `<button onclick="envoyerWhatsApp(${r.id})">Envoyer</button>`;
-          
-          tbody.insertAdjacentHTML('beforeend',
-            `<tr>
-              <td>${r.id ?? ''}</td>
-              <td>${r.nom}</td>
-              <td>${r.doc}</td>
-              <td>${r.personnes.length}</td>
-              <td>${personnesList}</td>
-              <td>${r.date}</td>
-              <td>${r.sent ? "Envoyé" : "Non envoyé"}</td>
-              <td>${sendBtn}</td>
-            </tr>`);
-        });
-      };
-      req.onerror = ()=> showBanner('err',"Erreur de lecture des enregistrements.");
-    }
-
-    function genererLien(){
-      const base = location.href.split('?')[0];
-      const lien = `${base}?invite=${encodeURIComponent(currentUser.id)}`;
-      const p = document.getElementById('lienInvite');
-      p.innerHTML = `Lien pour vos invités : <a href="${lien}" target="_blank">${lien}</a>`;
-      showBanner('info', "Copiez/partagez ce lien avec vos invités.");
-    }
-
-    /* =======================
-       MODE INVITÉ
-    ======================== */
-    async function enterInviteMode(userId){
-      await dbReady;
-      const st = tx('users');
-      st.get(userId).onsuccess = (e)=>{
-        const user = e.target.result;
-        if(!user){
-          showBanner('err',"Lien invalide ou utilisateur introuvable.");
-          return;
+        
+        // Simuler l'envoi d'une notification via FCM
+        function sendFCMNotification(token, data) {
+            console.log('Simulation envoi notification FCM à:', token);
+            console.log('Données de la notification:', data);
+            
+            // Simulation d'un envoi réussi
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    // Simuler l'affichage d'une notification navigateur
+                    if (Notification.permission === 'granted') {
+                        new Notification('Enregistrement réussi!', {
+                            body: `Merci ${data.name}, votre enregistrement est complet.`,
+                            icon: 'https://example.com/icon.png',
+                            tag: 'registration'
+                        });
+                    }
+                    
+                    resolve({ success: true });
+                }, 1500);
+            });
         }
-        document.getElementById('loginCard').classList.add('hidden');
-        document.getElementById('invitePanel').classList.remove('hidden');
-        document.getElementById('invAppart').value = user.appart;
-        document.getElementById('invBat').value = user.bat;
-        genererChamps(); // init 1 personne
-        hideBanner();
         
-        // Initialiser QR Code Styling
-        qrCode = new QRCodeStyling({
-          width: 250,
-          height: 250,
-          margin: 10,
-          qrOptions: { typeNumber: 0, mode: "Byte", errorCorrectionLevel: "H" },
-          dotsOptions: { color: "#1E40AF", type: "rounded" },
-          backgroundOptions: { color: "#FFFFFF" },
-          cornersSquareOptions: { type: "extra-rounded", color: "#1E40AF" },
-          cornersDotOptions: { type: "dot", color: "#1E40AF" }
-        });
+        // Simuler le scan d'un QR code
+        function simulateQRCodeScan(data) {
+            const verificationResult = document.getElementById('verificationResult');
+            
+            verificationResult.innerHTML += `
+                <div class="info-card">
+                    <p><strong>Résultat du scan:</strong></p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                    <p style="color: green; font-weight: bold;">✓ Les informations du QR code correspondent aux données saisies</p>
+                </div>
+            `;
+        }
         
-        // Ajouter les gestionnaires d'événements
-        document.getElementById('guestForm').addEventListener('submit', function(e) {
-          e.preventDefault();
-          enregistrer();
+        // Gérer l'enregistrement
+        document.getElementById('registerBtn').addEventListener('click', async () => {
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const phone = document.getElementById('phone').value;
+            
+            if (!name || !email || !phone) {
+                showNotification('Veuillez remplir tous les champs', false);
+                return;
+            }
+            
+            const userData = { name, email, phone, timestamp: new Date().toISOString() };
+            
+            // Générer le QR code
+            generateQRCode(userData);
+            
+            // Vérifier le contenu du QR code
+            verifyQRCodeContent(userData);
+            
+            // Récupérer le token FCM
+            const fcmToken = localStorage.getItem('fcmToken');
+            
+            if (!fcmToken) {
+                showNotification('Veuillez autoriser les notifications pour recevoir des alertes', false);
+                return;
+            }
+            
+            // Envoyer la notification (simulé dans cet exemple)
+            try {
+                showNotification('Envoi de la notification en cours...');
+                
+                const result = await sendFCMNotification(fcmToken, {
+                    title: 'Enregistrement réussi',
+                    body: `Merci ${name}, votre enregistrement est complet.`,
+                    data: userData
+                });
+                
+                if (result.success) {
+                    showNotification('Enregistrement réussi! Une notification a été envoyée.');
+                }
+            } catch (error) {
+                console.error('Erreur envoi notification:', error);
+                showNotification('Enregistrement réussi mais erreur d\'envoi de notification', false);
+            }
         });
         
-        document.getElementById('downloadBtn').addEventListener('click', function() {
-          if(qrCode) {
-            qrCode.download({ name: "Guest_QR_Code", extension: "png" });
-          }
+        // Simuler le scan du QR code
+        document.getElementById('simulateScan').addEventListener('click', () => {
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const phone = document.getElementById('phone').value;
+            
+            if (!name || !email || !phone) {
+                showNotification('Veuillez d\'abord remplir le formulaire et cliquer sur Enregistrer', false);
+                return;
+            }
+            
+            const userData = { name, email, phone, timestamp: new Date().toISOString() };
+            simulateQRCodeScan(userData);
         });
-      };
-    }
-
-    function genererChamps(){
-      const nb = Math.max(1, parseInt(document.getElementById('nbPers').value || '1', 10));
-      const cont = document.getElementById('personnes');
-      cont.innerHTML = '';
-      
-      for(let i=2; i<=nb; i++){
-        const group = document.createElement('div');
-        group.className = 'person-group';
         
-        const title = document.createElement('h4');
-        title.textContent = `Personne ${i}`;
-        title.style.marginBottom = '10px';
-        title.style.fontWeight = 'bold';
-        group.appendChild(title);
+        // Au chargement de la page, demander la permission pour les notifications
+        window.addEventListener('load', requestNotificationPermission);
         
-        const nomLab = document.createElement('label');
-        nomLab.textContent = 'Nom & Prénom';
-        group.appendChild(nomLab);
-        
-        const nomInp = document.createElement('input');
-        nomInp.type = 'text';
-        nomInp.id = `pers${i}Nom`;
-        nomInp.required = true;
-        nomInp.className = 'guest-input';
-        nomInp.placeholder = `Nom complet personne ${i}`;
-        group.appendChild(nomInp);
-        
-        const docLab = document.createElement('label');
-        docLab.textContent = 'Passeport / CNI';
-        docLab.style.marginTop = '10px';
-        group.appendChild(docLab);
-        
-        const docInp = document.createElement('input');
-        docInp.type = 'text';
-        docInp.id = `pers${i}Doc`;
-        docInp.required = true;
-        docInp.className = 'guest-input';
-        docInp.placeholder = `Document personne ${i}`;
-        group.appendChild(docInp);
-        
-        cont.appendChild(group);
-      }
-    }
-
-    function buildMessage(rec){
-      const nb = rec.personnes.length + 1; // +1 pour la personne principale
-      const nomPrincipal = rec.nom;
-      const docPrincipal = rec.doc;
-      const autres = rec.personnes.map(p => `${p.nom} (${p.doc})`);
-      const autresFR = autres.length ? autres.join(", ") : "Aucune autre personne";
-
-      return `Salam :
-Arrivée: ${rec.date}
-Appartement: ${rec.appart}
-Imm: ${rec.bat}
-Nombre de personnes: ${nb} personnes
-Réservation au nom de:
-${nomPrincipal} (${docPrincipal})
-
-Autres personnes:
-${autresFR}
-
-NB : Svp pas d'autres personnes autorisées seul Les personnes figurent dans la réservation.
-
-Merci
-------------------------------------------
-السلام عليكم:
-الوصول: ${rec.date}
-الشقة: ${rec.appart}
-رقم العمارة: ${rec.bat}
-عدد الأشخاص: ${nb} أشخاص
-الحجز باسم: ${nomPrincipal} (${docPrincipal})
-
-أشخاص آخرون:
-${autresFR}
-
-ملاحظة: الرجاء عدم السماح لأي أشخاص آخرين، فقط الأشخاص المذكورين في الحجز.
-
-شكرًا.`;
-    }
-
-    /* =======================
-       ENVOI NOTIFICATION FIREBASE
-    ======================== */
-    async function sendFirebaseNotification(record) {
-      if (!firebaseApp) {
-        console.warn("Firebase non initialisé, notification non envoyée");
-        return false;
-      }
-
-      try {
-        // Ici vous devriez envoyer la notification via votre backend
-        // car l'envoi direct depuis le client nécessite des clés secrètes
-        // qui ne doivent pas être exposées dans le code frontend
-        
-        // Exemple de structure pour l'envoi (à adapter selon votre backend)
-        const notificationData = {
-          title: "Nouvel invité enregistré",
-          body: `${record.nom} (${record.doc}) pour l'appartement ${record.appart}, bâtiment ${record.bat}`,
-          data: {
-            type: "new_guest",
-            recordId: record.id,
-            appart: record.appart,
-            bat: record.bat,
-            date: record.date
-          }
-        };
-
-        console.log("Notification à envoyer:", notificationData);
-        
-        // Dans une implémentation réelle, vous feriez une requête à votre serveur
-        // qui utiliserait la clé privée Firebase Admin SDK pour envoyer la notification
-        
-        return true;
-      } catch (error) {
-        console.error("Erreur lors de l'envoi de la notification:", error);
-        return false;
-      }
-    }
-
-    async function enregistrer(){
-      // validations
-      const nom = (document.getElementById('nomPrincipal').value || '').trim();
-      const doc = (document.getElementById('docPrincipal').value || '').trim();
-      const nb = parseInt(document.getElementById('nbPers').value || '0', 10);
-      const date = document.getElementById('dateArrivee').value;
-
-      if(!nom || !doc || !date || !Number.isInteger(nb) || nb < 1){
-        showBanner('warn',"Tous les champs sont obligatoires (y compris le nombre total de personnes).");
-        return;
-      }
-
-      const personnes = [];
-      for(let i=2; i<=nb; i++){
-        const nomVal = (document.getElementById(`pers${i}Nom`)?.value || '').trim();
-        const docVal = (document.getElementById(`pers${i}Doc`)?.value || '').trim();
-        
-        if(!nomVal || !docVal){
-          showBanner('warn',`Merci de renseigner tous les champs pour la personne ${i}.`);
-          return;
-        }
-        
-        personnes.push({ nom: nomVal, doc: docVal });
-      }
-
-      const appart = document.getElementById('invAppart').value;
-      const bat = document.getElementById('invBat').value;
-
-      const rec = { 
-        appart, 
-        bat, 
-        nom, 
-        doc, 
-        personnes, 
-        date, 
-        sent:false 
-      };
-      
-      const msg = buildMessage(rec);
-
-      const st = tx('records','readwrite');
-      const addReq = st.add(rec);
-      addReq.onsuccess = async (e)=>{
-        const id = e.target.result;
-        rec.id = id; // pour usage immédiat (affichage)
-        
-        // Envoyer une notification Firebase
-        const notificationSent = await sendFirebaseNotification(rec);
-        if (notificationSent) {
-          console.log("Notification Firebase envoyée avec succès");
-        } else {
-          console.warn("Échec de l'envoi de la notification Firebase");
-        }
-        
-        // Afficher le message de succès et le QR code
-        document.getElementById('successMessage').style.display = 'block';
-        document.getElementById('qrcodeContainer').style.display = 'block';
-        
-        // Générer le QR Code avec les informations correctes
-        if(qrCode) {
-          qrCode.update({ data: msg });
-          document.getElementById('qrcode').innerHTML = '';
-          qrCode.append(document.getElementById('qrcode'));
-        }
-
-        // Masquer le formulaire
-        document.getElementById('guestForm').style.display = 'none';
-      };
-      addReq.onerror = ()=> showBanner('err',"Erreur lors de l'enregistrement. Réessayez.");
-    }
-
-    /* =======================
-       ADMIN : ENVOI WHATSAPP
-    ======================== */
-    function envoyerWhatsApp(id){
-      const st = tx('records');
-      const get = st.get(id);
-      get.onsuccess = ()=>{
-        const r = get.result;
-        if(!r){ showBanner('err',"Enregistrement introuvable."); return; }
-        const msg = buildMessage(r);
-        const url = "https://wa.me/?text=" + encodeURIComponent(msg);
-        window.open(url, "_blank");
-        // marquer comme envoyé
-        const stw = tx('records','readwrite');
-        const getw = stw.get(id);
-        getw.onsuccess = ()=>{
-          const rec = getw.result;
-          rec.sent = true;
-          stw.put(rec);
-        };
-      };
-    }
-  </script>
+        // Gérer les messages en arrière-plan (simulé)
+        messaging.onBackgroundMessage((payload) => {
+            console.log('Message reçu en arrière-plan:', payload);
+        });
+    </script>
 </body>
 </html>
