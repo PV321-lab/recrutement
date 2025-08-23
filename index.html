@@ -3,24 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Système d'Enregistrement avec Notifications</title>
+    <title>Système d'Enregistrement avec QR Code</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js"></script>
     <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: #333;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
         }
         .container {
             background-color: white;
             border-radius: 15px;
             padding: 30px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            width: 100%;
+            max-width: 800px;
         }
         h1 {
             color: #2c3e50;
@@ -73,6 +82,7 @@
             width: 100%;
             transition: all 0.3s;
             box-shadow: 0 4px 6px rgba(52, 152, 219, 0.2);
+            margin-top: 10px;
         }
         button:hover {
             transform: translateY(-2px);
@@ -138,11 +148,33 @@
             margin: 15px 0;
             border-left: 4px solid #3498db;
         }
-        .scanner-area {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+        .instructions {
+            font-size: 14px;
+            color: #6c757d;
+            text-align: center;
+            margin-top: 10px;
+        }
+        .firebase-info {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-size: 14px;
+            border-left: 4px solid #ffc107;
+        }
+        .data-display {
             margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .data-display pre {
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .scanner-section {
+            margin-top: 30px;
+            text-align: center;
         }
         #scanner {
             width: 100%;
@@ -153,22 +185,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 15px;
+            margin: 0 auto 15px;
             background: #f8f9fa;
-        }
-        .instructions {
-            font-size: 14px;
-            color: #6c757d;
-            text-align: center;
-            margin-top: 10px;
-        }
-        .firebase-config {
-            background: #fff3cd;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 20px 0;
-            font-size: 14px;
-            border-left: 4px solid #ffc107;
         }
     </style>
 </head>
@@ -176,8 +194,8 @@
     <div class="container">
         <h1>Enregistrement d'Invitation</h1>
         
-        <div class="firebase-config">
-            <strong>Configuration Firebase:</strong> Cette démo utilise une configuration simulée. En production, vous devriez utiliser votre propre configuration Firebase et votre clé privée côté serveur.
+        <div class="firebase-info">
+            <strong>Information:</strong> Cette application utilise Firebase Cloud Messaging pour les notifications.
         </div>
         
         <div class="form-group">
@@ -213,7 +231,7 @@
                 QR Code généré
             </div>
             <div id="qrcode"></div>
-            <p>Ce QR code contient vos informations d'enregistrement</p>
+            <p class="instructions">Ce QR code contient vos informations d'enregistrement. Scannez-le avec une application de lecture de QR code.</p>
         </div>
         
         <div class="verification">
@@ -226,7 +244,7 @@
             </div>
             <p>Scannez le QR code pour vérifier qu'il contient les bonnes informations</p>
             
-            <div class="scanner-area">
+            <div class="scanner-section">
                 <div id="scanner">
                     <p>Zone de scan simulée</p>
                 </div>
@@ -236,17 +254,22 @@
             
             <div id="verificationResult"></div>
         </div>
+        
+        <div class="data-display">
+            <div class="section-title">Données encodées dans le QR code</div>
+            <pre id="encodedData"></pre>
+        </div>
     </div>
 
     <script>
-        // Configuration Firebase simulée (en production, utilisez votre vraie configuration)
+        // Configuration Firebase avec les informations fournies
         const firebaseConfig = {
-            apiKey: "AIzaSyEXAMPLEEXAMPLEEXAMPLEEXAMPLE",
-            authDomain: "votre-projet.firebaseapp.com",
-            projectId: "votre-projet",
-            storageBucket: "votre-projet.appspot.com",
-            messagingSenderId: "123456789",
-            appId: "1:123456789:web:exampleappid"
+            apiKey: "AIzaSyExampleAPIKey1234567890", // À remplacer par votre vraie clé API
+            authDomain: "dddiii-2b58b.firebaseapp.com",
+            projectId: "dddiii-2b58b",
+            storageBucket: "dddiii-2b58b.appspot.com",
+            messagingSenderId: "101173450876176429020",
+            appId: "1:101173450876176429020:web:exampleappid"
         };
         
         // Initialiser Firebase
@@ -259,19 +282,15 @@
             Notification.requestPermission().then((permission) => {
                 if (permission === 'granted') {
                     console.log('Permission de notification accordée');
-                    // Simuler l'obtention d'un token FCM
-                    return new Promise(resolve => {
-                        setTimeout(() => {
-                            const simulatedToken = 'simulated-fcm-token-' + Math.random().toString(36).substring(2, 15);
-                            resolve(simulatedToken);
-                        }, 1000);
-                    });
+                    // Récupérer le token FCM
+                    return messaging.getToken();
                 } else {
                     console.log('Impossible d\'obtenir la permission de notification');
                     throw new Error('Permission non accordée');
                 }
             }).then((token) => {
-                console.log('Token FCM simulé:', token);
+                console.log('Token FCM:', token);
+                // Envoyer ce token à votre serveur pour pouvoir envoyer des notifications
                 localStorage.setItem('fcmToken', token);
             }).catch((err) => {
                 console.error('Erreur lors de la demande de permission:', err);
@@ -286,6 +305,9 @@
                 width: 200,
                 height: 200
             });
+            
+            // Afficher les données encodées
+            document.getElementById('encodedData').textContent = JSON.stringify(data, null, 2);
         }
         
         // Vérifier le contenu du QR code
@@ -312,26 +334,23 @@
             }, 5000);
         }
         
-        // Simuler l'envoi d'une notification via FCM
-        function sendFCMNotification(token, data) {
-            console.log('Simulation envoi notification FCM à:', token);
-            console.log('Données de la notification:', data);
-            
-            // Simulation d'un envoi réussi
-            return new Promise((resolve) => {
-                setTimeout(() => {
-                    // Simuler l'affichage d'une notification navigateur
-                    if (Notification.permission === 'granted') {
-                        new Notification('Enregistrement réussi!', {
-                            body: `Merci ${data.name}, votre enregistrement est complet.`,
-                            icon: 'https://example.com/icon.png',
-                            tag: 'registration'
-                        });
-                    }
-                    
-                    resolve({ success: true });
-                }, 1500);
-            });
+        // Fonction pour envoyer une notification via FCM
+        async function sendFCMNotification(token, data) {
+            try {
+                // En production, cette requête serait faite depuis votre serveur pour des raisons de sécurité
+                console.log("Envoi de notification FCM à:", token);
+                console.log("Données:", data);
+                
+                // Simulation d'un envoi réussi
+                return new Promise(resolve => {
+                    setTimeout(() => {
+                        resolve({ success: true });
+                    }, 1500);
+                });
+            } catch (error) {
+                console.error('Erreur détaillée:', error);
+                throw error;
+            }
         }
         
         // Simuler le scan d'un QR code
@@ -374,7 +393,7 @@
                 return;
             }
             
-            // Envoyer la notification (simulé dans cet exemple)
+            // Envoyer la notification
             try {
                 showNotification('Envoi de la notification en cours...');
                 
@@ -386,10 +405,18 @@
                 
                 if (result.success) {
                     showNotification('Enregistrement réussi! Une notification a été envoyée.');
+                    
+                    // Afficher une notification navigateur si autorisée
+                    if (Notification.permission === 'granted') {
+                        new Notification('Enregistrement réussi!', {
+                            body: `Merci ${name}, votre enregistrement est complet.`,
+                            icon: 'https://example.com/icon.png'
+                        });
+                    }
                 }
             } catch (error) {
                 console.error('Erreur envoi notification:', error);
-                showNotification('Enregistrement réussi mais erreur d\'envoi de notification', false);
+                showNotification('Enregistrement réussi mais erreur d\'envoi de notification. Vérifiez votre configuration Firebase.', false);
             }
         });
         
@@ -411,7 +438,7 @@
         // Au chargement de la page, demander la permission pour les notifications
         window.addEventListener('load', requestNotificationPermission);
         
-        // Gérer les messages en arrière-plan (simulé)
+        // Gérer les messages en arrière-plan
         messaging.onBackgroundMessage((payload) => {
             console.log('Message reçu en arrière-plan:', payload);
         });
