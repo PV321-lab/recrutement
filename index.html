@@ -142,6 +142,15 @@
       margin-bottom: 12px;
       border: 1px solid #e5e7eb;
     }
+    
+    /* Style pour le bouton supprimer */
+    .btn-delete {
+      background: #dc3545;
+      margin-left: 5px;
+    }
+    .btn-delete:hover {
+      background: #bb2d3b;
+    }
   </style>
 </head>
 <body>
@@ -197,7 +206,7 @@
     <div class="card">
       <h3>Liste des utilisateurs</h3>
       <table id="tableUsers">
-        <thead><tr><th>Utilisateur</th><th>Appartement</th><th>Bâtiment</th><th>Mot de passe</th></tr></thead>
+        <thead><tr><th>Utilisateur</th><th>Appartement</th><th>Bâtiment</th><th>Mot de passe</th><th>Action</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
@@ -208,7 +217,7 @@
         <thead>
           <tr>
             <th>ID</th><th>Appartement</th><th>Bâtiment</th><th>Nom principal</th>
-            <th>Document</th><th>Total personnes</th><th>Liste personnes</th><th>Date</th><th>WhatsApp</th><th>Status</th>
+            <th>Document</th><th>Total personnes</th><th>Liste personnes</th><th>Date</th><th>WhatsApp</th><th>Status</th><th>Action</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -518,6 +527,20 @@
       get.onerror = ()=> showInlineMsg('userWarn','err',"Erreur d'accès à la base locale.");
     }
 
+    function supprimerUtilisateur(userId) {
+      if (!confirm(`Êtes-vous sûr de vouloir supprimer l'utilisateur ${userId} ?`)) {
+        return;
+      }
+      
+      const st = tx('users','readwrite');
+      const req = st.delete(userId);
+      req.onsuccess = ()=>{
+        showBanner('ok', `Utilisateur ${userId} supprimé.`);
+        refreshAdmin();
+      };
+      req.onerror = ()=> showBanner('err', "Erreur lors de la suppression de l'utilisateur.");
+    }
+
     function refreshAdmin(){
       // Liste utilisateurs
       const tbodyU = document.querySelector('#tableUsers tbody');
@@ -526,8 +549,9 @@
         const c = e.target.result;
         if(c){
           const u = c.value;
+          const deleteBtn = `<button class="btn-delete" onclick="supprimerUtilisateur('${u.user}')">Supprimer</button>`;
           tbodyU.insertAdjacentHTML('beforeend',
-            `<tr><td>${u.user}</td><td>${u.appart}</td><td>${u.bat}</td><td>${u.pass}</td></tr>`);
+            `<tr><td>${u.user}</td><td>${u.appart}</td><td>${u.bat}</td><td>${u.pass}</td><td>${deleteBtn}</td></tr>`);
           c.continue();
         }
       };
@@ -544,6 +568,7 @@
           last.forEach(r=>{
             const id = r.id ?? '';
             const sendBtn = `<button onclick="envoyerWhatsApp(${id})">Envoyer</button>`;
+            const deleteBtn = `<button class="btn-delete" onclick="supprimerEnregistrement(${id})">Supprimer</button>`;
             const personnesList = r.personnes.map(p => `${p.nom} (${p.doc})`).join(', ');
             
             tbody.insertAdjacentHTML('beforeend',
@@ -558,10 +583,32 @@
                 <td>${r.date}</td>
                 <td>${sendBtn}</td>
                 <td>${r.sent ? "Envoyé" : "Non envoyé"}</td>
+                <td>${deleteBtn}</td>
               </tr>`);
           });
         }
       };
+    }
+
+    /* =======================
+       SUPPRESSION ENREGISTREMENTS
+    ======================== */
+    function supprimerEnregistrement(id) {
+      if (!confirm("Êtes-vous sûr de vouloir supprimer cet enregistrement ?")) {
+        return;
+      }
+      
+      const st = tx('records','readwrite');
+      const req = st.delete(id);
+      req.onsuccess = ()=>{
+        showBanner('ok', "Enregistrement supprimé.");
+        if (currentUser.role === 'admin') {
+          refreshAdmin();
+        } else {
+          refreshUser();
+        }
+      };
+      req.onerror = ()=> showBanner('err', "Erreur lors de la suppression de l'enregistrement.");
     }
 
     /* =======================
@@ -577,6 +624,7 @@
         arr.slice(-200).forEach(r=>{
           const personnesList = r.personnes.map(p => `${p.nom} (${p.doc})`).join(', ');
           const sendBtn = `<button onclick="envoyerWhatsApp(${r.id})">Envoyer</button>`;
+          const deleteBtn = `<button class="btn-delete" onclick="supprimerEnregistrement(${r.id})">Supprimer</button>`;
           
           tbody.insertAdjacentHTML('beforeend',
             `<tr>
@@ -587,7 +635,7 @@
               <td>${personnesList}</td>
               <td>${r.date}</td>
               <td>${r.sent ? "Envoyé" : "Non envoyé"}</td>
-              <td>${sendBtn}</td>
+              <td>${sendBtn} ${deleteBtn}</td>
             </tr>`);
         });
       };
@@ -791,75 +839,3 @@ ${autresFR}
         
         personnes.push({ nom: nomVal, doc: docVal });
       }
-
-      const appart = document.getElementById('invAppart').value;
-      const bat = document.getElementById('invBat').value;
-
-      const rec = { 
-        appart, 
-        bat, 
-        nom, 
-        doc, 
-        personnes, 
-        date, 
-        sent:false 
-      };
-      
-      const msg = buildMessage(rec);
-
-      const st = tx('records','readwrite');
-      const addReq = st.add(rec);
-      addReq.onsuccess = async (e)=>{
-        const id = e.target.result;
-        rec.id = id; // pour usage immédiat (affichage)
-        
-        // Envoyer une notification Firebase
-        const notificationSent = await sendFirebaseNotification(rec);
-        if (notificationSent) {
-          console.log("Notification Firebase envoyée avec succès");
-        } else {
-          console.warn("Échec de l'envoi de la notification Firebase");
-        }
-        
-        // Afficher le message de succès et le QR code
-        document.getElementById('successMessage').style.display = 'block';
-        document.getElementById('qrcodeContainer').style.display = 'block';
-        
-        // Générer le QR Code avec les informations correctes
-        if(qrCode) {
-          qrCode.update({ data: msg });
-          document.getElementById('qrcode').innerHTML = '';
-          qrCode.append(document.getElementById('qrcode'));
-        }
-
-        // Masquer le formulaire
-        document.getElementById('guestForm').style.display = 'none';
-      };
-      addReq.onerror = ()=> showBanner('err',"Erreur lors de l'enregistrement. Réessayez.");
-    }
-
-    /* =======================
-       ADMIN : ENVOI WHATSAPP
-    ======================== */
-    function envoyerWhatsApp(id){
-      const st = tx('records');
-      const get = st.get(id);
-      get.onsuccess = ()=>{
-        const r = get.result;
-        if(!r){ showBanner('err',"Enregistrement introuvable."); return; }
-        const msg = buildMessage(r);
-        const url = "https://wa.me/?text=" + encodeURIComponent(msg);
-        window.open(url, "_blank");
-        // marquer comme envoyé
-        const stw = tx('records','readwrite');
-        const getw = stw.get(id);
-        getw.onsuccess = ()=>{
-          const rec = getw.result;
-          rec.sent = true;
-          stw.put(rec);
-        };
-      };
-    }
-  </script>
-</body>
-</html>
