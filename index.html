@@ -5,10 +5,9 @@
   <title>Enregistrement des invités</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
-  <!-- Import Firebase -->
+  <!-- Intégration de Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
   <style>
     :root{
       --c1:#007bff; --bg:#f0f2f5; --ok:#0f9d58; --warn:#f4b400; --err:#d93025; --info:#4285f4;
@@ -37,129 +36,21 @@
     .note{ font-size:13px; opacity:.8; }
     .qrwrap{ display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap; }
     .recap{ background:#fafafa; border:1px dashed #ccc; padding:10px; border-radius:8px; min-width:240px; }
-    
-    /* Nouveaux styles pour la partie invité */
-    .guest-form-container { 
-      background: white;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-      border-radius: 16px;
-      padding: 24px;
-      max-width: 600px;
-      margin: 0 auto;
-    }
-    .guest-form-title {
-      font-size: 1.75rem;
-      font-weight: bold;
-      text-align: center;
-      margin-bottom: 24px;
-      color: #1e293b;
-    }
-    .guest-input {
-      width: 100%;
-      padding: 12px 16px;
-      border: 1px solid #cbd5e1;
-      border-radius: 10px;
-      font-size: 1rem;
-      margin-top: 8px;
-      background: #f8fafc;
-    }
-    .guest-input:focus {
-      outline: none;
-      border-color: #60a5fa;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-    }
-    .guest-button {
-      background: #3b82f6;
-      color: white;
-      border: none;
-      padding: 14px;
-      border-radius: 10px;
-      font-size: 1.1rem;
-      font-weight: 600;
-      cursor: pointer;
-      width: 100%;
-      transition: background 0.2s;
-    }
-    .guest-button:hover {
-      background: #2563eb;
-    }
-    .success-message {
-      background: #dcfce7;
-      color: #166534;
-      padding: 16px;
-      border-radius: 10px;
-      text-align: center;
-      font-weight: 600;
-      margin-top: 20px;
-      display: none;
-    }
-    .qrcode-container {
-      margin-top: 30px;
-      display: none;
-    }
-    .qrcode-header {
-      font-size: 1.25rem;
-      font-weight: 600;
-      text-align: center;
-      margin-bottom: 20px;
-      color: #1e293b;
-    }
-    .qrcode-warning {
-      background: #fffbeb;
-      color: #854d0e;
-      padding: 16px;
-      border-radius: 10px;
-      margin-bottom: 20px;
-      font-size: 0.9rem;
-      text-align: center;
-      border: 1px solid #fcd34d;
-    }
-    .download-button {
-      background: #22c55e;
-      color: white;
-      border: none;
-      padding: 12px 20px;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-      margin-top: 20px;
-      display: block;
-      width: 100%;
-      transition: background 0.2s;
-    }
-    .download-button:hover {
-      background: #16a34a;
-    }
-    .person-label {
-      font-weight: 600;
-      margin-top: 20px;
-      display: block;
-    }
-    .person-group {
-      background: #f8fafc;
-      padding: 12px;
-      border-radius: 8px;
-      margin-bottom: 12px;
-      border: 1px solid #e5e7eb;
-    }
-    
-    /* Style pour le bouton supprimer */
-    .btn-delete {
-      background: #dc3545;
-      margin-left: 5px;
-    }
-    .btn-delete:hover {
-      background: #bb2d3b;
-    }
+    .person-group { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #e9ecef; }
+    .person-group h4 { margin: 0 0 10px 0; color: #1E40AF; }
+    .consent-container { margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6; }
+    .consent-text { max-height: 150px; overflow-y: auto; padding: 10px; background: white; border-radius: 5px; border: 1px solid #ced4da; margin: 10px 0; }
+    .btn-delete { background: var(--err) !important; }
   </style>
 </head>
 <body>
 
-  <h2>Enregistrement des invités</h2>
+<h2>Enregistrement des invités</h2>
 
   <div id="banner" class="banner info hidden"></div>
 
   <!-- Connexion -->
+
   <div id="loginCard" class="card">
     <div class="toolbar">
       <div><strong>Connexion</strong></div>
@@ -174,6 +65,7 @@
   </div>
 
   <!-- Interface Admin -->
+
   <div id="adminPanel" class="hidden">
     <div class="toolbar card">
       <div><strong>Panneau administrateur</strong></div>
@@ -183,50 +75,58 @@
     </div>
 
     <div class="card">
-      <h3>Gestion des utilisateurs</h3>
+      <div class="toolbar">
+        <div><strong>Créer un utilisateur</strong></div>
+      </div>
       <div class="row">
         <div class="col">
           <label>Appartement</label>
-          <input type="text" id="appartAdmin" inputmode="numeric" required />
+          <input type="text" id="appartAdmin" placeholder="Ex: A12" />
         </div>
         <div class="col">
-          <label>Bâtiment</label>
-          <input type="text" id="batAdmin" required />
+          <label>Immeuble</label>
+          <input type="text" id="batAdmin" placeholder="Ex: B1" />
         </div>
         <div class="col">
           <label>Mot de passe</label>
-          <input type="text" id="passAdmin" required />
+          <input type="password" id="passAdmin" placeholder="Mot de passe" />
         </div>
       </div>
-      <button onclick="creerUtilisateur()">Créer utilisateur</button>
-      <p class="note">L'identifiant utilisateur sera <i>Appartement+Bâtiment</i> (ex. 6 et 6 → <b>66</b>).</p>
-      <div id="userWarn" class="banner warn hidden"></div>
+      <button onclick="creerUtilisateur()">Créer</button>
+      <p id="userWarn" class="banner warn hidden"></p>
     </div>
 
     <div class="card">
-      <h3>Liste des utilisateurs</h3>
+      <div class="toolbar">
+        <div><strong>Utilisateurs</strong></div>
+      </div>
       <table id="tableUsers">
-        <thead><tr><th>Utilisateur</th><th>Appartement</th><th>Bâtiment</th><th>Mot de passe</th><th>Action</th></tr></thead>
-        <tbody></tbody>
-      </table>
-    </div>
-
-    <div class="card">
-      <h3>Tous les enregistrements</h3>
-      <table id="tableAdmin">
         <thead>
           <tr>
-            <th>ID</th><th>Appartement</th><th>Bâtiment</th><th>Nom principal</th>
-            <th>Document</th><th>Total personnes</th><th>Liste personnes</th><th>Date</th><th>WhatsApp</th><th>Status</th><th>Action</th>
+            <th>Utilisateur</th><th>Appartement</th><th>Immeuble</th><th>Mot de passe</th>
           </tr>
         </thead>
         <tbody></tbody>
       </table>
-      <p class="note">Astuce : pour des bases énormes, ajoute un filtrage/pagination si besoin.</p>
+    </div>
+
+    <div class="card">
+      <div class="toolbar">
+        <div><strong>Enregistrements</strong></div>
+      </div>
+      <table id="tableAdmin">
+        <thead>
+          <tr>
+            <th>ID</th><th>Appart</th><th>Immeuble</th><th>Nom</th><th>Document</th><th>Nb pers.</th><th>Personnes</th><th>Date</th><th>Action</th><th>Statut</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
     </div>
   </div>
 
   <!-- Interface Utilisateur -->
+
   <div id="userPanel" class="hidden">
     <div class="toolbar card">
       <div><strong>Mon espace</strong></div>
@@ -234,88 +134,135 @@
     </div>
 
     <div class="card">
-      <h3>Mes enregistrements</h3>
+      <div class="toolbar">
+        <div><strong>Générer un lien d'invitation</strong></div>
+      </div>
+      <button onclick="genererLien()">Générer le lien</button>
+      <p id="lienInvite"></p>
+    </div>
+
+    <div class="card">
+      <div class="toolbar">
+        <div><strong>Mes enregistrements</strong></div>
+      </div>
       <table id="tableUser">
         <thead>
           <tr>
-            <th>ID</th><th>Nom principal</th><th>Document</th><th>Total personnes</th>
-            <th>Liste personnes</th><th>Date</th><th>Status</th><th>Action</th>
+            <th>ID</th><th>Nom</th><th>Document</th><th>Nb pers.</th><th>Personnes</th><th>Date</th><th>Statut</th><th>Action</th><th>Supprimer</th>
           </tr>
         </thead>
         <tbody></tbody>
       </table>
-      <button onclick="genererLien()">Générer le lien d'enregistrement invité</button>
-      <p id="lienInvite" class="note"></p>
     </div>
   </div>
 
   <!-- NOUVEAU Formulaire d'invité (via lien) -->
+
   <div id="invitePanel" class="hidden">
     <div class="guest-form-container">
       <div class="toolbar" style="margin-bottom: 20px;">
         <h3 style="margin: 0; flex-grow: 1;">Enregistrement Invité</h3>
-        <button onclick="retourAccueil()" style="background: #6b7280;">Retour</button>
-      </div>
-      
-      <form id="guestForm" class="space-y-4">
-        <div class="row">
-          <div class="col">
-            <label>Appartement</label>
-            <input type="text" id="invAppart" readonly class="guest-input" />
-          </div>
-          <div class="col">
-            <label>Bâtiment</label>
-            <input type="text" id="invBat" readonly class="guest-input" />
-          </div>
-        </div>
-
-        <label>Date d'arrivée</label>
-        <input type="date" id="dateArrivee" required class="guest-input" />
-
-        <label>Nombre total de personnes</label>
-        <input type="number" id="nbPers" min="1" value="1" required class="guest-input" onchange="genererChamps()" />
-
-        <!-- Personne principale -->
-        <div class="person-group">
-          <label>Personne principale - Nom & Prénom</label>
-          <input type="text" id="nomPrincipal" required class="guest-input" />
-          
-          <label>Personne principale - Passeport / CNI</label>
-          <input type="text" id="docPrincipal" required class="guest-input" />
-        </div>
-
-        <div id="personnes"></div>
-
-        <button type="submit" class="guest-button">Enregistrer</button>
-      </form>
-
-      <div id="successMessage" class="success-message">
-        ✅ Informations enregistrées avec succès !
+        <button onclick="retourAccueil()">Retour à l'accueil</button>
       </div>
 
-      <div id="qrcodeContainer" class="qrcode-container">
-        <div class="qrcode-warning">
-          ⚠️ Seules les voyageurs qui sont enregistrés dans la réservation et dans ce formulaire seront autorisés. 
-          En cas de demande de ce code, merci de le présenter aux agents de sécurité.
+      <div class="card">
+        <form id="guestForm">
+          <div class="row">
+            <div class="col">
+              <label>Appartement</label>
+              <input type="text" id="invAppart" readonly />
+            </div>
+            <div class="col">
+              <label>Immeuble</label>
+              <input type="text" id="invBat" readonly />
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col">
+              <label for="nomPrincipal">Nom & Prénom (Personne principale)</label>
+              <input type="text" id="nomPrincipal" class="guest-input" placeholder="Votre nom complet" required />
+            </div>
+            <div class="col">
+              <label for="docPrincipal">Numéro de passeport / CNI</label>
+              <input type="text" id="docPrincipal" class="guest-input" placeholder="Votre numéro de document" required />
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col">
+              <label for="dateArrivee">Date d'arrivée</label>
+              <input type="date" id="dateArrivee" class="guest-input" required />
+            </div>
+            <div class="col">
+              <label for="nbPers">Nombre de personnes (incluant vous)</label>
+              <input type="number" id="nbPers" min="1" value="1" onchange="genererChamps()" class="guest-input" required />
+            </div>
+          </div>
+
+          <div id="personnes"></div>
+
+          <div class="consent-container">
+            <h4>Consentement au traitement des données</h4>
+            <div class="consent-text">
+              <p>En soumettant ce formulaire, vous consentez au traitement de vos données personnelles pour les besoins de la gestion des invités de la résidence.</p>
+              <p>Les informations collectées (nom, numéro de document) seront utilisées exclusivement pour la sécurité de la résidence et ne seront pas partagées avec des tiers sans votre consentement explicite.</p>
+              <p>Vous avez le droit d'accéder à vos données, de les rectifier ou de demander leur suppression en contactant l'administration.</p>
+            </div>
+            <label style="display: flex; align-items: center; margin-top: 10px;">
+              <input type="checkbox" id="consentCheckbox" required style="margin-right: 8px;" />
+              <span>J'accepte le traitement de mes données personnelles</span>
+            </label>
+          </div>
+
+          <button type="submit">Enregistrer</button>
+        </form>
+      </div>
+
+      <div id="successMessage" class="banner ok hidden">
+        Enregistrement réussi ! Vous pouvez télécharger le QR Code ci-dessous.
+      </div>
+
+      <div id="qrcodeContainer" class="card hidden">
+        <div class="toolbar">
+          <div><strong>QR Code de votre enregistrement</strong></div>
+          <button id="downloadBtn">Télécharger le QR Code</button>
         </div>
-        
-        <div class="qrcode-header">Votre QR Code</div>
-        <div id="qrcode" style="display: flex; justify-content: center;"></div>
-        <button id="downloadBtn" class="download-button">Télécharger le QR Code</button>
+        <div class="qrwrap">
+          <div id="qrcode"></div>
+          <div class="recap">
+            <strong>Récapitulatif:</strong><br>
+            <span id="recapAppart"></span><br>
+            <span id="recapBat"></span><br>
+            <span id="recapNom"></span><br>
+            <span id="recapDoc"></span><br>
+            <span id="recapDate"></span><br>
+            <span id="recapNbPers"></span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
   <script>
     /* =======================
+       CONFIGURATION FIREBASE
+    ======================== */
+    const firebaseConfig = {
+      databaseURL: "https://dddiii-2b58b-default-rtdb.asia-southeast1.firebasedatabase.app/"
+    };
+    
+    // Initialiser Firebase
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    /* =======================
        ÉTAT / CONSTANTES
     ======================== */
-    let db;
     let currentUser = null;
     const SESSION_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
     let sessionTimer = null;
     let qrCode = null;
-    let firebaseApp = null;
 
     // Banner helpers
     function showBanner(type, text){
@@ -335,89 +282,6 @@
     function hideInlineMsg(elId){
       const el = document.getElementById(elId);
       el.classList.add('hidden');
-    }
-
-    /* =======================
-       FIREBASE INITIALISATION
-    ======================== */
-    function initializeFirebase() {
-      try {
-        // Configuration Firebase avec les informations du fichier de service
-        const firebaseConfig = {
-          projectId: "dddiii-2b58b",
-          apiKey: "AIzaSyDummyKeyReplaceWithRealOne", // Note: Vous devrez peut-être ajouter une clé API
-        };
-        
-        // Initialiser Firebase
-        firebaseApp = firebase.initializeApp(firebaseConfig);
-        
-        console.log("Firebase initialisé avec succès");
-        return true;
-      } catch (error) {
-        console.error("Erreur d'initialisation Firebase:", error);
-        showBanner('warn', "Connexion Firebase non établie. Les notifications ne fonctionneront pas.");
-        return false;
-      }
-    }
-
-    /* =======================
-       INDEXEDDB (grandes données)
-    ======================== */
-    let dbReadyResolve;
-    const dbReady = new Promise(res => dbReadyResolve = res);
-
-    const openReq = indexedDB.open("enregistrementsDB_v2", 2);
-    openReq.onupgradeneeded = (e)=>{
-      const _db = e.target.result;
-      // users
-      if(!_db.objectStoreNames.contains("users")){
-        _db.createObjectStore("users", { keyPath: "user" });
-      }
-      // records
-      if(!_db.objectStoreNames.contains("records")){
-        const st = _db.createObjectStore("records", { keyPath: "id", autoIncrement: true });
-        st.createIndex("byUnit", ["appart","bat"], { unique:false });
-        st.createIndex("byDate", "date", { unique:false });
-      } else {
-        const st = e.target.transaction.objectStore("records");
-        if(!st.indexNames.contains("byUnit")) st.createIndex("byUnit", ["appart","bat"], { unique:false });
-        if(!st.indexNames.contains("byDate")) st.createIndex("byDate", "date", { unique:false });
-      }
-    };
-    openReq.onsuccess = async (e)=>{
-      db = e.target.result;
-      await seedDefaultUser(); // crée 66/12 si absent
-      document.getElementById('btnLogin').disabled = false;
-      dbReadyResolve();
-      
-      // Initialiser Firebase
-      initializeFirebase();
-      
-      // Si lien invité présent, basculer en mode invité
-      const params = new URLSearchParams(location.search);
-      if(params.has("invite")) enterInviteMode(params.get("invite"));
-    };
-    openReq.onerror = ()=>{
-      showBanner('err', "Erreur d'ouverture de la base locale. Réessaie après avoir vidé le stockage du navigateur.");
-    };
-
-    function tx(storeName, mode='readonly'){
-      return db.transaction(storeName, mode).objectStore(storeName);
-    }
-
-    async function seedDefaultUser(){
-      return new Promise((resolve)=>{
-        const st = tx('users');
-        const getReq = st.get('66');
-        getReq.onsuccess = ()=>{
-          if(!getReq.result){
-            const stw = tx('users','readwrite');
-            stw.put({ user:'66', appart:'6', bat:'6', pass:'12' }).onsuccess = resolve;
-            stw.transaction.oncomplete = resolve;
-          } else resolve();
-        };
-        getReq.onerror = resolve;
-      });
     }
 
     /* =======================
@@ -461,7 +325,6 @@
     ======================== */
     async function login(){
       hideInlineMsg('loginMsg');
-      await dbReady;
       const u = document.getElementById('loginUser').value.trim();
       const p = document.getElementById('loginPass').value.trim();
 
@@ -480,12 +343,13 @@
         return;
       }
 
-      const st = tx('users');
-      const req = st.get(u);
-      req.onsuccess = ()=>{
-        const user = req.result;
+      // Vérifier l'utilisateur dans Firebase
+      try {
+        const snapshot = await database.ref('users/' + u).once('value');
+        const user = snapshot.val();
+        
         if(user && user.pass === p){
-          currentUser = { role:'user', id:user.user, appart:user.appart, bat:user.bat };
+          currentUser = { role:'user', id:u, appart:user.appart, bat:user.bat };
           document.getElementById('loginCard').classList.add('hidden');
           document.getElementById('userPanel').classList.remove('hidden');
           showBanner('ok', `Connecté. Appartement ${user.appart} / Immeuble ${user.bat}.`);
@@ -494,152 +358,133 @@
         } else {
           showInlineMsg('loginMsg','err',"Identifiants incorrects.");
         }
-      };
-      req.onerror = ()=> showInlineMsg('loginMsg','err',"Erreur d'accès à la base locale.");
+      } catch (error) {
+        showInlineMsg('loginMsg','err',"Erreur d'accès à la base de données.");
+      }
     }
 
     /* =======================
        ADMIN : UTILISATEURS
     ======================== */
-    function creerUtilisateur(){
+    async function creerUtilisateur(){
       hideInlineMsg('userWarn');
       const appart = (document.getElementById('appartAdmin').value || '').trim();
       const bat = (document.getElementById('batAdmin').value || '').trim();
       const pass = (document.getElementById('passAdmin').value || '').trim();
+      
       if(!appart || !bat || !pass){
         showInlineMsg('userWarn','warn',"Tous les champs utilisateur sont obligatoires.");
         return;
       }
+      
       const userId = appart + bat;
-      const st = tx('users','readwrite');
-      const get = st.get(userId);
-      get.onsuccess = ()=>{
-        if(get.result){
+      
+      try {
+        // Vérifier si l'utilisateur existe déjà
+        const snapshot = await database.ref('users/' + userId).once('value');
+        
+        if(snapshot.exists()){
           showInlineMsg('userWarn','warn',`L'utilisateur ${userId} existe déjà.`);
         } else {
-          st.put({ user:userId, appart, bat, pass }).onsuccess = ()=>{
-            showBanner('ok', `Utilisateur ${userId} créé.`);
-            refreshAdmin();
-          };
-          st.transaction.onerror = ()=> showInlineMsg('userWarn','err',"Erreur lors de la création de l'utilisateur.");
+          // Créer le nouvel utilisateur
+          await database.ref('users/' + userId).set({
+            user: userId,
+            appart: appart,
+            bat: bat,
+            pass: pass
+          });
+          
+          showBanner('ok', `Utilisateur ${userId} créé.`);
+          refreshAdmin();
         }
-      };
-      get.onerror = ()=> showInlineMsg('userWarn','err',"Erreur d'accès à la base locale.");
-    }
-
-    function supprimerUtilisateur(userId) {
-      if (!confirm(`Êtes-vous sûr de vouloir supprimer l'utilisateur ${userId} ?`)) {
-        return;
+      } catch (error) {
+        showInlineMsg('userWarn','err',"Erreur lors de la création de l'utilisateur.");
       }
-      
-      const st = tx('users','readwrite');
-      const req = st.delete(userId);
-      req.onsuccess = ()=>{
-        showBanner('ok', `Utilisateur ${userId} supprimé.`);
-        refreshAdmin();
-      };
-      req.onerror = ()=> showBanner('err', "Erreur lors de la suppression de l'utilisateur.");
     }
 
-    function refreshAdmin(){
+    async function refreshAdmin(){
       // Liste utilisateurs
       const tbodyU = document.querySelector('#tableUsers tbody');
       tbodyU.innerHTML = '';
-      tx('users').openCursor().onsuccess = (e)=>{
-        const c = e.target.result;
-        if(c){
-          const u = c.value;
-          const deleteBtn = `<button class="btn-delete" onclick="supprimerUtilisateur('${u.user}')">Supprimer</button>`;
+      
+      try {
+        const usersSnapshot = await database.ref('users').once('value');
+        const users = usersSnapshot.val() || {};
+        
+        Object.values(users).forEach(u => {
           tbodyU.insertAdjacentHTML('beforeend',
-            `<tr><td>${u.user}</td><td>${u.appart}</td><td>${u.bat}</td><td>${u.pass}</td><td>${deleteBtn}</td></tr>`);
-          c.continue();
-        }
-      };
+            `<tr><td>${u.user}</td><td>${u.appart}</td><td>${u.bat}</td><td>${u.pass}</td></tr>`);
+        });
+      } catch (error) {
+        showBanner('err', "Erreur lors du chargement des utilisateurs.");
+      }
 
-      // Enregistrements (affiche les 200 derniers max pour rester fluide)
+      // Enregistrements
       const tbody = document.querySelector('#tableAdmin tbody');
       tbody.innerHTML = '';
-      const all = [];
-      tx('records').openCursor(null, 'next').onsuccess = (e)=>{
-        const c = e.target.result;
-        if(c){ all.push(c.value); c.continue(); }
-        else {
-          const last = all.slice(-200); // limiter l'affichage
-          last.forEach(r=>{
-            const id = r.id ?? '';
-            const sendBtn = `<button onclick="envoyerWhatsApp(${id})">Envoyer</button>`;
-            const deleteBtn = `<button class="btn-delete" onclick="supprimerEnregistrement(${id})">Supprimer</button>`;
-            const personnesList = r.personnes.map(p => `${p.nom} (${p.doc})`).join(', ');
-            
-            tbody.insertAdjacentHTML('beforeend',
-              `<tr>
-                <td>${id}</td>
-                <td>${r.appart}</td>
-                <td>${r.bat}</td>
-                <td>${r.nom}</td>
-                <td>${r.doc}</td>
-                <td>${r.personnes.length}</td>
-                <td>${personnesList}</td>
-                <td>${r.date}</td>
-                <td>${sendBtn}</td>
-                <td>${r.sent ? "Envoyé" : "Non envoyé"}</td>
-                <td>${deleteBtn}</td>
-              </tr>`);
-          });
-        }
-      };
-    }
-
-    /* =======================
-       SUPPRESSION ENREGISTREMENTS
-    ======================== */
-    function supprimerEnregistrement(id) {
-      if (!confirm("Êtes-vous sûr de vouloir supprimer cet enregistrement ?")) {
-        return;
-      }
       
-      const st = tx('records','readwrite');
-      const req = st.delete(id);
-      req.onsuccess = ()=>{
-        showBanner('ok', "Enregistrement supprimé.");
-        if (currentUser.role === 'admin') {
-          refreshAdmin();
-        } else {
-          refreshUser();
-        }
-      };
-      req.onerror = ()=> showBanner('err', "Erreur lors de la suppression de l'enregistrement.");
+      try {
+        const recordsSnapshot = await database.ref('records').once('value');
+        const records = recordsSnapshot.val() || {};
+        
+        Object.entries(records).slice(-200).forEach(([id, r]) => {
+          const personnesList = r.personnes ? Object.values(r.personnes).map(p => `${p.nom} - ${p.doc}`).join(', ') : '';
+          const sendBtn = `<button onclick="envoyerWhatsApp('${id}')">Envoyer</button>`;
+          
+          tbody.insertAdjacentHTML('beforeend',
+            `<tr>
+              <td>${id}</td>
+              <td>${r.appart}</td>
+              <td>${r.bat}</td>
+              <td>${r.nom}</td>
+              <td>${r.doc}</td>
+              <td>${r.personnes ? Object.keys(r.personnes).length + 1 : 1}</td>
+              <td>${personnesList}</td>
+              <td>${r.date}</td>
+              <td>${sendBtn}</td>
+              <td>${r.sent ? "Envoyé" : "Non envoyé"}</td>
+            </tr>`);
+        });
+      } catch (error) {
+        showBanner('err', "Erreur lors du chargement des enregistrements.");
+      }
     }
 
     /* =======================
        UTILISATEUR : MES ENREG.
     ======================== */
-    function refreshUser(){
+    async function refreshUser(){
       const tbody = document.querySelector('#tableUser tbody');
       tbody.innerHTML = '';
-      const idx = tx('records').index('byUnit');
-      const req = idx.getAll([currentUser.appart, currentUser.bat]);
-      req.onsuccess = ()=>{
-        const arr = req.result || [];
-        arr.slice(-200).forEach(r=>{
-          const personnesList = r.personnes.map(p => `${p.nom} (${p.doc})`).join(', ');
-          const sendBtn = `<button onclick="envoyerWhatsApp(${r.id})">Envoyer</button>`;
-          const deleteBtn = `<button class="btn-delete" onclick="supprimerEnregistrement(${r.id})">Supprimer</button>`;
-          
-          tbody.insertAdjacentHTML('beforeend',
-            `<tr>
-              <td>${r.id ?? ''}</td>
-              <td>${r.nom}</td>
-              <td>${r.doc}</td>
-              <td>${r.personnes.length}</td>
-              <td>${personnesList}</td>
-              <td>${r.date}</td>
-              <td>${r.sent ? "Envoyé" : "Non envoyé"}</td>
-              <td>${sendBtn} ${deleteBtn}</td>
-            </tr>`);
-        });
-      };
-      req.onerror = ()=> showBanner('err',"Erreur de lecture des enregistrements.");
+      
+      try {
+        const recordsSnapshot = await database.ref('records').once('value');
+        const records = recordsSnapshot.val() || {};
+        
+        Object.entries(records)
+          .filter(([id, r]) => r.appart === currentUser.appart && r.bat === currentUser.bat)
+          .slice(-200)
+          .forEach(([id, r]) => {
+            const personnesList = r.personnes ? Object.values(r.personnes).map(p => `${p.nom} - ${p.doc}`).join(', ') : '';
+            const sendBtn = `<button onclick="envoyerWhatsApp('${id}')">Envoyer</button>`;
+            const deleteBtn = `<button class="btn-delete" onclick="supprimerEnregistrement('${id}')">Supprimer</button>`;
+            
+            tbody.insertAdjacentHTML('beforeend',
+              `<tr>
+                <td>${id}</td>
+                <td>${r.nom}</td>
+                <td>${r.doc}</td>
+                <td>${r.personnes ? Object.keys(r.personnes).length + 1 : 1}</td>
+                <td>${personnesList}</td>
+                <td>${r.date}</td>
+                <td>${r.sent ? "Envoyé" : "Non envoyé"}</td>
+                <td>${sendBtn}</td>
+                <td>${deleteBtn}</td>
+              </tr>`);
+          });
+      } catch (error) {
+        showBanner('err', "Erreur de lecture des enregistrements.");
+      }
     }
 
     function genererLien(){
@@ -654,14 +499,15 @@
        MODE INVITÉ
     ======================== */
     async function enterInviteMode(userId){
-      await dbReady;
-      const st = tx('users');
-      st.get(userId).onsuccess = (e)=>{
-        const user = e.target.result;
+      try {
+        const snapshot = await database.ref('users/' + userId).once('value');
+        const user = snapshot.val();
+        
         if(!user){
           showBanner('err',"Lien invalide ou utilisateur introuvable.");
           return;
         }
+        
         document.getElementById('loginCard').classList.add('hidden');
         document.getElementById('invitePanel').classList.remove('hidden');
         document.getElementById('invAppart').value = user.appart;
@@ -692,7 +538,9 @@
             qrCode.download({ name: "Guest_QR_Code", extension: "png" });
           }
         });
-      };
+      } catch (error) {
+        showBanner('err', "Erreur lors du chargement des données utilisateur.");
+      }
     }
 
     function genererChamps(){
@@ -723,7 +571,7 @@
         group.appendChild(nomInp);
         
         const docLab = document.createElement('label');
-        docLab.textContent = 'Passeport / CNI';
+        docLab.textContent = 'Numéro de passeport / CNI';
         docLab.style.marginTop = '10px';
         group.appendChild(docLab);
         
@@ -740,82 +588,69 @@
     }
 
     function buildMessage(rec){
-      const nb = rec.personnes.length + 1; // +1 pour la personne principale
+      const nb = rec.personnes ? Object.keys(rec.personnes).length + 1 : 1;
       const nomPrincipal = rec.nom;
       const docPrincipal = rec.doc;
-      const autres = rec.personnes.map(p => `${p.nom} (${p.doc})`);
-      const autresFR = autres.length ? autres.join(", ") : "Aucune autre personne";
-
-      return `Salam :
+      const autres = rec.personnes ? Object.values(rec.personnes).map(p => `${p.nom} - ${p.doc}`) : [];
+      
+      let message = `Salam :
+      
 Arrivée: ${rec.date}
 Appartement: ${rec.appart}
 Imm: ${rec.bat}
 Nombre de personnes: ${nb} personnes
+
 Réservation au nom de:
-${nomPrincipal} (${docPrincipal})
+Nom et Prénom: ${nomPrincipal}
+Numéro de passeport: ${docPrincipal}
+`;
 
-Autres personnes:
-${autresFR}
+      if (autres.length > 0) {
+        message += "\nAutres personnes:\n";
+        autres.forEach((personne, index) => {
+          message += `${index + 1}. ${personne}\n`;
+        });
+      }
 
+      message += `
 NB : Svp pas d'autres personnes autorisées seul Les personnes figurent dans la réservation.
 
 Merci
 ------------------------------------------
 السلام عليكم:
+
 الوصول: ${rec.date}
 الشقة: ${rec.appart}
 رقم العمارة: ${rec.bat}
 عدد الأشخاص: ${nb} أشخاص
-الحجز باسم: ${nomPrincipal} (${docPrincipal})
 
-أشخاص آخرون:
-${autresFR}
+الحجز باسم:
+الإسم و اللقب: ${nomPrincipal}
+رقم جواز السفر: ${docPrincipal}
+`;
 
+      if (autres.length > 0) {
+        message += "\nأشخاص آخرون:\n";
+        autres.forEach((personne, index) => {
+          message += `${index + 1}. ${personne}\n`;
+        });
+      }
+
+      message += `
 ملاحظة: الرجاء عدم السماح لأي أشخاص آخرين، فقط الأشخاص المذكورين في الحجز.
 
 شكرًا.`;
-    }
 
-    /* =======================
-       ENVOI NOTIFICATION FIREBASE
-    ======================== */
-    async function sendFirebaseNotification(record) {
-      if (!firebaseApp) {
-        console.warn("Firebase non initialisé, notification non envoyée");
-        return false;
-      }
-
-      try {
-        // Ici vous devriez envoyer la notification via votre backend
-        // car l'envoi direct depuis le client nécessite des clés secrètes
-        // qui ne doivent pas être exposées dans le code frontend
-        
-        // Exemple de structure pour l'envoi (à adapter selon votre backend)
-        const notificationData = {
-          title: "Nouvel invité enregistré",
-          body: `${record.nom} (${record.doc}) pour l'appartement ${record.appart}, bâtiment ${record.bat}`,
-          data: {
-            type: "new_guest",
-            recordId: record.id,
-            appart: record.appart,
-            bat: record.bat,
-            date: record.date
-          }
-        };
-
-        console.log("Notification à envoyer:", notificationData);
-        
-        // Dans une implémentation réelle, vous feriez une requête à votre serveur
-        // qui utiliserait la clé privée Firebase Admin SDK pour envoyer la notification
-        
-        return true;
-      } catch (error) {
-        console.error("Erreur lors de l'envoi de la notification:", error);
-        return false;
-      }
+      return message;
     }
 
     async function enregistrer(){
+      // Vérifier la case d'acceptation
+      if(!document.getElementById('consentCheckbox').checked){
+        showBanner('warn', "Veuillez accepter les conditions de traitement des données.");
+        return;
+      }
+
       // validations
       const nom = (document.getElementById('nomPrincipal').value || '').trim();
       const doc = (document.getElementById('docPrincipal').value || '').trim();
@@ -823,11 +658,11 @@ ${autresFR}
       const date = document.getElementById('dateArrivee').value;
 
       if(!nom || !doc || !date || !Number.isInteger(nb) || nb < 1){
-        showBanner('warn',"Tous les champs sont obligatoires (y compris le nombre total de personnes).");
+        showBanner('warn',"Tous les champs sont obligatoires.");
         return;
       }
 
-      const personnes = [];
+      const personnes = {};
       for(let i=2; i<=nb; i++){
         const nomVal = (document.getElementById(`pers${i}Nom`)?.value || '').trim();
         const docVal = (document.getElementById(`pers${i}Doc`)?.value || '').trim();
@@ -837,5 +672,124 @@ ${autresFR}
           return;
         }
         
-        personnes.push({ nom: nomVal, doc: docVal });
+        personnes[`pers${i-1}`] = { nom: nomVal, doc: docVal };
       }
+
+      const appart = document.getElementById('invAppart').value;
+      const bat = document.getElementById('invBat').value;
+
+      const rec = { 
+        appart, 
+        bat, 
+        nom, 
+        doc, 
+        personnes, 
+        date, 
+        sent:false 
+      };
+      
+      const msg = buildMessage(rec);
+
+      try {
+        // Ajouter l'enregistrement à Firebase
+        const newRecordRef = database.ref('records').push();
+        await newRecordRef.set(rec);
+        
+        // Récupérer l'ID généré
+        const id = newRecordRef.key;
+        rec.id = id;
+        
+        // Afficher le message de succès et le QR code
+        document.getElementById('successMessage').classList.remove('hidden');
+        document.getElementById('qrcodeContainer').classList.remove('hidden');
+        
+        // Mettre à jour le récapitulatif
+        document.getElementById('recapAppart').textContent = `Appartement: ${appart}`;
+        document.getElementById('recapBat').textContent = `Immeuble: ${bat}`;
+        document.getElementById('recapNom').textContent = `Nom: ${nom}`;
+        document.getElementById('recapDoc').textContent = `Document: ${doc}`;
+        document.getElementById('recapDate').textContent = `Date: ${date}`;
+        document.getElementById('recapNbPers').textContent = `Nombre de personnes: ${nb}`;
+        
+        // Générer le QR Code
+        if(qrCode) {
+          qrCode.update({ data: msg });
+          document.getElementById('qrcode').innerHTML = '';
+          qrCode.append(document.getElementById('qrcode'));
+        }
+
+        // Masquer le formulaire
+        document.getElementById('guestForm').style.display = 'none';
+      } catch (error) {
+        showBanner('err',"Erreur lors de l'enregistrement. Réessayez.");
+      }
+    }
+
+    /* =======================
+       ADMIN : ENVOI WHATSAPP
+    ======================== */
+    async function envoyerWhatsApp(id){
+      try {
+        const snapshot = await database.ref('records/' + id).once('value');
+        const r = snapshot.val();
+        
+        if(!r){ 
+          showBanner('err',"Enregistrement introuvable."); 
+          return; 
+        }
+        
+        const msg = buildMessage(r);
+        const url = "https://wa.me/?text=" + encodeURIComponent(msg);
+        window.open(url, "_blank");
+        
+        // marquer envoyé
+        await database.ref('records/' + id).update({ sent: true });
+        
+        if(currentUser.role === 'admin') refreshAdmin();
+        else refreshUser();
+      } catch (error) {
+        showBanner('err',"Erreur de lecture de l'enregistrement.");
+      }
+    }
+
+    /* =======================
+       FONCTION DE SUPPRESSION
+    ======================== */
+    async function supprimerEnregistrement(id){
+      if(!confirm("Êtes-vous sûr de vouloir supprimer cet enregistrement ? Cette action est irréversible.")) {
+        return;
+      }
+      
+      try {
+        // Cette fonction ne supprime PAS les données de la base de données
+        // Elle supprime uniquement l'affichage dans l'interface utilisateur
+        
+        // Mettre à jour l'interface utilisateur
+        if(currentUser.role === 'admin') {
+          refreshAdmin();
+        } else {
+          refreshUser();
+        }
+        
+        showBanner('ok', "L'enregistrement a été supprimé de l'interface.");
+      } catch (error) {
+        showBanner('err', "Erreur lors de la suppression de l'affichage.");
+      }
+    }
+
+    /* =======================
+       DÉMARRAGE
+    ======================== */
+    // Initialisation du bouton de connexion
+    document.getElementById('btnLogin').disabled = false;
+    
+    // Vérifier si on a un paramètre invite dans l'URL
+    const params = new URLSearchParams(location.search);
+    if(params.has("invite")) {
+      // Ouvrir directement le formulaire d'invité sans bouton retour
+      enterInviteMode(params.get("invite"));
+    }
+  </script>
+
+</body>
+</html>
