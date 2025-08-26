@@ -37,7 +37,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
-/* ======================= QR CODE MESSAGE (corrigé) ======================== */
+/* ======================= QR CODE MESSAGE ======================== */
 function buildQrMessage(rec){
   const nb = rec.personnes ? Object.keys(rec.personnes).length + 1 : 1;
   let msg = `Appartement: ${rec.appart}
@@ -68,7 +68,7 @@ async function supprimerRecord(id){
   }
 }
 
-/* ======================= ADAPTATION TABLE ADMIN ======================== */
+/* ======================= TABLE ADMIN (avec Supprimer) ======================== */
 async function refreshAdmin(){
   const tbody = document.querySelector('#tableAdmin tbody');
   tbody.innerHTML = '';
@@ -98,7 +98,7 @@ async function refreshAdmin(){
   }
 }
 
-/* ======================= ADAPTATION TABLE UTILISATEUR ======================== */
+/* ======================= TABLE UTILISATEUR (avec Supprimer) ======================== */
 async function refreshUser(){
   const tbody = document.querySelector('#tableUser tbody');
   tbody.innerHTML = '';
