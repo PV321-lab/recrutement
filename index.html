@@ -77,28 +77,29 @@
     <div class="card">
       <div class="toolbar">
         <div><strong>Créer un utilisateur</strong></div>
+        <div class="note">Pour les résidents</div>
       </div>
       <div class="row">
         <div class="col">
           <label>Appartement</label>
-          <input type="text" id="appartAdmin" placeholder="Ex: A12" />
+          <input type="text" id="appartAdmin" placeholder="N° Appartement" />
         </div>
         <div class="col">
           <label>Immeuble</label>
-          <input type="text" id="batAdmin" placeholder="Ex: B1" />
+          <input type="text" id="batAdmin" placeholder="N° Immeuble" />
         </div>
         <div class="col">
           <label>Mot de passe</label>
           <input type="password" id="passAdmin" placeholder="Mot de passe" />
         </div>
       </div>
-      <button onclick="creerUtilisateur()">Créer</button>
+      <button onclick="creerUtilisateur()">Créer l'utilisateur</button>
       <p id="userWarn" class="banner warn hidden"></p>
     </div>
 
     <div class="card">
       <div class="toolbar">
-        <div><strong>Utilisateurs</strong></div>
+        <div><strong>Utilisateurs existants</strong></div>
       </div>
       <table id="tableUsers">
         <thead>
@@ -112,17 +113,18 @@
 
     <div class="card">
       <div class="toolbar">
-        <div><strong>Enregistrements</strong></div>
+        <div><strong>Tous les enregistrements</strong></div>
       </div>
       <table id="tableAdmin">
         <thead>
           <tr>
-            <th>ID</th><th>Appart</th><th>Immeuble</th><th>Nom</th><th>Document</th><th>Nb pers.</th><th>Personnes</th><th>Date</th><th>Action</th><th>Statut</th>
+            <th>ID</th><th>Appart</th><th>Immeuble</th><th>Nom</th><th>Document</th><th>Nb Pers</th><th>Détails</th><th>Date</th><th>Action</th><th>Statut</th>
           </tr>
         </thead>
         <tbody></tbody>
       </table>
     </div>
+
   </div>
 
   <!-- Interface Utilisateur -->
@@ -148,12 +150,13 @@
       <table id="tableUser">
         <thead>
           <tr>
-            <th>ID</th><th>Nom</th><th>Document</th><th>Nb pers.</th><th>Personnes</th><th>Date</th><th>Statut</th><th>Action</th><th>Supprimer</th>
+            <th>ID</th><th>Nom</th><th>Document</th><th>Nb Pers</th><th>Détails</th><th>Date</th><th>Statut</th><th>Action</th><th>Supprimer</th>
           </tr>
         </thead>
         <tbody></tbody>
       </table>
     </div>
+
   </div>
 
   <!-- NOUVEAU Formulaire d'invité (via lien) -->
@@ -180,38 +183,36 @@
 
           <div class="row">
             <div class="col">
-              <label for="nomPrincipal">Nom & Prénom (Personne principale)</label>
-              <input type="text" id="nomPrincipal" class="guest-input" placeholder="Votre nom complet" required />
+              <label>Date d'arrivée</label>
+              <input type="date" id="dateArrivee" required />
             </div>
             <div class="col">
-              <label for="docPrincipal">Numéro de passeport / CNI</label>
-              <input type="text" id="docPrincipal" class="guest-input" placeholder="Votre numéro de document" required />
+              <label>Nombre de personnes (incluant vous)</label>
+              <input type="number" id="nbPers" min="1" value="1" onchange="genererChamps()" required />
             </div>
           </div>
 
-          <div class="row">
-            <div class="col">
-              <label for="dateArrivee">Date d'arrivée</label>
-              <input type="date" id="dateArrivee" class="guest-input" required />
-            </div>
-            <div class="col">
-              <label for="nbPers">Nombre de personnes (incluant vous)</label>
-              <input type="number" id="nbPers" min="1" value="1" onchange="genererChamps()" class="guest-input" required />
-            </div>
+          <div>
+            <h4>Personne 1 (vous)</h4>
+            <label>Nom & Prénom</label>
+            <input type="text" id="nomPrincipal" class="guest-input" placeholder="Votre nom complet" required />
+            
+            <label>Numéro de passeport / CNI</label>
+            <input type="text" id="docPrincipal" class="guest-input" placeholder="Votre numéro de document" required />
           </div>
 
           <div id="personnes"></div>
 
           <div class="consent-container">
-            <h4>Consentement au traitement des données</h4>
+            <h4>Consentement pour le traitement des données</h4>
             <div class="consent-text">
               <p>En soumettant ce formulaire, vous consentez au traitement de vos données personnelles pour les besoins de la gestion des invités de la résidence.</p>
-              <p>Les informations collectées (nom, numéro de document) seront utilisées exclusivement pour la sécurité de la résidence et ne seront pas partagées avec des tiers sans votre consentement explicite.</p>
-              <p>Vous avez le droit d'accéder à vos données, de les rectifier ou de demander leur suppression en contactant l'administration.</p>
+              <p>Les informations collectées (nom, numéro de document) seront utilisées uniquement pour identifier les personnes autorisées à accéder à la résidence et seront conservées pendant la durée nécessaire à cet effet.</p>
+              <p>Conformément à la réglementation en vigueur, vous disposez d'un droit d'accès, de rectification et de suppression de vos données personnelles.</p>
             </div>
-            <label style="display: flex; align-items: center; margin-top: 10px;">
-              <input type="checkbox" id="consentCheckbox" required style="margin-right: 8px;" />
-              <span>J'accepte le traitement de mes données personnelles</span>
+            <label>
+              <input type="checkbox" id="consentCheckbox" required />
+              J'accepte le traitement de mes données personnelles
             </label>
           </div>
 
@@ -220,24 +221,19 @@
       </div>
 
       <div id="successMessage" class="banner ok hidden">
-        Enregistrement réussi ! Vous pouvez télécharger le QR Code ci-dessous.
+        Enregistrement réussi! Merci. Présentez ce QR code à l'entrée.
       </div>
 
       <div id="qrcodeContainer" class="card hidden">
         <div class="toolbar">
-          <div><strong>QR Code de votre enregistrement</strong></div>
+          <div><strong>Votre QR Code d'accès</strong></div>
           <button id="downloadBtn">Télécharger le QR Code</button>
         </div>
         <div class="qrwrap">
           <div id="qrcode"></div>
           <div class="recap">
-            <strong>Récapitulatif:</strong><br>
-            <span id="recapAppart"></span><br>
-            <span id="recapBat"></span><br>
-            <span id="recapNom"></span><br>
-            <span id="recapDoc"></span><br>
-            <span id="recapDate"></span><br>
-            <span id="recapNbPers"></span>
+            <h4>Récapitulatif:</h4>
+            <p id="recapDetails"></p>
           </div>
         </div>
       </div>
@@ -703,14 +699,6 @@ Merci
         document.getElementById('successMessage').classList.remove('hidden');
         document.getElementById('qrcodeContainer').classList.remove('hidden');
         
-        // Mettre à jour le récapitulatif
-        document.getElementById('recapAppart').textContent = `Appartement: ${appart}`;
-        document.getElementById('recapBat').textContent = `Immeuble: ${bat}`;
-        document.getElementById('recapNom').textContent = `Nom: ${nom}`;
-        document.getElementById('recapDoc').textContent = `Document: ${doc}`;
-        document.getElementById('recapDate').textContent = `Date: ${date}`;
-        document.getElementById('recapNbPers').textContent = `Nombre de personnes: ${nb}`;
-        
         // Générer le QR Code
         if(qrCode) {
           qrCode.update({ data: msg });
@@ -761,19 +749,17 @@ Merci
       }
       
       try {
-        // Cette fonction ne supprime PAS les données de la base de données
-        // Elle supprime uniquement l'affichage dans l'interface utilisateur
+        // Marquer l'enregistrement comme supprimé sans le supprimer de la base
+        await database.ref('records/' + id).update({ 
+          deleted: true,
+          deletedAt: new Date().toISOString(),
+          deletedBy: currentUser.id
+        });
         
-        // Mettre à jour l'interface utilisateur
-        if(currentUser.role === 'admin') {
-          refreshAdmin();
-        } else {
-          refreshUser();
-        }
-        
-        showBanner('ok', "L'enregistrement a été supprimé de l'interface.");
+        showBanner('ok', "L'enregistrement a été marqué comme supprimé.");
+        refreshUser();
       } catch (error) {
-        showBanner('err', "Erreur lors de la suppression de l'affichage.");
+        showBanner('err', "Erreur lors de la suppression de l'enregistrement.");
       }
     }
 
