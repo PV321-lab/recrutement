@@ -86,7 +86,7 @@
         </div>
         <div class="col">
           <label>Immeuble</label>
-          <input type="text" id="batAdmin" placeholder="N° Immeuble" />
+          <input type="text" id="batAdmin" placeholder="Immeuble" />
         </div>
         <div class="col">
           <label>Mot de passe</label>
@@ -103,9 +103,7 @@
       </div>
       <table id="tableUsers">
         <thead>
-          <tr>
-            <th>Utilisateur</th><th>Appartement</th><th>Immeuble</th><th>Mot de passe</th>
-          </tr>
+          <tr><th>Utilisateur</th><th>Appartement</th><th>Immeuble</th><th>Mot de passe</th></tr>
         </thead>
         <tbody></tbody>
       </table>
@@ -113,12 +111,13 @@
 
     <div class="card">
       <div class="toolbar">
-        <div><strong>Tous les enregistrements</strong></div>
+        <div><strong>Enregistrements des invités</strong></div>
       </div>
       <table id="tableAdmin">
         <thead>
           <tr>
-            <th>ID</th><th>Appart</th><th>Immeuble</th><th>Nom</th><th>Document</th><th>Nb Pers</th><th>Détails</th><th>Date</th><th>Action</th><th>Statut</th>
+            <th>ID</th><th>Appart</th><th>Immeuble</th><th>Nom</th><th>Document</th>
+            <th>Nb Pers</th><th>Personnes</th><th>Date</th><th>Action</th><th>Statut</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -150,7 +149,7 @@
       <table id="tableUser">
         <thead>
           <tr>
-            <th>ID</th><th>Nom</th><th>Document</th><th>Nb Pers</th><th>Détails</th><th>Date</th><th>Statut</th><th>Action</th><th>Supprimer</th>
+            <th>ID</th><th>Nom</th><th>Document</th><th>Nb Pers</th><th>Personnes</th><th>Date</th><th>Statut</th><th>Action</th><th>Supprimer</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -181,59 +180,52 @@
             </div>
           </div>
 
-          <div class="row">
-            <div class="col">
-              <label>Date d'arrivée</label>
-              <input type="date" id="dateArrivee" required />
-            </div>
-            <div class="col">
-              <label>Nombre de personnes (incluant vous)</label>
-              <input type="number" id="nbPers" min="1" value="1" onchange="genererChamps()" required />
-            </div>
-          </div>
+          <label>Nom & Prénom (Personne principale)</label>
+          <input type="text" id="nomPrincipal" class="guest-input" placeholder="Votre nom complet" required />
 
-          <div>
-            <h4>Personne 1 (vous)</h4>
-            <label>Nom & Prénom</label>
-            <input type="text" id="nomPrincipal" class="guest-input" placeholder="Votre nom complet" required />
-            
-            <label>Numéro de passeport / CNI</label>
-            <input type="text" id="docPrincipal" class="guest-input" placeholder="Votre numéro de document" required />
-          </div>
+          <label>Numéro de passeport / CNI</label>
+          <input type="text" id="docPrincipal" class="guest-input" placeholder="Votre numéro de document" required />
+
+          <label>Date d'arrivée</label>
+          <input type="date" id="dateArrivee" class="guest-input" required />
+
+          <label>Nombre de personnes (incluant vous)</label>
+          <input type="number" id="nbPers" class="guest-input" min="1" value="1" onchange="genererChamps()" required />
 
           <div id="personnes"></div>
 
           <div class="consent-container">
-            <h4>Consentement pour le traitement des données</h4>
-            <div class="consent-text">
-              <p>En soumettant ce formulaire, vous consentez au traitement de vos données personnelles pour les besoins de la gestion des invités de la résidence.</p>
-              <p>Les informations collectées (nom, numéro de document) seront utilisées uniquement pour identifier les personnes autorisées à accéder à la résidence et seront conservées pendant la durée nécessaire à cet effet.</p>
-              <p>Conformément à la réglementation en vigueur, vous disposez d'un droit d'accès, de rectification et de suppression de vos données personnelles.</p>
-            </div>
             <label>
               <input type="checkbox" id="consentCheckbox" required />
-              J'accepte le traitement de mes données personnelles
+              J'accepte le traitement de mes données personnelles pour l'enregistrement
             </label>
+            <div class="consent-text">
+              En cochant cette case, vous acceptez que vos informations personnelles (nom, numéro de document) soient enregistrées pour la gestion des invités de l'immeuble. Ces données seront conservées pendant la durée nécessaire à la gestion de votre séjour et ne seront pas utilisées à d'autres fins.
+            </div>
           </div>
 
           <button type="submit">Enregistrer</button>
         </form>
       </div>
 
-      <div id="successMessage" class="banner ok hidden">
-        Enregistrement réussi! Merci. Présentez ce QR code à l'entrée.
+      <div id="successMessage" class="card banner ok hidden">
+        <strong>Enregistrement réussi !</strong>
+        <p>Votre QR code a été généré. Vous pouvez le télécharger et le présenter à l'arrivée.</p>
       </div>
 
       <div id="qrcodeContainer" class="card hidden">
         <div class="toolbar">
-          <div><strong>Votre QR Code d'accès</strong></div>
-          <button id="downloadBtn">Télécharger le QR Code</button>
+          <div><strong>Votre QR Code</strong></div>
+          <button id="downloadBtn">Télécharger</button>
         </div>
         <div class="qrwrap">
           <div id="qrcode"></div>
           <div class="recap">
-            <h4>Récapitulatif:</h4>
-            <p id="recapDetails"></p>
+            <p><strong>Appartement:</strong> <span id="recapAppart"></span></p>
+            <p><strong>Immeuble:</strong> <span id="recapBat"></span></p>
+            <p><strong>Nom:</strong> <span id="recapNom"></span></p>
+            <p><strong>Document:</strong> <span id="recapDoc"></span></p>
+            <p><strong>Date d'arrivée:</strong> <span id="recapDate"></span></p>
           </div>
         </div>
       </div>
@@ -699,6 +691,13 @@ Merci
         document.getElementById('successMessage').classList.remove('hidden');
         document.getElementById('qrcodeContainer').classList.remove('hidden');
         
+        // Remplir les informations de récapitulation
+        document.getElementById('recapAppart').textContent = appart;
+        document.getElementById('recapBat').textContent = bat;
+        document.getElementById('recapNom').textContent = nom;
+        document.getElementById('recapDoc').textContent = doc;
+        document.getElementById('recapDate').textContent = date;
+        
         // Générer le QR Code
         if(qrCode) {
           qrCode.update({ data: msg });
@@ -710,6 +709,21 @@ Merci
         document.getElementById('guestForm').style.display = 'none';
       } catch (error) {
         showBanner('err',"Erreur lors de l'enregistrement. Réessayez.");
+      }
+    }
+
+    /* =======================
+       FONCTION SUPPRIMER (UI SEULEMENT)
+    ======================== */
+    function supprimerEnregistrement(id){
+      if(confirm("Voulez-vous vraiment supprimer cet enregistrement ? Cette action est seulement visuelle et ne supprime pas les données de la base de données.")) {
+        // Suppression uniquement visuelle - on recharge simplement la liste
+        showBanner('info', "L'enregistrement a été supprimé de l'affichage (pas de la base de données).");
+        if(currentUser.role === 'admin') {
+          refreshAdmin();
+        } else {
+          refreshUser();
+        }
       }
     }
 
@@ -737,29 +751,6 @@ Merci
         else refreshUser();
       } catch (error) {
         showBanner('err',"Erreur de lecture de l'enregistrement.");
-      }
-    }
-
-    /* =======================
-       FONCTION DE SUPPRESSION
-    ======================== */
-    async function supprimerEnregistrement(id){
-      if(!confirm("Êtes-vous sûr de vouloir supprimer cet enregistrement ? Cette action est irréversible.")) {
-        return;
-      }
-      
-      try {
-        // Marquer l'enregistrement comme supprimé sans le supprimer de la base
-        await database.ref('records/' + id).update({ 
-          deleted: true,
-          deletedAt: new Date().toISOString(),
-          deletedBy: currentUser.id
-        });
-        
-        showBanner('ok', "L'enregistrement a été marqué comme supprimé.");
-        refreshUser();
-      } catch (error) {
-        showBanner('err', "Erreur lors de la suppression de l'enregistrement.");
       }
     }
 
