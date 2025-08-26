@@ -82,24 +82,25 @@
       <div class="row">
         <div class="col">
           <label>Appartement</label>
-          <input type="text" id="appartAdmin" placeholder="N° Appartement" />
+          <input type="text" id="appartAdmin" placeholder="Ex: A12" />
         </div>
         <div class="col">
           <label>Immeuble</label>
-          <input type="text" id="batAdmin" placeholder="Immeuble" />
+          <input type="text" id="batAdmin" placeholder="Ex: B1" />
         </div>
         <div class="col">
           <label>Mot de passe</label>
           <input type="password" id="passAdmin" placeholder="Mot de passe" />
         </div>
       </div>
-      <button onclick="creerUtilisateur()">Créer l'utilisateur</button>
+      <button onclick="creerUtilisateur()">Créer</button>
       <p id="userWarn" class="banner warn hidden"></p>
     </div>
 
     <div class="card">
       <div class="toolbar">
-        <div><strong>Utilisateurs existants</strong></div>
+        <div><strong>Utilisateurs</strong></div>
+        <div class="note">Liste des résidents</div>
       </div>
       <table id="tableUsers">
         <thead>
@@ -111,19 +112,19 @@
 
     <div class="card">
       <div class="toolbar">
-        <div><strong>Enregistrements des invités</strong></div>
+        <div><strong>Enregistrements</strong></div>
+        <div class="note">Tous les invités enregistrés</div>
       </div>
       <table id="tableAdmin">
         <thead>
           <tr>
             <th>ID</th><th>Appart</th><th>Immeuble</th><th>Nom</th><th>Document</th>
-            <th>Nb Pers</th><th>Personnes</th><th>Date</th><th>Action</th><th>Statut</th>
+            <th>Nb Pers</th><th>Détails</th><th>Date</th><th>Action</th><th>Statut</th>
           </tr>
         </thead>
         <tbody></tbody>
       </table>
     </div>
-
   </div>
 
   <!-- Interface Utilisateur -->
@@ -136,26 +137,28 @@
 
     <div class="card">
       <div class="toolbar">
-        <div><strong>Générer un lien d'invitation</strong></div>
-      </div>
-      <button onclick="genererLien()">Générer le lien</button>
-      <p id="lienInvite"></p>
-    </div>
-
-    <div class="card">
-      <div class="toolbar">
         <div><strong>Mes enregistrements</strong></div>
+        <div class="note">Historique de vos invités</div>
       </div>
       <table id="tableUser">
         <thead>
           <tr>
-            <th>ID</th><th>Nom</th><th>Document</th><th>Nb Pers</th><th>Personnes</th><th>Date</th><th>Statut</th><th>Action</th><th>Supprimer</th>
+            <th>ID</th><th>Nom</th><th>Document</th><th>Nb Pers</th><th>Détails</th>
+            <th>Date</th><th>Statut</th><th>Action</th><th>Supprimer</th>
           </tr>
         </thead>
         <tbody></tbody>
       </table>
     </div>
 
+    <div class="card">
+      <div class="toolbar">
+        <div><strong>Lien d'invitation</strong></div>
+        <div class="note">Partagez avec vos invités</div>
+      </div>
+      <button onclick="genererLien()">Générer le lien</button>
+      <p id="lienInvite"></p>
+    </div>
   </div>
 
   <!-- NOUVEAU Formulaire d'invité (via lien) -->
@@ -195,37 +198,43 @@
           <div id="personnes"></div>
 
           <div class="consent-container">
-            <label>
-              <input type="checkbox" id="consentCheckbox" required />
-              J'accepte le traitement de mes données personnelles pour l'enregistrement
-            </label>
+            <h4>Consentement pour le traitement des données</h4>
             <div class="consent-text">
-              En cochant cette case, vous acceptez que vos informations personnelles (nom, numéro de document) soient enregistrées pour la gestion des invités de l'immeuble. Ces données seront conservées pendant la durée nécessaire à la gestion de votre séjour et ne seront pas utilisées à d'autres fins.
+              En soumettant ce formulaire, vous acceptez que vos informations personnelles soient collectées et traitées 
+              pour la gestion des invités de la résidence. Ces données incluent votre nom, numéro de document d'identité, 
+              et informations sur les personnes accompagnantes. Ces informations seront utilisées uniquement pour des 
+              purposes de sécurité et de gestion des accès et ne seront pas partagées avec des tiers sans votre consentement, 
+              sauf si requis par la loi.
             </div>
+            <label style="display: flex; align-items: center; margin-top: 10px;">
+              <input type="checkbox" id="consentCheckbox" required style="margin-right: 8px;" />
+              J'accepte les conditions de traitement des données
+            </label>
           </div>
 
           <button type="submit">Enregistrer</button>
         </form>
       </div>
 
-      <div id="successMessage" class="card banner ok hidden">
-        <strong>Enregistrement réussi !</strong>
-        <p>Votre QR code a été généré. Vous pouvez le télécharger et le présenter à l'arrivée.</p>
+      <div id="successMessage" class="banner ok hidden">
+        Enregistrement réussi ! Vous pouvez télécharger le QR code ci-dessous.
       </div>
 
       <div id="qrcodeContainer" class="card hidden">
         <div class="toolbar">
-          <div><strong>Votre QR Code</strong></div>
+          <div><strong>QR Code de l'invité</strong></div>
           <button id="downloadBtn">Télécharger</button>
         </div>
         <div class="qrwrap">
           <div id="qrcode"></div>
           <div class="recap">
-            <p><strong>Appartement:</strong> <span id="recapAppart"></span></p>
-            <p><strong>Immeuble:</strong> <span id="recapBat"></span></p>
-            <p><strong>Nom:</strong> <span id="recapNom"></span></p>
-            <p><strong>Document:</strong> <span id="recapDoc"></span></p>
-            <p><strong>Date d'arrivée:</strong> <span id="recapDate"></span></p>
+            <strong>Récapitulatif:</strong><br>
+            <span id="recapAppart"></span><br>
+            <span id="recapBat"></span><br>
+            <span id="recapNom"></span><br>
+            <span id="recapDoc"></span><br>
+            <span id="recapDate"></span><br>
+            <span id="recapNb"></span>
           </div>
         </div>
       </div>
@@ -418,6 +427,7 @@
         Object.entries(records).slice(-200).forEach(([id, r]) => {
           const personnesList = r.personnes ? Object.values(r.personnes).map(p => `${p.nom} - ${p.doc}`).join(', ') : '';
           const sendBtn = `<button onclick="envoyerWhatsApp('${id}')">Envoyer</button>`;
+          const deleteBtn = `<button class="btn-delete" onclick="supprimerEnregistrement('${id}')">Supprimer</button>`;
           
           tbody.insertAdjacentHTML('beforeend',
             `<tr>
@@ -431,6 +441,7 @@
               <td>${r.date}</td>
               <td>${sendBtn}</td>
               <td>${r.sent ? "Envoyé" : "Non envoyé"}</td>
+              <td>${deleteBtn}</td>
             </tr>`);
         });
       } catch (error) {
@@ -481,6 +492,29 @@
       const p = document.getElementById('lienInvite');
       p.innerHTML = `Lien pour vos invités : <a href="${lien}" target="_blank">${lien}</a>`;
       showBanner('info', "Copiez/partagez ce lien avec vos invités.");
+    }
+
+    /* =======================
+       FONCTION DE SUPPRESSION
+    ======================== */
+    async function supprimerEnregistrement(id) {
+      if (!confirm("Êtes-vous sûr de vouloir supprimer cet enregistrement ? Cette action est irréversible.")) {
+        return;
+      }
+      
+      try {
+        await database.ref('records/' + id).remove();
+        showBanner('ok', "Enregistrement supprimé avec succès.");
+        
+        // Rafraîchir l'affichage
+        if (currentUser.role === 'admin') {
+          refreshAdmin();
+        } else {
+          refreshUser();
+        }
+      } catch (error) {
+        showBanner('err', "Erreur lors de la suppression de l'enregistrement.");
+      }
     }
 
     /* =======================
@@ -691,13 +725,6 @@ Merci
         document.getElementById('successMessage').classList.remove('hidden');
         document.getElementById('qrcodeContainer').classList.remove('hidden');
         
-        // Remplir les informations de récapitulation
-        document.getElementById('recapAppart').textContent = appart;
-        document.getElementById('recapBat').textContent = bat;
-        document.getElementById('recapNom').textContent = nom;
-        document.getElementById('recapDoc').textContent = doc;
-        document.getElementById('recapDate').textContent = date;
-        
         // Générer le QR Code
         if(qrCode) {
           qrCode.update({ data: msg });
@@ -709,21 +736,6 @@ Merci
         document.getElementById('guestForm').style.display = 'none';
       } catch (error) {
         showBanner('err',"Erreur lors de l'enregistrement. Réessayez.");
-      }
-    }
-
-    /* =======================
-       FONCTION SUPPRIMER (UI SEULEMENT)
-    ======================== */
-    function supprimerEnregistrement(id){
-      if(confirm("Voulez-vous vraiment supprimer cet enregistrement ? Cette action est seulement visuelle et ne supprime pas les données de la base de données.")) {
-        // Suppression uniquement visuelle - on recharge simplement la liste
-        showBanner('info', "L'enregistrement a été supprimé de l'affichage (pas de la base de données).");
-        if(currentUser.role === 'admin') {
-          refreshAdmin();
-        } else {
-          refreshUser();
-        }
       }
     }
 
