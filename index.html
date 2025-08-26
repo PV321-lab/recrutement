@@ -8,7 +8,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
   <style>
-    /* mêmes styles que ton code */
+    /* mêmes styles que ton code initial */
   </style>
 </head>
 <body>
@@ -37,21 +37,18 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
-/* ======================= QR CODE MESSAGE ======================== */
+/* ======================= QR CODE MESSAGE (corrigé) ======================== */
 function buildQrMessage(rec){
   const nb = rec.personnes ? Object.keys(rec.personnes).length + 1 : 1;
   let msg = `Appartement: ${rec.appart}
 Bâtiment: ${rec.bat}
-Date d'arrivée: ${rec.date}
 Nombre de personnes: ${nb}
 
-Nom & Prénom: ${rec.nom}
-Passeport: ${rec.doc}
-`;
+Nom & Prénom:
+- ${rec.nom}`;
   if(rec.personnes){
-    msg += "\nAutres personnes:\n";
-    Object.values(rec.personnes).forEach((p,i)=>{
-      msg += `${i+1}. ${p.nom} - ${p.doc}\n`;
+    Object.values(rec.personnes).forEach((p)=>{
+      msg += `\n- ${p.nom}`;
     });
   }
   return msg;
