@@ -2,107 +2,83 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>Enregistrement Invité</title>
+<title>Enregistrement des invités</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<!-- jsPDF -->
+<!-- QR -->
+<script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+<!-- PDF -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <style>
-body{
-  font-family: Arial, sans-serif;
-  background:#f0f2f5;
-  padding:10px;
-}
+body{font-family:Arial;background:#f0f2f5;margin:0;padding:10px}
+.card{background:#fff;padding:15px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.15);margin-bottom:15px}
+.hidden{display:none}
+label{font-weight:bold;margin-top:10px;display:block}
+input,button{width:100%;padding:8px;margin-top:5px}
+button{background:#1E40AF;color:#fff;border:none;border-radius:6px;margin-top:12px;cursor:pointer}
 
-.card{
-  background:#fff;
-  padding:15px;
-  border-radius:10px;
-  max-width:600px;
-  margin:auto;
-  box-shadow:0 2px 8px rgba(0,0,0,.2);
-}
+.banner{padding:10px;border-radius:6px;margin-bottom:10px;font-weight:bold}
+.warn{background:#fff3cd}
+.ok{background:#d4edda}
 
-label{
-  font-weight:bold;
-  margin-top:10px;
-  display:block;
-}
-
-input,button{
-  width:100%;
-  padding:8px;
-  margin-top:5px;
-}
-
-button{
-  background:#1E40AF;
-  color:white;
-  border:none;
-  border-radius:6px;
-  margin-top:15px;
-  cursor:pointer;
-}
-
-.reglement{
+.reglement-box{
   font-size:11px;
   line-height:1.3;
   border:1px solid #ccc;
   padding:8px;
   background:#fafafa;
-  max-height:230px;
+  max-height:220px;
   overflow:auto;
-  margin-top:10px;
 }
 
-canvas{
+.signature-zone canvas{
+  width:100%;
+  height:120px;
   border:1px solid #999;
   border-radius:5px;
-  margin-top:5px;
+  touch-action:none;
 }
-
-.banner{
-  padding:10px;
-  margin-bottom:10px;
-  border-radius:6px;
-  font-weight:bold;
-}
-
-.warn{background:#fff3cd;}
-.ok{background:#d4edda;}
 </style>
 </head>
 
 <body>
 
-<div class="card">
+<div id="banner" class="banner hidden"></div>
+
+<!-- ===== INVITÉ ===== -->
+<div id="invitePanel" class="card">
 
 <h3>Enregistrement Invité</h3>
 
-<div id="msg" class="banner" style="display:none"></div>
+<form id="guestForm">
 
 <label>Appartement</label>
-<input type="text" id="appart" value="12" readonly>
+<input type="text" id="invAppart" value="12" readonly>
 
 <label>Immeuble</label>
-<input type="text" id="bat" value="A" readonly>
+<input type="text" id="invBat" value="A" readonly>
 
 <label>Date d'arrivée *</label>
-<input type="date" id="date">
+<input type="date" id="dateArrivee" required>
 
 <label>Nom complet *</label>
-<input type="text" id="nom">
+<input type="text" id="nomPrincipal" required>
 
 <label>Document *</label>
-<input type="text" id="doc">
+<input type="text" id="docPrincipal" required>
 
-<div class="reglement">
+<div class="reglement-box">
 <b>1. Couples marocains</b><br>
 Seuls les couples marocains légalement mariés sont acceptés.<br><br>
 
-<b>2. Tranquillité et bruit</b><br>
-Silence total après 23h00. Aucun bruit à toute heure.<br><br>
+<b>2. Tranquillité</b><br>
+Silence total après 23h00.<br><br>
 
 <b>3. Tabagisme</b><br>
 Interdit à l’intérieur. Autorisé uniquement à l’extérieur.<br><br>
@@ -111,7 +87,7 @@ Interdit à l’intérieur. Autorisé uniquement à l’extérieur.<br><br>
 Maximum 5 personnes. Aucune visite après 22h00.<br><br>
 
 <b>5. Piscine</b><br>
-Douche obligatoire. Pas de verre. Enfants sous surveillance.
+Douche obligatoire. Pas de verre. Enfants surveillés.
 Fermeture à 20h00. Pas de plongeons.<br><br>
 
 <b>6. Propreté</b><br>
@@ -121,31 +97,55 @@ En acceptant ce règlement, vous confirmez l’avoir lu et compris.
 </div>
 
 <label style="display:flex;align-items:center;margin-top:8px">
-<input type="checkbox" id="accept" style="width:auto;margin-right:6px">
+<input type="checkbox" id="consentCheckbox" style="width:auto;margin-right:6px">
 J’accepte le règlement
 </label>
 
 <label>Signature du client *</label>
-<canvas id="signature" width="300" height="120"></canvas>
-<button type="button" onclick="clearSignature()">Effacer la signature</button>
+<div class="signature-zone">
+<canvas id="signaturePad"></canvas>
+<button type="button" onclick="clearSignature()">Effacer signature</button>
+</div>
 
-<button onclick="valider()">Valider & Générer PDF</button>
+<button type="submit">Enregistrer & Générer PDF</button>
 
+</form>
 </div>
 
 <script>
-const canvas = document.getElementById("signature");
-const ctx = canvas.getContext("2d");
+/* ===== Firebase ===== */
+firebase.initializeApp({
+  databaseURL:"https://dddiii-2b58b-default-rtdb.asia-southeast1.firebasedatabase.app/"
+});
+const database = firebase.database();
+
+/* ===== Banner ===== */
+function showBanner(type,msg){
+  const b=document.getElementById("banner");
+  b.className="banner "+type;
+  b.textContent=msg;
+  b.classList.remove("hidden");
+}
+
+/* ===== Signature ===== */
+const canvas=document.getElementById("signaturePad");
+const ctx=canvas.getContext("2d");
 let drawing=false;
-let signed=false;
+let hasSignature=false;
+
+function resizeCanvas(){
+  canvas.width=canvas.offsetWidth;
+  canvas.height=120;
+}
+resizeCanvas();
 
 canvas.addEventListener("mousedown",e=>{
-  drawing=true; signed=true;
+  drawing=true;hasSignature=true;
   ctx.beginPath();
   ctx.moveTo(e.offsetX,e.offsetY);
 });
 canvas.addEventListener("mousemove",e=>{
-  if(!drawing) return;
+  if(!drawing)return;
   ctx.lineTo(e.offsetX,e.offsetY);
   ctx.stroke();
 });
@@ -154,48 +154,52 @@ canvas.addEventListener("mouseleave",()=>drawing=false);
 
 function clearSignature(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
-  signed=false;
+  hasSignature=false;
 }
 
-function show(type,text){
-  const m=document.getElementById("msg");
-  m.className="banner "+type;
-  m.textContent=text;
-  m.style.display="block";
-}
+/* ===== Enregistrement ===== */
+document.getElementById("guestForm").addEventListener("submit",async e=>{
+  e.preventDefault();
 
-function valider(){
-  if(!accept.checked){
-    show("warn","Vous devez accepter le règlement.");
+  if(!consentCheckbox.checked){
+    showBanner("warn","Vous devez accepter le règlement.");
     return;
   }
-  if(!signed){
-    show("warn","Signature obligatoire.");
-    return;
-  }
-  if(!nom.value || !doc.value || !date.value){
-    show("warn","Tous les champs sont obligatoires.");
+  if(!hasSignature){
+    showBanner("warn","Signature obligatoire.");
     return;
   }
 
-  generatePDF();
-  show("ok","PDF généré avec succès.");
-}
+  const rec={
+    appart:invAppart.value,
+    bat:invBat.value,
+    nom:nomPrincipal.value,
+    doc:docPrincipal.value,
+    date:dateArrivee.value
+  };
 
-function generatePDF(){
+  const ref=database.ref("records").push();
+  await ref.set(rec);
+
+  generatePDF(rec, canvas.toDataURL("image/png"));
+  showBanner("ok","Enregistrement réussi – PDF généré.");
+});
+
+/* ===== PDF ===== */
+function generatePDF(rec, signature){
   const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF();
+  const pdf=new jsPDF();
 
   pdf.setFontSize(12);
   pdf.text("FICHE D'INVITÉ",10,10);
-  pdf.text(`Nom : ${nom.value}`,10,20);
-  pdf.text(`Document : ${doc.value}`,10,28);
-  pdf.text(`Appartement : ${appart.value}`,10,36);
-  pdf.text(`Immeuble : ${bat.value}`,10,44);
-  pdf.text(`Date : ${date.value}`,10,52);
+  pdf.text(`Nom: ${rec.nom}`,10,20);
+  pdf.text(`Document: ${rec.doc}`,10,28);
+  pdf.text(`Appartement: ${rec.appart}`,10,36);
+  pdf.text(`Immeuble: ${rec.bat}`,10,44);
+  pdf.text(`Date: ${rec.date}`,10,52);
 
   pdf.text("Signature du client :",10,65);
-  pdf.addImage(canvas.toDataURL(),"PNG",10,70,80,35);
+  pdf.addImage(signature,"PNG",10,70,80,35);
 
   pdf.save("invitation_signee.pdf");
 }
