@@ -1,36 +1,197 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Enregistrement Invité</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+<!-- PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
 <style>
-  .reglement-box {
-    font-size: 11px;
-    line-height: 1.3;
-    background: #ffffff;
-    border: 1px solid #ced4da;
-    padding: 10px;
-    border-radius: 6px;
-    max-height: 220px;
-    overflow-y: auto;
-  }
+body{font-family:Arial;background:#f0f2f5;margin:0;padding:10px}
+.card{background:#fff;padding:15px;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,.15)}
+.hidden{display:none}
+label{font-weight:bold;margin-top:10px;display:block}
+input,button{width:100%;padding:8px;margin-top:5px}
+button{background:#1E40AF;color:#fff;border:none;border-radius:6px;margin-top:12px}
 
-  .signature-box {
-    margin-top: 10px;
-  }
+.reglement-box{
+  font-size:11px;
+  line-height:1.3;
+  border:1px solid #ccc;
+  padding:8px;
+  max-height:220px;
+  overflow:auto;
+  background:#fafafa;
+}
 
-  .signature-box canvas {
-    border: 1px solid #adb5bd;
-    border-radius: 5px;
-    width: 100%;
-    height: 120px;
-    touch-action: none;
-  }
+canvas{
+  border:1px solid #999;
+  border-radius:5px;
+  margin-top:5px;
+}
 
-  .signature-actions {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 5px;
-  }
-
-  .signature-actions button {
-    background: #6c757d;
-    font-size: 12px;
-    padding: 5px 8px;
-  }
+.banner{
+  padding:10px;
+  margin-bottom:10px;
+  border-radius:6px;
+  font-weight:bold;
+}
+.banner.warn{background:#fff3cd}
+.banner.ok{background:#d4edda}
 </style>
+</head>
+
+<body>
+
+<div id="banner" class="banner hidden"></div>
+
+<div class="card" id="invitePanel">
+<form id="guestForm">
+
+<label>Appartement</label>
+<input type="text" id="invAppart" value="12" readonly>
+
+<label>Immeuble</label>
+<input type="text" id="invBat" value="A" readonly>
+
+<label>Date d'arrivée *</label>
+<input type="date" id="dateArrivee" required>
+
+<label>Nom complet *</label>
+<input type="text" id="nomPrincipal" required>
+
+<label>Document *</label>
+<input type="text" id="docPrincipal" required>
+
+<div class="consent-container">
+<h4>Règlement intérieur</h4>
+
+<div class="reglement-box">
+<b>1. Couples marocains</b><br>
+Seuls les couples marocains légalement mariés sont acceptés.<br><br>
+
+<b>2. Tranquillité</b><br>
+Silence total après 23h00.<br><br>
+
+<b>3. Tabac</b><br>
+Interdit à l’intérieur, autorisé uniquement à l’extérieur.<br><br>
+
+<b>4. Nombre de personnes</b><br>
+Maximum 5 personnes. Aucune visite après 22h00.<br><br>
+
+<b>5. Piscine</b><br>
+Douche obligatoire, pas de verre, enfants surveillés,
+fermeture à 20h00.<br><br>
+
+<b>6. Propreté</b><br>
+Maintenir les lieux propres.<br><br>
+
+En acceptant ce règlement, vous confirmez l’avoir lu et compris.
+</div>
+
+<label style="display:flex;align-items:center;margin-top:8px">
+<input type="checkbox" id="consentCheckbox" required style="width:auto;margin-right:6px">
+J’accepte le règlement
+</label>
+
+<label>Signature du client *</label>
+<canvas id="signaturePad" width="300" height="120"></canvas>
+<button type="button" onclick="clearSignature()">Effacer signature</button>
+</div>
+
+<button type="submit">Enregistrer & Générer PDF</button>
+</form>
+</div>
+
+<script>
+/* ===== Firebase ===== */
+firebase.initializeApp({
+  databaseURL:"https://dddiii-2b58b-default-rtdb.asia-southeast1.firebasedatabase.app/"
+});
+const db = firebase.database();
+
+/* ===== Banner ===== */
+function showBanner(type,msg){
+  const b=document.getElementById("banner");
+  b.className="banner "+type;
+  b.textContent=msg;
+  b.classList.remove("hidden");
+}
+
+/* ===== Signature ===== */
+const canvas=document.getElementById("signaturePad");
+const ctx=canvas.getContext("2d");
+let drawing=false, hasSignature=false;
+
+canvas.addEventListener("mousedown",e=>{
+  drawing=true; hasSignature=true;
+  ctx.beginPath(); ctx.moveTo(e.offsetX,e.offsetY);
+});
+canvas.addEventListener("mousemove",e=>{
+  if(!drawing) return;
+  ctx.lineTo(e.offsetX,e.offsetY); ctx.stroke();
+});
+canvas.addEventListener("mouseup",()=>drawing=false);
+canvas.addEventListener("mouseleave",()=>drawing=false);
+
+function clearSignature(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  hasSignature=false;
+}
+
+/* ===== Enregistrement ===== */
+document.getElementById("guestForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+
+  if(!document.getElementById("consentCheckbox").checked){
+    showBanner("warn","Vous devez accepter le règlement");
+    return;
+  }
+  if(!hasSignature){
+    showBanner("warn","Signature obligatoire");
+    return;
+  }
+
+  const rec={
+    appart:invAppart.value,
+    bat:invBat.value,
+    nom:nomPrincipal.value,
+    doc:docPrincipal.value,
+    date:dateArrivee.value
+  };
+
+  const ref=db.ref("records").push();
+  await ref.set(rec);
+
+  generatePDF(rec, canvas.toDataURL("image/png"));
+  showBanner("ok","Enregistrement réussi – PDF généré");
+});
+
+/* ===== PDF ===== */
+function generatePDF(rec, signature){
+  const { jsPDF } = window.jspdf;
+  const pdf=new jsPDF();
+
+  pdf.setFontSize(12);
+  pdf.text("FICHE D'INVITÉ",10,10);
+  pdf.text(`Nom: ${rec.nom}`,10,20);
+  pdf.text(`Document: ${rec.doc}`,10,28);
+  pdf.text(`Appartement: ${rec.appart}`,10,36);
+  pdf.text(`Immeuble: ${rec.bat}`,10,44);
+  pdf.text(`Date: ${rec.date}`,10,52);
+
+  pdf.text("Signature du client :",10,65);
+  pdf.addImage(signature,"PNG",10,70,80,35);
+
+  pdf.save("invitation_signee.pdf");
+}
+</script>
+
+</body>
+</html>
