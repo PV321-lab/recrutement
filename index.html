@@ -47,9 +47,6 @@
     .rules-section-title { color: #1E40AF; font-weight: bold; margin-top: 15px; margin-bottom: 5px; }
     .signature-box { margin-top: 15px; padding-top: 15px; border-top: 1px solid #dee2e6; }
     .signature-label { font-weight: bold; margin-bottom: 5px; }
-    .checkbox-group { display: flex; align-items: flex-start; margin-top: 15px; }
-    .checkbox-group input { width: auto; margin-right: 10px; margin-top: 3px; }
-    .checkbox-label { flex: 1; }
   </style>
 </head>
 <body>
@@ -197,7 +194,6 @@
 
           <div class="consent-container">
             <h4>Règlement intérieur et consentement à la collecte de données</h4>
-            
             <div class="consent-text">
               <p><strong>En acceptant, vous consentez à la collecte de vos informations personnelles. Conformément à la législation marocaine, ces données seront conservées temporairement et supprimées une fois leur utilisation terminée.</strong></p>
               
@@ -238,13 +234,6 @@
               <p><strong>En acceptant ce règlement, vous confirmez avoir lu et compris ces règles. Tout manquement pourra entraîner des mesures adaptées.</strong></p>
             </div>
             
-            <div class="checkbox-group">
-              <input type="checkbox" id="consentCheckbox" required>
-              <div class="checkbox-label">
-                <span>J'accepte le règlement intérieur et les conditions de traitement des données</span>
-              </div>
-            </div>
-            
             <div class="signature-box">
               <div class="signature-label">Signature numérique (tapez votre nom complet) *</div>
               <input type="text" id="signature" required placeholder="Nom et prénom pour signature électronique" class="guest-input">
@@ -252,6 +241,11 @@
                 En tapant votre nom complet, vous confirmez avoir lu et accepté toutes les conditions ci-dessus.
               </div>
             </div>
+            
+            <label style="display: flex; align-items: center; margin-top: 10px;">
+              <input type="checkbox" id="consentCheckbox" required style="margin-right: 10px; width: auto;">
+              <span>J'accepte le règlement intérieur et les conditions de traitement des données</span>
+            </label>
           </div>
 
           <button type="submit">Enregistrer</button>
@@ -695,7 +689,6 @@ Merci
       const nomPrincipal = rec.nom;
       const docPrincipal = rec.doc;
       const autres = rec.personnes ? Object.values(rec.personnes).map(p => `${p.nom} - ${p.doc}`) : [];
-      const signature = rec.signature || '';
       
       let qrContent = `INFORMATIONS INVITÉ
       
@@ -717,7 +710,6 @@ Document: ${docPrincipal}
       }
 
       qrContent += `
-Signature: ${signature}
 ID: ${rec.id}
 `;
 
@@ -794,4 +786,59 @@ ID: ${rec.id}
         
         // Générer le QR Code avec les informations de l'invité
         const qrContent = buildQRContent(rec);
-        if(qrCode)
+        if(qrCode) {
+          qrCode.update({ data: qrContent });
+          document.getElementById('qrcode').innerHTML = '';
+          qrCode.append(document.getElementById('qrcode'));
+        }
+
+        // Masquer le formulaire
+        document.getElementById('guestForm').style.display = 'none';
+      } catch (error) {
+        showBanner('err',"Erreur lors de l'enregistrement. Réessayez.");
+      }
+    }
+
+    /* =======================
+       ADMIN : ENVOI WHATSAPP
+    ======================== */
+    async function envoyerWhatsApp(id){
+      try {
+        const snapshot = await database.ref('records/' + id).once('value');
+        const r = snapshot.val();
+        
+        if(!r){ 
+          showBanner('err',"Enregistrement introuvable."); 
+          return; 
+        }
+        
+        const msg = buildMessage(r);
+        const url = "https://wa.me/?text=" + encodeURIComponent(msg);
+        window.open(url, "_blank");
+        
+        // marquer envoyé
+        await database.ref('records/' + id).update({ sent: true });
+        
+        if(currentUser.role === 'admin') refreshAdmin();
+        else refreshUser();
+      } catch (error) {
+        showBanner('err',"Erreur de lecture de l'enregistrement.");
+      }
+    }
+
+    /* =======================
+       DÉMARRAGE
+    ======================== */
+    // Initialisation du bouton de connexion
+    document.getElementById('btnLogin').disabled = false;
+    
+    // Vérifier si on a un paramètre invite dans l'URL
+    const params = new URLSearchParams(location.search);
+    if(params.has("invite")) {
+      // Ouvrir directement le formulaire d'invité sans bouton retour
+      enterInviteMode(params.get("invite"));
+    }
+  </script>
+
+</body>
+</html>
