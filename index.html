@@ -58,6 +58,7 @@
     .rules-container ul { padding-left: 20px; margin: 10px 0; }
     .rules-container li { margin-bottom: 8px; }
     .signature-controls { display: flex; gap: 10px; justify-content: center; margin-top: 15px; }
+    .signature-preview { max-width: 100px; max-height: 40px; object-fit: contain; border: 1px solid #ddd; }
   </style>
 </head>
 <body>
@@ -130,8 +131,8 @@
       <table id="tableAdmin">
         <thead>
           <tr>
-            <th>ID</th><th>Appart.</th><th>Immeuble</th><th>Nom</th><th>Document</th><th>Type Doc</th>
-            <th>Nb Pers.</th><th>Personnes</th><th>Date</th><th>Action</th><th>Statut</th>
+            <th>ID</th><th>Appart.</th><th>Immeuble</th><th>Nom</th><th>Doc/Type</th><th>Nationalité</th>
+            <th>Nb Pers.</th><th>Personnes</th><th>Date</th><th>Signature</th><th>Action</th><th>Statut</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -161,7 +162,7 @@
       <table id="tableUser">
         <thead>
           <tr>
-            <th>ID</th><th>Nom</th><th>Document</th><th>Type Doc</th><th>Nb Pers.</th><th>Personnes</th><th>Date</th><th>Statut</th><th>Action</th>
+            <th>ID</th><th>Nom</th><th>Doc/Type</th><th>Nationalité</th><th>Nb Pers.</th><th>Personnes</th><th>Date</th><th>Signature</th><th>Statut</th><th>Action</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -211,20 +212,13 @@
               <label>Numéro de document *</label>
               <input type="text" id="docPrincipal" required placeholder="N° de document" class="guest-input" />
             </div>
+            <div class="col">
+              <label>Nationalité *</label>
+              <input type="text" id="nationalitePrincipal" required placeholder="Nationalité" class="guest-input" />
+            </div>
           </div>
 
           <div id="personnes"></div>
-
-          <div class="consent-container">
-            <h4>Consentement à la collecte de données</h4>
-            <div class="consent-text">
-              <p>En acceptant, vous consentez à la collecte de vos informations personnelles. Conformément à la législation marocaine, ces données seront conservées temporairement et supprimées une fois leur utilisation terminée.</p>
-            </div>
-            <label style="display: flex; align-items: center; margin-top: 10px;">
-              <input type="checkbox" id="consentCheckbox" required style="margin-right: 10px; width: auto;">
-              <span>J'accepte les conditions de traitement des données</span>
-            </label>
-          </div>
 
           <div class="rules-container">
             <h4>Règlement intérieur à respecter :</h4>
@@ -236,14 +230,17 @@
               <li><strong>5. Piscine :</strong> Douche obligatoire avant la baignade. Pas de verre ni objets fragiles autour de la piscine. Surveillance permanente des enfants par un adulte. Horaires : fermeture à 20h00. Pas de courses ni plongeons.</li>
               <li><strong>6. Propreté et entretien :</strong> Maintenir les lieux propres en permanence. Vider régulièrement les poubelles. Respecter les sols et surfaces (pas de traces, pas de nourriture hors cuisine).</li>
             </ul>
-            <p style="margin-top: 15px; font-weight: bold; color: #2c3e50;">
-              En acceptant ce règlement, vous confirmez avoir lu et compris ces règles.
-              <br>J'accepte l'ensemble des règles ci-dessus.
-            </p>
+          </div>
+
+          <div class="consent-container">
+            <label style="display: flex; align-items: center; margin-top: 10px;">
+              <input type="checkbox" id="consentCheckbox" required style="margin-right: 10px; width: auto;">
+              <span>J'accepte les conditions ci-dessus et autorise le traitement des données</span>
+            </label>
           </div>
 
           <div class="signature-area">
-            <div class="signature-title">Signature du règlement intérieur</div>
+            <div class="signature-title">Signature *</div>
             <canvas id="signatureCanvas" class="signature-canvas">
               Votre navigateur ne supporte pas la signature.
             </canvas>
@@ -251,18 +248,14 @@
               <button type="button" id="clearBtn" class="btn" style="background: #e74c3c;">Effacer la signature</button>
               <button type="button" id="registerBtn" class="btn" style="background: #27ae60;" disabled>Enregistrer</button>
             </div>
-            <p style="margin-top: 10px; font-size: 14px; color: #666;">
-              Signez ci-dessus pour accepter le règlement intérieur et enregistrer votre réservation.
-            </p>
           </div>
         </form>
       </div>
 
       <div id="successMessage" class="banner ok hidden">
-        Enregistrement réussi ! Votre document signé s'ouvre dans un nouvel onglet.
+        Enregistrement réussi ! Votre document s'ouvre dans un nouvel onglet.
         <br><br>
-        <strong>Note importante :</strong> En cas de demande des agents de sécurité, présentez ce document signé.
-        Seules les personnes enregistrées dans cette réservation sont autorisées à entrer.
+        <strong>Note :</strong> Présentez ce document à l'accueil si demandé.
       </div>
     </div>
   </div>
@@ -436,7 +429,8 @@
         const records = recordsSnapshot.val() || {};
         
         Object.entries(records).slice(-200).forEach(([id, r]) => {
-          const personnesList = r.personnes ? Object.values(r.personnes).map(p => `${p.nom} (${p.typeDoc}) - ${p.doc}`).join(', ') : '';
+          const personnesList = r.personnes ? Object.values(r.personnes).map(p => `${p.nom} (${p.typeDoc})`).join(', ') : '';
+          const signaturePreview = r.signature ? `<img src="${r.signature}" class="signature-preview" alt="Signature" title="Signature">` : '';
           const sendBtn = `<button onclick="envoyerWhatsApp('${id}')">Envoyer</button>`;
           
           tbody.insertAdjacentHTML('beforeend',
@@ -445,11 +439,12 @@
               <td>${r.appart}</td>
               <td>${r.bat}</td>
               <td>${r.nom}</td>
-              <td>${r.doc}</td>
-              <td>${r.typeDoc || 'Non spécifié'}</td>
+              <td>${r.doc} (${r.typeDoc})</td>
+              <td>${r.nationalite || ''}</td>
               <td>${r.personnes ? Object.keys(r.personnes).length + 1 : 1}</td>
               <td>${personnesList}</td>
               <td>${r.date}</td>
+              <td>${signaturePreview}</td>
               <td>${sendBtn}</td>
               <td>${r.sent ? "Envoyé" : "Non envoyé"}</td>
             </tr>`);
@@ -471,7 +466,8 @@
           .filter(([id, r]) => r.appart === currentUser.appart && r.bat === currentUser.bat)
           .slice(-200)
           .forEach(([id, r]) => {
-            const personnesList = r.personnes ? Object.values(r.personnes).map(p => `${p.nom} (${p.typeDoc}) - ${p.doc}`).join(', ') : '';
+            const personnesList = r.personnes ? Object.values(r.personnes).map(p => `${p.nom} (${p.typeDoc})`).join(', ') : '';
+            const signaturePreview = r.signature ? `<img src="${r.signature}" class="signature-preview" alt="Signature" title="Signature">` : '';
             const sendBtn = `<button onclick="envoyerWhatsApp('${id}')">Envoyer</button>`;
             const deleteBtn = `<button class="btn-delete" onclick="supprimerEnregistrement('${id}')">Supprimer</button>`;
             
@@ -479,11 +475,12 @@
               `<tr>
                 <td>${id}</td>
                 <td>${r.nom}</td>
-                <td>${r.doc}</td>
-                <td>${r.typeDoc || 'Non spécifié'}</td>
+                <td>${r.doc} (${r.typeDoc})</td>
+                <td>${r.nationalite || ''}</td>
                 <td>${r.personnes ? Object.keys(r.personnes).length + 1 : 1}</td>
                 <td>${personnesList}</td>
                 <td>${r.date}</td>
+                <td>${signaturePreview}</td>
                 <td>${r.sent ? "Envoyé" : "Non envoyé"}</td>
                 <td>${sendBtn}${deleteBtn}</td>
               </tr>`);
@@ -597,22 +594,23 @@
 
     async function registerSignature() {
       if(!document.getElementById('consentCheckbox').checked){
-        showBanner('warn', "Veuillez accepter les conditions de traitement des données.");
+        showBanner('warn', "Veuillez accepter les conditions.");
         return;
       }
 
       if(!hasSignature){
-        showBanner('warn', "Veuillez d'abord signer le règlement.");
+        showBanner('warn', "Veuillez d'abord signer.");
         return;
       }
 
       const nom = (document.getElementById('nomPrincipal').value || '').trim();
       const doc = (document.getElementById('docPrincipal').value || '').trim();
       const typeDoc = (document.getElementById('typeDocPrincipal').value || '').trim();
+      const nationalite = (document.getElementById('nationalitePrincipal').value || '').trim();
       const nb = parseInt(document.getElementById('nbPers').value || '0', 10);
       const date = document.getElementById('dateArrivee').value;
 
-      if(!nom || !doc || !typeDoc || !date || !Number.isInteger(nb) || nb < 1){
+      if(!nom || !doc || !typeDoc || !nationalite || !date || !Number.isInteger(nb) || nb < 1){
         showBanner('warn',"Tous les champs sont obligatoires.");
         return;
       }
@@ -622,19 +620,20 @@
         const nomVal = (document.getElementById(`pers${i}Nom`)?.value || '').trim();
         const docVal = (document.getElementById(`pers${i}Doc`)?.value || '').trim();
         const typeDocVal = (document.getElementById(`pers${i}TypeDoc`)?.value || '').trim();
+        const nationaliteVal = (document.getElementById(`pers${i}Nationalite`)?.value || '').trim();
         
-        if(!nomVal || !docVal || !typeDocVal){
+        if(!nomVal || !docVal || !typeDocVal || !nationaliteVal){
           showBanner('warn',`Merci de renseigner tous les champs pour la personne ${i}.`);
           return;
         }
         
-        personnes[`pers${i-1}`] = { nom: nomVal, doc: docVal, typeDoc: typeDocVal };
+        personnes[`pers${i-1}`] = { nom: nomVal, doc: docVal, typeDoc: typeDocVal, nationalite: nationaliteVal };
       }
 
       const appart = document.getElementById('invAppart').value;
       const bat = document.getElementById('invBat').value;
 
-      signatureData = canvas.toDataURL('image/png');
+      signatureData = canvas.toDataURL('image/jpeg', 0.3);
 
       const rec = { 
         appart, 
@@ -642,9 +641,12 @@
         nom, 
         doc, 
         typeDoc,
+        nationalite,
         personnes, 
         date, 
-        sent:false 
+        signature: signatureData,
+        sent:false,
+        createdAt: new Date().toISOString()
       };
 
       try {
@@ -778,6 +780,19 @@
         docInp.placeholder = `Document personne ${i}`;
         group.appendChild(docInp);
         
+        const nationaliteLab = document.createElement('label');
+        nationaliteLab.textContent = 'Nationalité';
+        nationaliteLab.style.marginTop = '10px';
+        group.appendChild(nationaliteLab);
+        
+        const nationaliteInp = document.createElement('input');
+        nationaliteInp.type = 'text';
+        nationaliteInp.id = `pers${i}Nationalite`;
+        nationaliteInp.required = true;
+        nationaliteInp.className = 'guest-input';
+        nationaliteInp.placeholder = `Nationalité personne ${i}`;
+        group.appendChild(nationaliteInp);
+        
         cont.appendChild(group);
       }
     }
@@ -846,24 +861,19 @@ Merci
       const pdf = new jsPDF('p', 'mm', 'a4');
       let yPos = 20;
       
-      pdf.setFontSize(20);
-      pdf.setTextColor(44, 62, 80);
-      pdf.text('DOCUMENT SIGNÉ', 105, yPos, { align: 'center' });
+      pdf.setFontSize(16);
+      pdf.setTextColor(0, 0, 0);
+      pdf.text('DOCUMENT', 105, yPos, { align: 'center' });
       yPos += 10;
       
-      pdf.setFontSize(14);
+      pdf.setFontSize(12);
       pdf.setTextColor(100, 100, 100);
-      pdf.text('Règlement intérieur accepté', 105, yPos, { align: 'center' });
+      pdf.text('Réservation et règlement accepté', 105, yPos, { align: 'center' });
       yPos += 15;
       
-      pdf.setDrawColor(44, 62, 80);
-      pdf.setLineWidth(1);
+      pdf.setDrawColor(0, 0, 0);
+      pdf.setLineWidth(0.5);
       pdf.line(20, yPos, 190, yPos);
-      yPos += 10;
-      
-      pdf.setFontSize(16);
-      pdf.setTextColor(44, 62, 80);
-      pdf.text('INFORMATIONS DE LA RÉSERVATION', 20, yPos);
       yPos += 10;
       
       const totalPersons = rec.personnes ? Object.keys(rec.personnes).length + 1 : 1;
@@ -871,95 +881,75 @@ Merci
       pdf.setFontSize(12);
       pdf.setTextColor(0, 0, 0);
       
-      pdf.text(`Nom du signataire : ${rec.nom}`, 20, yPos);
-      yPos += 8;
+      pdf.text(`Nom : ${rec.nom}`, 20, yPos);
+      yPos += 7;
       
-      pdf.text(`Date d'enregistrement : ${new Date().toLocaleDateString('fr-FR')}`, 20, yPos);
-      yPos += 8;
+      pdf.text(`Document : ${rec.doc} (${rec.typeDoc})`, 20, yPos);
+      yPos += 7;
+      
+      pdf.text(`Nationalité : ${rec.nationalite}`, 20, yPos);
+      yPos += 7;
       
       pdf.text(`Nombre de personnes : ${totalPersons}`, 20, yPos);
-      yPos += 8;
+      yPos += 7;
       
-      pdf.text(`Appartement : ${rec.appart} - Immeuble : ${rec.bat}`, 20, yPos);
-      yPos += 8;
+      pdf.text(`Appartement : ${rec.appart}`, 20, yPos);
+      yPos += 7;
+      
+      pdf.text(`Immeuble : ${rec.bat}`, 20, yPos);
+      yPos += 7;
       
       pdf.text(`Date d'arrivée : ${rec.date}`, 20, yPos);
-      yPos += 15;
+      yPos += 7;
       
-      pdf.setDrawColor(200, 200, 200);
-      pdf.setLineWidth(0.5);
-      pdf.line(20, yPos, 190, yPos);
-      yPos += 15;
-      
-      pdf.setFontSize(16);
-      pdf.setTextColor(44, 62, 80);
-      pdf.text('RÈGLEMENT INTÉRIEUR ACCEPTÉ', 105, yPos, { align: 'center' });
+      pdf.text(`Date d'enregistrement : ${new Date().toLocaleDateString('fr-FR')}`, 20, yPos);
       yPos += 15;
       
       pdf.setFontSize(10);
-      pdf.setTextColor(0, 0, 0);
       
-      const rules = [
-        '1. Couples marocains',
-        'Seuls les couples de la nationalité marocaine mariés sont acceptés.',
-        '',
-        '2. Tranquillité et bruit',
-        'Silence total obligatoire après 23h00. Pas de musique forte, cris ou nuisances',
-        'sonores à toute heure, par respect pour les voisins.',
-        '',
-        '3. Tabagisme',
-        'Fumer est strictement interdit à l\'intérieur. Autorisé uniquement en extérieur',
-        '(terrasse ou jardin), avec obligation de nettoyer les mégots et cendres.',
-        '',
-        '4. Nombre de personnes',
-        'Maximum 5 personnes autorisées dans l\'appartement.',
-        '',
-        '5. Piscine',
-        'Douche obligatoire avant la baignade.',
-        'Pas de verre ni objets fragiles autour de la piscine.',
-        'Surveillance permanente des enfants par un adulte.',
-        'Horaires : fermeture à 20h00.',
-        'Pas de courses ni plongeons.',
-        '',
-        '6. Propreté et entretien',
-        'Maintenir les lieux propres en permanence.',
-        'Vider régulièrement les poubelles.',
-        'Respecter les sols et surfaces (pas de traces, pas de nourriture hors cuisine).',
-        '',
-        'En acceptant ce règlement, vous confirmez avoir lu et compris ces règles.',
-        '',
-        `J'accepte l'ensemble des règles ci-dessus.`,
-        '',
-        `Signé par : ${rec.nom}`,
-        `Le : ${new Date().toLocaleDateString('fr-FR')}`,
-        '',
-        'Signature :'
-      ];
-
-      rules.forEach(line => {
-        if (yPos > 250) {
-          pdf.addPage();
-          yPos = 20;
-        }
-        pdf.text(line, 20, yPos);
-        yPos += line === '' ? 5 : 7;
-      });
+      if (rec.personnes && Object.keys(rec.personnes).length > 0) {
+        pdf.text('Personnes accompagnantes :', 20, yPos);
+        yPos += 7;
+        
+        Object.values(rec.personnes).forEach((personne, index) => {
+          if (yPos > 250) {
+            pdf.addPage();
+            yPos = 20;
+          }
+          pdf.text(`${index + 1}. ${personne.nom} - ${personne.doc} (${personne.typeDoc}) - ${personne.nationalite}`, 20, yPos);
+          yPos += 7;
+        });
+        yPos += 5;
+      }
       
-      yPos += 5;
+      yPos += 10;
       
-      if (yPos > 160) {
+      pdf.setFontSize(11);
+      pdf.text('Le signataire déclare avoir pris connaissance et accepté le règlement intérieur.', 20, yPos);
+      yPos += 7;
+      
+      pdf.text(`Signé par : ${rec.nom}`, 20, yPos);
+      yPos += 7;
+      
+      pdf.text(`Date : ${new Date().toLocaleDateString('fr-FR')}`, 20, yPos);
+      yPos += 15;
+      
+      if (yPos > 150) {
         pdf.addPage();
         yPos = 20;
       }
       
+      pdf.text('Signature :', 20, yPos);
+      yPos += 7;
+      
       const imgWidth = 80;
       const imgHeight = 40;
-      pdf.addImage(signatureData, 'PNG', 20, yPos, imgWidth, imgHeight);
+      pdf.addImage(signatureData, 'JPEG', 20, yPos, imgWidth, imgHeight);
       
       const now = new Date();
-      pdf.setFontSize(9);
+      pdf.setFontSize(8);
       pdf.setTextColor(100, 100, 100);
-      pdf.text(`Document généré le ${now.toLocaleDateString('fr-FR')} à ${now.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'})}`, 20, 280);
+      pdf.text(`Document généré le ${now.toLocaleDateString('fr-FR')}`, 20, 280);
       
       const pdfBlob = pdf.output('blob');
       const pdfUrl = URL.createObjectURL(pdfBlob);
@@ -969,7 +959,7 @@ Merci
         <!DOCTYPE html>
         <html>
         <head>
-          <title>Document signé - ${rec.nom}</title>
+          <title>Document - ${rec.nom}</title>
           <style>
             body { margin: 0; padding: 20px; background: #f5f5f5; }
             .preview-container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
@@ -985,19 +975,20 @@ Merci
         </head>
         <body>
           <div class="preview-container">
-            <h1>Document Signé</h1>
-            <p style="text-align: center; color: #666; margin-bottom: 20px;">Règlement intérieur accepté</p>
+            <h1>Document</h1>
             
             <div class="document-info">
-              <p><strong>Nom du signataire :</strong> ${rec.nom}</p>
-              <p><strong>Date d'enregistrement :</strong> ${new Date().toLocaleDateString('fr-FR')}</p>
+              <p><strong>Nom :</strong> ${rec.nom}</p>
+              <p><strong>Document :</strong> ${rec.doc} (${rec.typeDoc})</p>
+              <p><strong>Nationalité :</strong> ${rec.nationalite}</p>
               <p><strong>Nombre de personnes :</strong> ${totalPersons}</p>
               <p><strong>Appartement :</strong> ${rec.appart} - Immeuble : ${rec.bat}</p>
               <p><strong>Date d'arrivée :</strong> ${rec.date}</p>
+              <p><strong>Date d'enregistrement :</strong> ${new Date().toLocaleDateString('fr-FR')}</p>
             </div>
             
             <div class="actions">
-              <a href="${pdfUrl}" download="document_signe_${rec.nom.replace(/\s+/g, '_')}.pdf" class="action-btn download-btn">📥 Télécharger le PDF</a>
+              <a href="${pdfUrl}" download="document_${rec.nom.replace(/\s+/g, '_')}.pdf" class="action-btn download-btn">📥 Télécharger PDF</a>
               <button onclick="window.print()" class="action-btn">🖨️ Imprimer</button>
             </div>
             <iframe src="${pdfUrl}"></iframe>
