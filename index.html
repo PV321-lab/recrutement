@@ -1,87 +1,137 @@
+Système de Signature avec Règlement Intérieur
+
+```html
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Signature</title>
+    <title>Règlement Intérieur - Signature</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
         }
         
         body {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
             min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-family: 'Arial', sans-serif;
             padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
         
-        .signature-container {
+        .container {
             width: 100%;
-            max-width: 700px;
+            max-width: 800px;
             background: white;
-            border-radius: 20px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+        
+        .document-header {
+            background: linear-gradient(135deg, #2c3e50 0%, #4a6491 100%);
+            color: white;
+            padding: 25px;
             text-align: center;
         }
         
-        .signature-title {
-            color: #2d3436;
-            margin-bottom: 25px;
+        .document-header h1 {
             font-size: 1.8rem;
+            margin-bottom: 10px;
+            letter-spacing: 0.5px;
+        }
+        
+        .document-header p {
+            opacity: 0.9;
+            font-size: 0.95rem;
+        }
+        
+        .reglement-content {
+            padding: 30px;
+            line-height: 1.7;
+            color: #333;
+        }
+        
+        .reglement-content h2 {
+            color: #2c3e50;
+            margin: 25px 0 15px 0;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #f0f0f0;
+            font-size: 1.4rem;
+        }
+        
+        .article {
+            margin-bottom: 20px;
+            padding-left: 10px;
+            border-left: 3px solid #3498db;
+        }
+        
+        .article-title {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+        }
+        
+        .signature-section {
+            padding: 30px;
+            border-top: 2px dashed #ddd;
+            background-color: #f9f9f9;
+        }
+        
+        .signature-label {
+            display: block;
+            margin-bottom: 15px;
             font-weight: 600;
+            color: #2c3e50;
+            font-size: 1.1rem;
         }
         
         .signature-canvas {
             width: 100%;
-            height: 350px;
-            background: #f8f9fa;
-            border: 3px dashed #a5b1c2;
-            border-radius: 15px;
-            margin-bottom: 25px;
+            height: 150px;
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 15px;
             cursor: crosshair;
             touch-action: none;
-            transition: all 0.3s ease;
-        }
-        
-        .signature-canvas:hover {
-            border-color: #74b9ff;
+            transition: border-color 0.3s;
         }
         
         .signature-canvas.active {
-            border: 3px solid #0984e3;
-            background: #fff;
+            border-color: #3498db;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
         }
         
         .save-button {
-            background: linear-gradient(135deg, #0984e3 0%, #74b9ff 100%);
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
             color: white;
             border: none;
-            padding: 18px 40px;
-            font-size: 1.2rem;
-            border-radius: 12px;
+            padding: 16px 35px;
+            font-size: 1.1rem;
+            border-radius: 8px;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 5px 15px rgba(116, 185, 255, 0.4);
+            box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
             font-weight: 600;
-            letter-spacing: 0.5px;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
-            margin: 0 auto;
+            margin: 20px auto 0;
             min-width: 250px;
         }
         
         .save-button:hover {
             transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(116, 185, 255, 0.6);
+            box-shadow: 0 6px 20px rgba(46, 204, 113, 0.4);
         }
         
         .save-button:active {
@@ -89,217 +139,308 @@
         }
         
         .save-button:disabled {
-            background: #b2bec3;
+            background: #95a5a6;
             cursor: not-allowed;
             transform: none;
             box-shadow: none;
         }
         
-        .button-icon {
-            font-size: 1.4rem;
+        .clear-button {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-right: 15px;
+            transition: background 0.3s;
         }
         
-        .signature-notice {
-            color: #636e72;
-            font-size: 0.9rem;
+        .clear-button:hover {
+            background: #c0392b;
+        }
+        
+        .buttons-container {
+            display: flex;
+            justify-content: center;
             margin-top: 15px;
+        }
+        
+        .acceptance-section {
+            margin-top: 25px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .notice {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            margin-top: 10px;
             font-style: italic;
         }
         
+        .footer {
+            text-align: center;
+            color: #95a5a6;
+            font-size: 0.85rem;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+        
         @media (max-width: 768px) {
-            .signature-canvas {
-                height: 300px;
+            .container {
+                margin: 10px;
             }
             
-            .signature-container {
+            .reglement-content {
+                padding: 20px;
+            }
+            
+            .signature-section {
                 padding: 20px;
             }
             
             .save-button {
-                padding: 15px 30px;
-                font-size: 1.1rem;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            .signature-canvas {
-                height: 250px;
-            }
-            
-            .signature-title {
-                font-size: 1.5rem;
+                width: 100%;
             }
         }
     </style>
 </head>
 <body>
-    <div class="signature-container">
-        <h1 class="signature-title">Signez ici</h1>
+    <div class="container">
+        <div class="document-header">
+            <h1>RÈGLEMENT INTÉRIEUR à respecter</h1>
+            <p>Document à signer électroniquement</p>
+        </div>
         
-        <canvas id="signatureCanvas" class="signature-canvas">
-            Votre navigateur ne supporte pas les signatures digitales.
-        </canvas>
+        <div class="reglement-content">
+            <div class="article">
+                <div class="article-title">1. Couples marocains</div>
+                <p>Seuls les couples de la nationalité marocaine mariés sont acceptés.</p>
+            </div>
+            
+            <div class="article">
+                <div class="article-title">2. Tranquillité et bruit</div>
+                <p>Silence total obligatoire après 23h00. Pas de musique forte, cris ou nuisances sonores à toute heure, par respect pour les voisins.</p>
+            </div>
+            
+            <div class="article">
+                <div class="article-title">3. Tabagisme</div>
+                <p>Fumer est strictement interdit à l'intérieur. Autorisé uniquement en extérieur (terrasse ou jardin), avec obligation de nettoyer les mégots et cendres.</p>
+            </div>
+            
+            <div class="article">
+                <div class="article-title">4. Nombre de personnes</div>
+                <p>Maximum 5 personnes autorisées dans l'appartement.</p>
+            </div>
+            
+            <div class="article">
+                <div class="article-title">5. Piscine</div>
+                <p>Douche obligatoire avant la baignade.<br>
+                Pas de verre ni objets fragiles autour de la piscine.<br>
+                Surveillance permanente des enfants par un adulte.<br>
+                Horaires : fermeture à 20h00.<br>
+                Pas de courses ni plongeons.</p>
+            </div>
+            
+            <div class="article">
+                <div class="article-title">6. Propreté et entretien</div>
+                <p>Maintenir les lieux propres en permanence.<br>
+                Vider régulièrement les poubelles.<br>
+                Respecter les sols et surfaces (pas de traces, pas de nourriture hors cuisine).</p>
+            </div>
+            
+            <div class="acceptance-section">
+                <p>En acceptant ce règlement, vous confirmez avoir lu et compris ces règles.</p>
+                <p><strong>J'accepte l'ensemble des règles ci-dessus</strong></p>
+            </div>
+        </div>
         
-        <button id="saveButton" class="save-button" disabled>
-            <span class="button-icon">💾</span>
-            <span>Enregistrer la signature</span>
-        </button>
-        
-        <p class="signature-notice">Signez avec votre doigt, votre souris ou votre stylet</p>
+        <div class="signature-section">
+            <label class="signature-label">Signature :</label>
+            <canvas id="signatureCanvas" class="signature-canvas">
+                Votre navigateur ne supporte pas les signatures digitales.
+            </canvas>
+            
+            <div class="buttons-container">
+                <button id="clearButton" class="clear-button">Effacer la signature</button>
+                <button id="saveButton" class="save-button" disabled>
+                    <span>📄</span>
+                    <span>Enregistrer le document signé</span>
+                </button>
+            </div>
+            
+            <p class="notice">Signez ci-dessus avec votre doigt, votre souris ou votre stylet</p>
+        </div>
+    </div>
+    
+    <div class="footer">
+        Document signé électroniquement - Généré le <span id="currentDate"></span>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Récupération des éléments
-            const canvas = document.getElementById('signatureCanvas');
-            const saveButton = document.getElementById('saveButton');
-            const ctx = canvas.getContext('2d');
+        const canvas = document.getElementById('signatureCanvas');
+        const saveButton = document.getElementById('saveButton');
+        const clearButton = document.getElementById('clearButton');
+        const currentDateElement = document.getElementById('currentDate');
+        const ctx = canvas.getContext('2d');
+        
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+        let hasSignature = false;
+        
+        const { jsPDF } = window.jspdf;
+        
+        function initializeDate() {
+            const now = new Date();
+            const options = { 
+                day: '2-digit', 
+                month: '2-digit', 
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            };
+            currentDateElement.textContent = now.toLocaleDateString('fr-FR', options);
+        }
+        
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
             
-            let isDrawing = false;
-            let lastX = 0;
-            let lastY = 0;
-            let hasSignature = false;
-            
-            // Ajuster la taille du canvas
-            function resizeCanvas() {
-                const rect = canvas.getBoundingClientRect();
-                canvas.width = rect.width;
-                canvas.height = rect.height;
-                
-                // Réinitialiser le dessin
+            if (!hasSignature) {
                 clearCanvas();
             }
-            
-            // Initialiser le canvas
-            resizeCanvas();
-            window.addEventListener('resize', resizeCanvas);
-            
-            // Configurer le style de dessin
-            ctx.strokeStyle = '#2d3436';
-            ctx.lineWidth = 3;
+        }
+        
+        function setupDrawingStyle() {
+            ctx.strokeStyle = '#2c3e50';
+            ctx.lineWidth = 2.5;
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
+        }
+        
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            hasSignature = false;
+            saveButton.disabled = true;
+            canvas.classList.remove('active');
+        }
+        
+        function getCoordinates(e) {
+            let x, y;
+            const rect = canvas.getBoundingClientRect();
             
-            // Fonction pour démarrer le dessin
-            function startDrawing(e) {
-                isDrawing = true;
-                canvas.classList.add('active');
-                saveButton.disabled = true;
-                
-                const coords = getCoordinates(e);
-                [lastX, lastY] = [coords.x, coords.y];
-                
-                // Commencer à dessiner un point
-                ctx.beginPath();
-                ctx.arc(lastX, lastY, ctx.lineWidth/2, 0, Math.PI * 2);
-                ctx.fill();
+            if (e.type.includes('touch')) {
+                const touch = e.touches[0] || e.changedTouches[0];
+                x = touch.clientX - rect.left;
+                y = touch.clientY - rect.top;
+            } else {
+                x = e.clientX - rect.left;
+                y = e.clientY - rect.top;
             }
             
-            // Fonction pour dessiner
-            function draw(e) {
-                if (!isDrawing) return;
-                
-                e.preventDefault();
-                
-                const coords = getCoordinates(e);
-                const currentX = coords.x;
-                const currentY = coords.y;
-                
-                // Dessiner la ligne
-                ctx.beginPath();
-                ctx.moveTo(lastX, lastY);
-                ctx.lineTo(currentX, currentY);
-                ctx.stroke();
-                
-                // Mettre à jour les dernières coordonnées
-                [lastX, lastY] = [currentX, currentY];
+            return { x, y };
+        }
+        
+        function startDrawing(e) {
+            isDrawing = true;
+            canvas.classList.add('active');
+            saveButton.disabled = true;
+            
+            const coords = getCoordinates(e);
+            [lastX, lastY] = [coords.x, coords.y];
+            
+            ctx.beginPath();
+            ctx.arc(lastX, lastY, ctx.lineWidth / 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        function draw(e) {
+            if (!isDrawing) return;
+            e.preventDefault();
+            
+            const coords = getCoordinates(e);
+            const currentX = coords.x;
+            const currentY = coords.y;
+            
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(currentX, currentY);
+            ctx.stroke();
+            
+            [lastX, lastY] = [currentX, currentY];
+        }
+        
+        function stopDrawing() {
+            if (!isDrawing) return;
+            
+            isDrawing = false;
+            canvas.classList.remove('active');
+            hasSignature = true;
+            saveButton.disabled = false;
+        }
+        
+        async function generatePDF() {
+            if (!hasSignature) {
+                alert("Veuillez d'abord signer le document.");
+                return;
             }
             
-            // Fonction pour arrêter le dessin
-            function stopDrawing() {
-                if (!isDrawing) return;
+            saveButton.innerHTML = '<span>⏳</span><span>Génération du PDF...</span>';
+            saveButton.disabled = true;
+            
+            try {
+                const container = document.querySelector('.container');
+                const canvas = await html2canvas(container, {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: '#ffffff'
+                });
                 
-                isDrawing = false;
-                canvas.classList.remove('active');
-                hasSignature = true;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const imgWidth = 190;
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                
+                const imgData = canvas.toDataURL('image/png');
+                pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+                
+                const now = new Date();
+                const timestamp = now.getTime();
+                pdf.setFontSize(10);
+                pdf.text(`Document signé électroniquement - ${now.toLocaleDateString('fr-FR')}`, 10, imgHeight + 20);
+                
+                pdf.save(`reglement_interieur_signe_${timestamp}.pdf`);
+                
+                setTimeout(() => {
+                    saveButton.innerHTML = '<span>📄</span><span>Enregistrer le document signé</span>';
+                    saveButton.disabled = false;
+                    alert('PDF généré avec succès ! Vous pouvez maintenant l\'imprimer ou le sauvegarder.');
+                }, 1000);
+                
+            } catch (error) {
+                console.error('Erreur lors de la génération du PDF:', error);
+                alert('Une erreur est survenue lors de la génération du PDF.');
+                
+                saveButton.innerHTML = '<span>📄</span><span>Enregistrer le document signé</span>';
                 saveButton.disabled = false;
             }
-            
-            // Fonction pour obtenir les coordonnées
-            function getCoordinates(e) {
-                let x, y;
-                
-                if (e.type.includes('touch')) {
-                    const touch = e.touches[0] || e.changedTouches[0];
-                    const rect = canvas.getBoundingClientRect();
-                    x = touch.clientX - rect.left;
-                    y = touch.clientY - rect.top;
-                } else {
-                    const rect = canvas.getBoundingClientRect();
-                    x = e.clientX - rect.left;
-                    y = e.clientY - rect.top;
-                }
-                
-                return {x, y};
-            }
-            
-            // Fonction pour effacer le canvas
-            function clearCanvas() {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                hasSignature = false;
-                saveButton.disabled = true;
-            }
-            
-            // Fonction pour enregistrer la signature
-            function saveSignature() {
-                if (!hasSignature) {
-                    alert("Veuillez d'abord signer dans la zone.");
-                    return;
-                }
-                
-                // Créer un canvas temporaire optimisé pour petite taille
-                const tempCanvas = document.createElement('canvas');
-                const tempCtx = tempCanvas.getContext('2d');
-                
-                // Taille réduite pour l'image finale
-                tempCanvas.width = 400;
-                tempCanvas.height = 200;
-                
-                // Fond blanc
-                tempCtx.fillStyle = 'white';
-                tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-                
-                // Dessiner la signature redimensionnée
-                tempCtx.drawImage(canvas, 0, 0, canvas.width, canvas.height, 0, 0, tempCanvas.width, tempCanvas.height);
-                
-                // Convertir en image PNG avec compression
-                const imageData = tempCanvas.toDataURL('image/png', 0.7);
-                
-                // Télécharger l'image
-                const link = document.createElement('a');
-                link.download = 'signature_' + new Date().getTime() + '.png';
-                link.href = imageData;
-                link.click();
-                
-                // Animation de succès
-                saveButton.innerHTML = '<span class="button-icon">✅</span><span>Signature enregistrée !</span>';
-                saveButton.style.background = 'linear-gradient(135deg, #00b894 0%, #55efc4 100%)';
-                
-                // Réinitialiser après 2 secondes
-                setTimeout(() => {
-                    saveButton.innerHTML = '<span class="button-icon">💾</span><span>Enregistrer la signature</span>';
-                    saveButton.style.background = 'linear-gradient(135deg, #0984e3 0%, #74b9ff 100%)';
-                    clearCanvas();
-                }, 2000);
-            }
-            
-            // Événements pour le dessin (souris)
+        }
+        
+        function initializeEventListeners() {
             canvas.addEventListener('mousedown', startDrawing);
             canvas.addEventListener('mousemove', draw);
             canvas.addEventListener('mouseup', stopDrawing);
             canvas.addEventListener('mouseout', stopDrawing);
             
-            // Événements pour le dessin (tactile)
             canvas.addEventListener('touchstart', function(e) {
                 e.preventDefault();
                 startDrawing(e);
@@ -315,12 +456,23 @@
                 stopDrawing();
             });
             
-            // Événement pour le bouton d'enregistrement
-            saveButton.addEventListener('click', saveSignature);
+            clearButton.addEventListener('click', clearCanvas);
+            saveButton.addEventListener('click', generatePDF);
             
-            // Double-clic sur le canvas pour effacer
             canvas.addEventListener('dblclick', clearCanvas);
-        });
+            window.addEventListener('resize', resizeCanvas);
+        }
+        
+        function initializeApp() {
+            initializeDate();
+            resizeCanvas();
+            setupDrawingStyle();
+            initializeEventListeners();
+        }
+        
+        document.addEventListener('DOMContentLoaded', initializeApp);
+        
     </script>
 </body>
 </html>
+```
