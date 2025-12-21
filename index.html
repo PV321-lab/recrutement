@@ -1,317 +1,174 @@
-Système de Signature avec Prévisualisation PDF
-
 ```html
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Signature Règlement Intérieur</title>
+    <title>Signature Règlement</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Arial', sans-serif;
         }
         
         body {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            background: #f5f5f5;
             min-height: 100vh;
             padding: 20px;
         }
         
-        .main-container {
-            max-width: 1000px;
+        .container {
+            max-width: 900px;
             margin: 0 auto;
             background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
             overflow: hidden;
         }
         
         .header {
-            background: linear-gradient(135deg, #2c3e50 0%, #4a6491 100%);
+            background: #2c3e50;
             color: white;
             padding: 25px;
             text-align: center;
         }
         
         .header h1 {
-            font-size: 26px;
-            margin-bottom: 8px;
-            font-weight: 600;
+            font-size: 24px;
+            margin-bottom: 10px;
         }
         
-        .header p {
-            opacity: 0.9;
-            font-size: 15px;
-        }
-        
-        .content-wrapper {
-            display: flex;
-            min-height: 600px;
-        }
-        
-        .document-section {
-            flex: 1;
+        .content {
             padding: 30px;
-            border-right: 1px solid #eee;
-            overflow-y: auto;
-            max-height: 600px;
         }
         
         .section {
             margin-bottom: 25px;
             padding-bottom: 20px;
-            border-bottom: 1px solid #f0f0f0;
-        }
-        
-        .section:last-child {
-            border-bottom: none;
+            border-bottom: 1px solid #eee;
         }
         
         .section-title {
             color: #2c3e50;
             font-size: 18px;
-            margin-bottom: 12px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            margin-bottom: 15px;
+            font-weight: bold;
         }
         
-        .section-title:before {
-            content: "•";
-            color: #3498db;
-            font-size: 24px;
-        }
-        
-        .signature-section {
-            flex: 0 0 400px;
-            padding: 30px;
-            background: #f8f9fa;
-            display: flex;
-            flex-direction: column;
+        .signature-area {
+            margin: 40px 0;
+            padding: 20px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            text-align: center;
         }
         
         .signature-title {
             font-size: 18px;
             margin-bottom: 20px;
             color: #2c3e50;
-            font-weight: 600;
         }
         
         .signature-canvas {
             width: 100%;
             height: 200px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
             background: white;
             cursor: crosshair;
-            margin-bottom: 20px;
-            touch-action: none;
-        }
-        
-        .canvas-controls {
-            display: flex;
-            gap: 10px;
             margin-bottom: 20px;
         }
         
         .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-clear {
-            background: #e74c3c;
-            color: white;
-            flex: 1;
-        }
-        
-        .btn-clear:hover {
-            background: #c0392b;
-            transform: translateY(-2px);
-        }
-        
-        .btn-save {
+            padding: 15px 40px;
             background: #27ae60;
             color: white;
-            flex: 1;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            display: block;
+            margin: 30px auto;
         }
         
-        .btn-save:hover {
+        .btn:hover {
             background: #219653;
-            transform: translateY(-2px);
         }
         
-        .btn-pdf {
-            background: #3498db;
-            color: white;
-            width: 100%;
-            justify-content: center;
-            margin-top: 10px;
+        .btn:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
         }
         
-        .btn-pdf:hover {
-            background: #2980b9;
-            transform: translateY(-2px);
-        }
-        
-        .btn-disabled {
-            background: #95a5a6 !important;
-            cursor: not-allowed !important;
-            transform: none !important;
-        }
-        
-        .acceptance-box {
-            background: #e8f4fc;
-            padding: 20px;
-            border-radius: 8px;
-            border-left: 4px solid #3498db;
-            margin-top: 25px;
-            text-align: center;
-        }
-        
-        .signature-preview {
-            margin-top: 20px;
-            padding: 15px;
-            background: white;
-            border-radius: 8px;
-            border: 1px solid #ddd;
-            display: none;
-        }
-        
-        .signature-preview img {
-            max-width: 100%;
-            height: auto;
-            border: 1px solid #eee;
-            border-radius: 4px;
-        }
-        
-        .info-text {
-            color: #7f8c8d;
-            font-size: 13px;
-            text-align: center;
-            margin-top: 10px;
-            font-style: italic;
-        }
-        
-        .footer {
-            padding: 20px;
-            text-align: center;
-            color: #7f8c8d;
-            font-size: 14px;
-            border-top: 1px solid #eee;
+        .final-section {
             background: #f8f9fa;
-        }
-        
-        @media (max-width: 900px) {
-            .content-wrapper {
-                flex-direction: column;
-            }
-            
-            .document-section {
-                border-right: none;
-                border-bottom: 1px solid #eee;
-                max-height: 400px;
-            }
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+            text-align: center;
         }
     </style>
 </head>
 <body>
-    <div class="main-container">
+    <div class="container">
         <div class="header">
-            <h1>RÈGLEMENT INTÉRIEUR À RESPECTER</h1>
-            <p>Signature électronique du document</p>
+            <h1>RÈGLEMENT INTÉRIEUR</h1>
+            <p>Document à signer</p>
         </div>
         
-        <div class="content-wrapper">
-            <div class="document-section">
-                <div class="section">
-                    <div class="section-title">1. Couples marocains</div>
-                    <p>Seuls les couples de la nationalité marocaine mariés sont acceptés.</p>
-                </div>
-                
-                <div class="section">
-                    <div class="section-title">2. Tranquillité et bruit</div>
-                    <p>Silence total obligatoire après 23h00. Pas de musique forte, cris ou nuisances sonores à toute heure, par respect pour les voisins.</p>
-                </div>
-                
-                <div class="section">
-                    <div class="section-title">3. Tabagisme</div>
-                    <p>Fumer est strictement interdit à l'intérieur. Autorisé uniquement en extérieur (terrasse ou jardin), avec obligation de nettoyer les mégots et cendres.</p>
-                </div>
-                
-                <div class="section">
-                    <div class="section-title">4. Nombre de personnes</div>
-                    <p>Maximum 5 personnes autorisées dans l'appartement.</p>
-                </div>
-                
-                <div class="section">
-                    <div class="section-title">5. Piscine</div>
-                    <p>Douche obligatoire avant la baignade.<br>
-                    Pas de verre ni objets fragiles autour de la piscine.<br>
-                    Surveillance permanente des enfants par un adulte.<br>
-                    Horaires : fermeture à 20h00.<br>
-                    Pas de courses ni plongeons.</p>
-                </div>
-                
-                <div class="section">
-                    <div class="section-title">6. Propreté et entretien</div>
-                    <p>Maintenir les lieux propres en permanence.<br>
-                    Vider régulièrement les poubelles.<br>
-                    Respecter les sols et surfaces (pas de traces, pas de nourriture hors cuisine).</p>
-                </div>
-                
-                <div class="acceptance-box">
-                    <p>En acceptant ce règlement, vous confirmez avoir lu et compris ces règles.</p>
-                    <p><strong>J'accepte l'ensemble des règles ci-dessus</strong></p>
-                </div>
+        <div class="content">
+            <div class="section">
+                <div class="section-title">1. Couples marocains</div>
+                <p>Seuls les couples de la nationalité marocaine mariés sont acceptés.</p>
             </div>
             
-            <div class="signature-section">
-                <div class="signature-title">Votre signature</div>
+            <div class="section">
+                <div class="section-title">2. Tranquillité et bruit</div>
+                <p>Silence total obligatoire après 23h00. Pas de musique forte, cris ou nuisances sonores à toute heure, par respect pour les voisins.</p>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">3. Tabagisme</div>
+                <p>Fumer est strictement interdit à l'intérieur. Autorisé uniquement en extérieur (terrasse ou jardin), avec obligation de nettoyer les mégots et cendres.</p>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">4. Nombre de personnes</div>
+                <p>Maximum 5 personnes autorisées dans l'appartement.</p>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">5. Piscine</div>
+                <p>Douche obligatoire avant la baignade.<br>
+                Pas de verre ni objets fragiles autour de la piscine.<br>
+                Surveillance permanente des enfants par un adulte.<br>
+                Horaires : fermeture à 20h00.<br>
+                Pas de courses ni plongeons.</p>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">6. Propreté et entretien</div>
+                <p>Maintenir les lieux propres en permanence.<br>
+                Vider régulièrement les poubelles.<br>
+                Respecter les sols et surfaces (pas de traces, pas de nourriture hors cuisine).</p>
+            </div>
+            
+            <div class="final-section">
+                <p>En acceptant ce règlement, vous confirmez avoir lu et compris ces règles.</p>
+                <p><strong>J'accepte l'ensemble des règles ci-dessus</strong></p>
+            </div>
+            
+            <div class="signature-area">
+                <div class="signature-title">Signature :</div>
                 <canvas id="signatureCanvas" class="signature-canvas">
                     Votre navigateur ne supporte pas la signature.
                 </canvas>
                 
-                <div class="canvas-controls">
-                    <button id="clearBtn" class="btn btn-clear">
-                        <span>✕</span>
-                        <span>Effacer</span>
-                    </button>
-                    <button id="saveBtn" class="btn btn-save">
-                        <span>✓</span>
-                        <span>Enregistrer</span>
-                    </button>
-                </div>
-                
-                <p class="info-text">Signez avec votre doigt, souris ou stylet</p>
-                
-                <div id="signaturePreview" class="signature-preview">
-                    <div style="font-weight: bold; margin-bottom: 10px; color: #2c3e50;">Signature enregistrée :</div>
-                    <img id="signatureImage" src="" alt="Signature">
-                </div>
-                
-                <button id="pdfBtn" class="btn btn-pdf btn-disabled" disabled>
-                    <span>📄</span>
-                    <span>Générer PDF avec signature</span>
-                </button>
+                <button id="saveBtn" class="btn" disabled>Enregistrer</button>
             </div>
-        </div>
-        
-        <div class="footer">
-            Document électronique - Valide après signature
         </div>
     </div>
 
@@ -319,18 +176,13 @@ Système de Signature avec Prévisualisation PDF
     
     <script>
         const canvas = document.getElementById('signatureCanvas');
-        const clearBtn = document.getElementById('clearBtn');
         const saveBtn = document.getElementById('saveBtn');
-        const pdfBtn = document.getElementById('pdfBtn');
-        const signaturePreview = document.getElementById('signaturePreview');
-        const signatureImage = document.getElementById('signatureImage');
         const ctx = canvas.getContext('2d');
         
         let isDrawing = false;
         let lastX = 0;
         let lastY = 0;
         let hasSignature = false;
-        let signatureData = '';
         
         const { jsPDF } = window.jspdf;
         
@@ -339,8 +191,8 @@ Système de Signature avec Prévisualisation PDF
             canvas.width = rect.width;
             canvas.height = rect.height;
             
-            ctx.strokeStyle = '#2c3e50';
-            ctx.lineWidth = 2.5;
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
             
@@ -352,9 +204,7 @@ Système de Signature avec Prévisualisation PDF
         function clearCanvas() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             hasSignature = false;
-            signaturePreview.style.display = 'none';
-            pdfBtn.classList.add('btn-disabled');
-            pdfBtn.disabled = true;
+            saveBtn.disabled = true;
         }
         
         function getPos(e) {
@@ -402,59 +252,32 @@ Système de Signature avec Prévisualisation PDF
         function stopDraw() {
             if (!isDrawing) return;
             isDrawing = false;
-        }
-        
-        function saveSignature() {
-            if (!isSignatureNotEmpty()) {
-                alert("Veuillez d'abord signer dans la zone de signature.");
-                return;
-            }
-            
-            signatureData = canvas.toDataURL('image/png', 0.8);
-            signatureImage.src = signatureData;
-            signaturePreview.style.display = 'block';
             hasSignature = true;
-            
-            pdfBtn.classList.remove('btn-disabled');
-            pdfBtn.disabled = false;
-            
-            alert("Signature enregistrée ! Vous pouvez maintenant générer le PDF.");
+            saveBtn.disabled = false;
         }
         
-        function isSignatureNotEmpty() {
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-            for (let i = 3; i < imageData.length; i += 4) {
-                if (imageData[i] > 0) return true;
-            }
-            return false;
-        }
-        
-        function generatePDF() {
+        function saveDocument() {
             if (!hasSignature) {
-                alert("Veuillez d'abord enregistrer une signature.");
+                alert("Veuillez d'abord signer.");
                 return;
             }
             
-            const originalText = pdfBtn.innerHTML;
-            pdfBtn.innerHTML = '<span>⏳</span><span>Génération en cours...</span>';
-            pdfBtn.disabled = true;
+            const signatureData = canvas.toDataURL('image/png');
+            
+            saveBtn.textContent = '⏳ Génération...';
+            saveBtn.disabled = true;
             
             setTimeout(() => {
                 const pdf = new jsPDF('p', 'mm', 'a4');
                 let yPos = 20;
                 
-                pdf.setFontSize(18);
-                pdf.setTextColor(44, 62, 80);
-                pdf.text('RÈGLEMENT INTÉRIEUR À RESPECTER', 105, yPos, { align: 'center' });
-                yPos += 12;
+                pdf.setFontSize(16);
+                pdf.text('RÈGLEMENT INTÉRIEUR', 105, yPos, { align: 'center' });
+                yPos += 15;
                 
                 pdf.setFontSize(10);
-                pdf.setTextColor(100, 100, 100);
                 pdf.text('Document signé électroniquement', 105, yPos, { align: 'center' });
                 yPos += 20;
-                
-                pdf.setFontSize(11);
-                pdf.setTextColor(0, 0, 0);
                 
                 const rules = [
                     '1. Couples marocains',
@@ -492,62 +315,48 @@ Système de Signature avec Prévisualisation PDF
                 ];
                 
                 rules.forEach(line => {
-                    if (yPos > 250) {
+                    if (yPos > 270) {
                         pdf.addPage();
                         yPos = 20;
                     }
                     pdf.text(line, 20, yPos);
-                    yPos += line === '' ? 5 : 7;
+                    yPos += 7;
                 });
                 
                 yPos += 10;
                 
-                if (yPos > 250) {
-                    pdf.addPage();
-                    yPos = 20;
-                }
-                
                 const imgWidth = 80;
                 const imgHeight = 40;
+                
                 pdf.addImage(signatureData, 'PNG', 20, yPos, imgWidth, imgHeight);
                 
-                yPos += imgHeight + 15;
-                
                 const now = new Date();
-                pdf.setFontSize(9);
-                pdf.setTextColor(100, 100, 100);
-                pdf.text(`Document généré le : ${now.toLocaleDateString('fr-FR')} à ${now.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'})}`, 20, 280);
+                pdf.text(`Document généré le: ${now.toLocaleDateString('fr-FR')}`, 20, 280);
                 
-                const timestamp = Date.now();
-                
-                const newWindow = window.open('', '_blank');
                 const pdfBlob = pdf.output('blob');
                 const pdfUrl = URL.createObjectURL(pdfBlob);
                 
+                const newWindow = window.open('', '_blank');
                 newWindow.document.write(`
                     <!DOCTYPE html>
                     <html>
                     <head>
-                        <title>Prévisualisation PDF</title>
+                        <title>Document signé</title>
                         <style>
                             body { margin: 0; padding: 20px; background: #f5f5f5; }
                             .preview-container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
                             h1 { color: #2c3e50; text-align: center; margin-bottom: 20px; }
                             .actions { text-align: center; margin: 30px 0; }
                             .action-btn { background: #3498db; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 16px; margin: 0 10px; text-decoration: none; display: inline-block; }
-                            .action-btn:hover { background: #2980b9; }
-                            .download-btn { background: #27ae60; }
-                            .download-btn:hover { background: #219653; }
                             iframe { width: 100%; height: 600px; border: 1px solid #ddd; border-radius: 5px; margin-top: 20px; }
                         </style>
                     </head>
                     <body>
                         <div class="preview-container">
-                            <h1>Prévisualisation du document signé</h1>
+                            <h1>Document signé</h1>
                             <div class="actions">
-                                <a href="${pdfUrl}" download="reglement_signe_${timestamp}.pdf" class="action-btn download-btn">📥 Télécharger le PDF</a>
-                                <button onclick="window.print()" class="action-btn">🖨️ Imprimer</button>
-                                <button onclick="window.close()" class="action-btn" style="background: #e74c3c;">✕ Fermer</button>
+                                <a href="${pdfUrl}" download="reglement_signe.pdf" class="action-btn">Télécharger PDF</a>
+                                <button onclick="window.print()" class="action-btn">Imprimer</button>
                             </div>
                             <iframe src="${pdfUrl}"></iframe>
                         </div>
@@ -556,10 +365,10 @@ Système de Signature avec Prévisualisation PDF
                 `);
                 newWindow.document.close();
                 
-                pdfBtn.innerHTML = originalText;
-                pdfBtn.disabled = false;
+                saveBtn.textContent = 'Enregistrer';
+                saveBtn.disabled = false;
                 
-            }, 1000);
+            }, 500);
         }
         
         function setupEvents() {
@@ -583,9 +392,7 @@ Système de Signature avec Prévisualisation PDF
                 stopDraw();
             });
             
-            clearBtn.addEventListener('click', clearCanvas);
-            saveBtn.addEventListener('click', saveSignature);
-            pdfBtn.addEventListener('click', generatePDF);
+            saveBtn.addEventListener('click', saveDocument);
             
             window.addEventListener('resize', initCanvas);
         }
