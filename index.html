@@ -3,22 +3,104 @@
 <head>
     <title>Test Firebase Connexion</title>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        input, button { margin: 5px; padding: 10px; }
-        #result { margin-top: 20px; padding: 15px; border-radius: 5px; }
-        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        .loading { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .container {
+            border: 2px solid #333;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        button {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        
+        button:hover {
+            background: #3367d6;
+        }
+        
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .loading {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .info-box {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+            border: 1px solid #b3d7ff;
+        }
+        
+        .data-section {
+            margin-top: 20px;
+        }
+        
+        .data-item {
+            background: #f8f9fa;
+            padding: 10px;
+            margin: 5px 0;
+            border-left: 4px solid #4285f4;
+        }
+        
+        h3 {
+            color: #333;
+            border-bottom: 2px solid #4285f4;
+            padding-bottom: 5px;
+        }
     </style>
 </head>
 <body>
-    <h2>Test de connexion Firebase</h2>
+    <h2>🔍 Test Connexion Firebase</h2>
     
-    <input type="email" id="email" placeholder="Email" value="g.marouane@outlook.fr"><br>
-    <input type="password" id="password" placeholder="Mot de passe" value="M@ra10"><br>
-    <button onclick="testConnexion()">Tester la connexion et la lecture</button>
+    <div class="info-box">
+        <strong>Configuration utilisée :</strong><br>
+        Projet: <code>dddiii-2b58b</code><br>
+        Email: <code>g.marouane@outlook.fr</code><br>
+        Région DB: <code>asia-southeast1</code>
+    </div>
+    
+    <button onclick="testerConnexion()">🔗 TESTER LA CONNEXION ET LIRE LES DONNÉES</button>
     
     <div id="result"></div>
+    
+    <div id="dataDisplay" class="data-section"></div>
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -26,7 +108,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
     <script>
-        // VOTRE CONFIGURATION
+        // VOTRE CONFIGURATION EXACTE
         const firebaseConfig = {
             apiKey: "AIzaSyC6uSDTNCuw5sHNVaNgq0EzJqJZ9jgic7U",
             authDomain: "dddiii-2b58b.firebaseapp.com",
@@ -38,119 +120,142 @@
             measurementId: "G-QGFM2N76VK"
         };
 
-        // Initialiser Firebase
-        let app, auth, database;
-        
-        function initFirebase() {
-            try {
-                // Fermer les anciennes instances
-                if (firebase.apps.length > 0) {
-                    firebase.apps.forEach(app => {
-                        try {
-                            app.delete();
-                        } catch (e) {
-                            console.log("Erreur fermeture app:", e);
-                        }
-                    });
-                }
-                
-                // Initialiser avec votre config
-                app = firebase.initializeApp(firebaseConfig);
-                auth = firebase.auth();
-                database = firebase.database();
-                
-                console.log("Firebase initialisé avec succès");
-                return true;
-            } catch (error) {
-                console.error("Erreur initialisation Firebase:", error);
-                return false;
-            }
-        }
+        let auth = null;
+        let database = null;
 
-        async function testConnexion() {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
+        async function testerConnexion() {
             const resultDiv = document.getElementById('result');
+            const dataDiv = document.getElementById('dataDisplay');
             
-            // Afficher chargement
-            resultDiv.innerHTML = "Initialisation...";
+            // Réinitialiser l'affichage
+            resultDiv.innerHTML = "";
+            dataDiv.innerHTML = "";
             resultDiv.className = "loading";
             
             try {
-                // 1. Initialiser Firebase
-                if (!initFirebase()) {
-                    throw new Error("Échec de l'initialisation Firebase");
+                // Étape 1: Initialiser Firebase
+                resultDiv.innerHTML = "1. Initialisation de Firebase...\n";
+                
+                // Fermer les anciennes instances
+                if (firebase.apps.length > 0) {
+                    await Promise.all(firebase.apps.map(app => app.delete()));
                 }
                 
-                resultDiv.innerHTML = "Connexion en cours...";
+                // Initialiser avec votre config
+                const app = firebase.initializeApp(firebaseConfig);
+                auth = firebase.auth();
+                database = firebase.database();
                 
-                // 2. Se connecter avec email/mot de passe
+                resultDiv.innerHTML += "✓ Firebase initialisé\n";
+                resultDiv.innerHTML += "2. Connexion avec les identifiants...\n";
+                
+                // Étape 2: Connexion avec email/mot de passe
+                const email = "g.marouane@outlook.fr";
+                const password = "M@ra10";
+                
                 const userCredential = await auth.signInWithEmailAndPassword(email, password);
                 const user = userCredential.user;
                 
-                resultDiv.innerHTML = `✓ Connecté !<br>UID: ${user.uid}<br>Email: ${user.email}<br>Test de lecture...`;
+                resultDiv.innerHTML += `✓ Connecté avec succès!\n`;
+                resultDiv.innerHTML += `   UID: ${user.uid}\n`;
+                resultDiv.innerHTML += `   Email: ${user.email}\n`;
+                resultDiv.innerHTML += `   Email vérifié: ${user.emailVerified}\n`;
+                resultDiv.innerHTML += "3. Lecture de la base de données...\n";
                 
-                // 3. Tester la lecture de la base de données
-                try {
-                    // Essayer de lire à la racine
-                    const snapshot = await database.ref('/').limitToFirst(3).once('value');
+                // Étape 3: Lire TOUTES les données
+                const snapshot = await database.ref('/').once('value');
+                
+                if (snapshot.exists()) {
+                    const allData = snapshot.val();
+                    resultDiv.innerHTML += `✓ Données trouvées!\n`;
+                    resultDiv.innerHTML += `   Nombre d'éléments: ${Object.keys(allData).length}\n\n`;
                     
-                    if (snapshot.exists()) {
-                        const data = snapshot.val();
-                        resultDiv.innerHTML += `<br><br>✓ Lecture réussie !`;
-                        resultDiv.innerHTML += `<br>Données trouvées: ${JSON.stringify(data).substring(0, 300)}...`;
+                    // Afficher les données de manière organisée
+                    dataDiv.innerHTML = '<h3>📊 DONNÉES DE LA BASE :</h3>';
+                    
+                    Object.keys(allData).forEach(key => {
+                        const value = allData[key];
+                        const dataItem = document.createElement('div');
+                        dataItem.className = 'data-item';
                         
-                        // Afficher les chemins disponibles
-                        resultDiv.innerHTML += `<br><br>Chemins disponibles:`;
-                        Object.keys(data).forEach(key => {
-                            resultDiv.innerHTML += `<br>• ${key}`;
-                        });
-                    } else {
-                        resultDiv.innerHTML += `<br><br>✓ Connexion DB OK mais aucune donnée trouvée à la racine`;
-                    }
+                        if (typeof value === 'object' && value !== null) {
+                            dataItem.innerHTML = `
+                                <strong>${key}:</strong><br>
+                                <pre>${JSON.stringify(value, null, 2)}</pre>
+                            `;
+                        } else {
+                            dataItem.innerHTML = `<strong>${key}:</strong> ${value}`;
+                        }
+                        
+                        dataDiv.appendChild(dataItem);
+                    });
                     
-                } catch (dbError) {
-                    resultDiv.innerHTML += `<br><br>❌ Erreur lecture DB: ${dbError.message}`;
-                    resultDiv.innerHTML += `<br><strong>Vérifiez vos règles de sécurité:</strong>`;
-                    resultDiv.innerHTML += `<br>Allez sur Firebase Console → Realtime Database → Règles`;
-                    resultDiv.innerHTML += `<br>Essayez ces règles temporaires:`;
-                    resultDiv.innerHTML += `<pre>{
-  "rules": {
-    ".read": "auth != null",
-    ".write": false
-  }
-}</pre>`;
+                    // Afficher aussi le JSON brut
+                    const rawDataDiv = document.createElement('div');
+                    rawDataDiv.className = 'data-item';
+                    rawDataDiv.innerHTML = `
+                        <strong>JSON Complet :</strong><br>
+                        <pre>${JSON.stringify(allData, null, 2)}</pre>
+                    `;
+                    dataDiv.appendChild(rawDataDiv);
+                    
+                    resultDiv.className = "success";
+                    
+                } else {
+                    resultDiv.innerHTML += "✓ Connexion DB réussie mais aucune donnée trouvée\n";
+                    dataDiv.innerHTML = '<h3>ℹ️ Base de données vide</h3>';
+                    resultDiv.className = "success";
                 }
-                
-                resultDiv.className = "success";
                 
             } catch (error) {
-                resultDiv.innerHTML = `❌ Erreur: ${error.message}`;
-                resultDiv.className = "error";
+                // Afficher l'erreur détaillée
+                resultDiv.innerHTML = `❌ ERREUR:\n`;
+                resultDiv.innerHTML += `Code: ${error.code || 'N/A'}\n`;
+                resultDiv.innerHTML += `Message: ${error.message}\n\n`;
                 
-                // Aide selon le type d'erreur
-                if (error.code === 'auth/user-not-found') {
-                    resultDiv.innerHTML += `<br><br>L'utilisateur n'existe pas dans Firebase Authentication.`;
-                    resultDiv.innerHTML += `<br>Créez-le dans Firebase Console → Authentication`;
-                } else if (error.code === 'auth/wrong-password') {
-                    resultDiv.innerHTML += `<br><br>Mot de passe incorrect.`;
-                } else if (error.code === 'auth/invalid-api-key') {
-                    resultDiv.innerHTML += `<br><br>Clé API invalide. Vérifiez votre configuration.`;
-                } else if (error.code === 'auth/network-request-failed') {
-                    resultDiv.innerHTML += `<br><br>Problème réseau. Vérifiez votre connexion.`;
-                } else if (error.message.includes('asia-southeast1')) {
-                    resultDiv.innerHTML += `<br><br>Région de la DB: asia-southeast1`;
-                    resultDiv.innerHTML += `<br>Assurez-vous que c'est la bonne région.`;
+                // Diagnostic selon le type d'erreur
+                resultDiv.innerHTML += `🔍 DIAGNOSTIC:\n`;
+                
+                if (error.code === 'auth/invalid-api-key') {
+                    resultDiv.innerHTML += `- La clé API est invalide\n`;
+                    resultDiv.innerHTML += `- Vérifiez: ${firebaseConfig.apiKey.substring(0, 20)}...\n`;
+                } 
+                else if (error.code === 'auth/user-not-found') {
+                    resultDiv.innerHTML += `- L'utilisateur n'existe pas\n`;
+                    resultDiv.innerHTML += `- Créez-le dans Firebase Console → Authentication\n`;
+                }
+                else if (error.code === 'auth/wrong-password') {
+                    resultDiv.innerHTML += `- Mot de passe incorrect\n`;
+                }
+                else if (error.code === 'auth/network-request-failed') {
+                    resultDiv.innerHTML += `- Problème réseau\n`;
+                    resultDiv.innerHTML += `- Vérifiez votre connexion internet\n`;
+                }
+                else if (error.message.includes('permission_denied')) {
+                    resultDiv.innerHTML += `- Permission refusée par les règles de sécurité\n`;
+                    resultDiv.innerHTML += `- Allez sur Firebase Console → Realtime Database → Règles\n`;
+                    resultDiv.innerHTML += `- Utilisez temporairement:\n`;
+                    resultDiv.innerHTML += `{\n  "rules": {\n    ".read": true,\n    ".write": false\n  }\n}\n`;
+                }
+                else {
+                    resultDiv.innerHTML += `- Erreur inconnue: ${error.message}\n`;
                 }
                 
-                console.error("Détails erreur:", error);
+                resultDiv.innerHTML += `\n📋 CONFIG UTILISÉE:\n`;
+                resultDiv.innerHTML += JSON.stringify(firebaseConfig, null, 2);
+                
+                resultDiv.className = "error";
+                
+                console.error("Erreur complète:", error);
             }
         }
 
-        // Initialiser au chargement
-        window.onload = function() {
-            initFirebase();
-        };
+        // Message d'accueil
+        document.getElementById('result').innerHTML = 
+            "Cliquez sur le bouton pour tester la connexion Firebase\n" +
+            "et lire toutes les données de la base.\n\n" +
+            "➡️ Vérifiera: 1. Clé API 2. Authentification 3. Règles DB 4. Données";
+        document.getElementById('result').className = "info-box";
     </script>
 </body>
 </html>
