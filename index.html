@@ -1,68 +1,99 @@
+```html
 <!DOCTYPE html>
 <html>
 <head>
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-    import { 
-      getAuth, 
-      signInWithEmailAndPassword,
-      onAuthStateChanged 
-    } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-    import { 
-      getDatabase,
-      ref,
-      set
-    } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
-
-    // Configuration Firebase
-    const firebaseConfig = {
-      // COPIER ICI VOTRE CONFIGURATION
-      // depuis Firebase Console → Paramètres projet → Apps
-    };
-
-    // Initialiser Firebase
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getDatabase(app);
-
-    // Vérifier l'état de connexion
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        console.log("Utilisateur connecté:", user.email);
-        // Maintenant vous pouvez lire/écrire dans la DB
-      } else {
-        console.log("Non connecté");
-      }
-    });
-
-    // Fonction de connexion
-    async function login() {
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-      
-      try {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        alert("Connexion réussie!");
-        
-        // Exemple : écrire dans la DB
-        const user = userCredential.user;
-        await set(ref(db, 'users/' + user.uid), {
-          email: user.email,
-          lastLogin: new Date().toISOString()
-        });
-        
-      } catch (error) {
-        alert("Erreur: " + error.message);
-      }
-    }
-
-    // Rendre la fonction accessible globalement
-    window.login = login;
-  </script>
+    <title>Test Firebase Lecture</title>
 </head>
 <body>
-  <input type="email" id="email" placeholder="Email">
-  <input type="password" id="password" placeholder="Mot de passe">
-  <button onclick="login()">Se connecter</button>
+    <h2>Test de lecture Firebase</h2>
+    
+    <input type="email" id="email" placeholder="Email" value="g.marouane@outlook.fr"><br><br>
+    <input type="password" id="password" placeholder="Mot de passe" value="M@ra10"><br><br>
+    
+    <button onclick="testLecture()">Tester la lecture</button>
+    
+    <div id="result" style="margin-top: 20px;"></div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+    <script>
+        // REMPLACEZ CE CONFIG AVEC VOTRE CONFIG FIREBASE
+        const firebaseConfig = {
+            apiKey: "AIzaSyBxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            authDomain: "votre-projet.firebaseapp.com",
+            databaseURL: "https://votre-projet.firebaseio.com",
+            projectId: "votre-projet",
+            storageBucket: "votre-projet.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:abc123def456"
+        };
+
+        // Initialiser Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const auth = firebase.auth();
+        const database = firebase.database();
+
+        async function testLecture() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('result');
+            
+            resultDiv.innerHTML = "Connexion en cours...";
+            resultDiv.style.color = "blue";
+
+            try {
+                // 1. Se connecter
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                resultDiv.innerHTML = "✓ Connecté avec succès!<br>Test de lecture...";
+                
+                // 2. Tester la lecture
+                const snapshot = await database.ref('test').once('value');
+                
+                if (snapshot.exists()) {
+                    resultDiv.innerHTML = "✓ Lecture réussie!<br>Données: " + JSON.stringify(snapshot.val());
+                    resultDiv.style.color = "green";
+                } else {
+                    resultDiv.innerHTML = "✓ Lecture réussie!<br>Aucune donnée au chemin 'test'";
+                    resultDiv.style.color = "orange";
+                }
+
+            } catch (error) {
+                resultDiv.innerHTML = "✗ Erreur: " + error.message;
+                resultDiv.style.color = "red";
+                console.error("Détails:", error);
+            }
+        }
+    </script>
 </body>
 </html>
+```
+
+Instructions :
+
+1. Copiez-collez ce code dans un fichier HTML
+2. Remplacez firebaseConfig avec VOTRE configuration Firebase
+3. Ouvrez le fichier dans un navigateur
+4. Cliquez sur "Tester la lecture"
+
+Pour obtenir votre configuration Firebase :
+
+· Allez sur Firebase Console
+· Sélectionnez votre projet
+· Cliquez sur ⚙️ → Paramètres du projet
+· Allez dans "Vos applications"
+· Copiez la configuration (objet firebaseConfig)
+
+Important : Assurez-vous que vos règles de sécurité autorisent la lecture :
+
+```json
+{
+  "rules": {
+    ".read": "auth != null",
+    ".write": false
+  }
+}
+```
