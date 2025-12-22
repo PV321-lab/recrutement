@@ -78,16 +78,16 @@ th { background:var(--c1); color:#fff; }
 </div>
 <div class="row">
     <div class="col">
+    <label>Email</label>
+    <input type="email" id="userEmail" placeholder="exemple@email.com"/>
+    </div>
+    <div class="col">
     <label>Appartement</label>
     <input type="text" id="appartAdmin" placeholder="Ex: 12"/>
     </div>
     <div class="col">
     <label>Immeuble</label>
     <input type="text" id="batAdmin" placeholder="Ex: A"/>
-    </div>
-    <div class="col">
-    <label>Mot de passe</label>
-    <input type="text" id="passAdmin" placeholder="Mot de passe"/>
     </div>
 </div>
 <button onclick="creerUtilisateur()">Créer utilisateur</button>
@@ -99,7 +99,7 @@ th { background:var(--c1); color:#fff; }
 </div>
 <table id="tableUsers">
     <thead>
-    <tr><th>ID</th><th>Appartement</th><th>Immeuble</th><th>Mot de passe</th></tr>
+    <tr><th>Email</th><th>Appartement</th><th>Immeuble</th><th>Mot de passe</th></tr>
     </thead>
     <tbody></tbody>
 </table>
@@ -111,7 +111,7 @@ th { background:var(--c1); color:#fff; }
 <table id="tableAdmin">
     <thead>
     <tr>
-    <th>ID</th><th>Appart.</th><th>Immeuble</th><th>Nom</th><th>Document</th><th>Type Doc</th>
+    <th>ID</th><th>Email</th><th>Appart.</th><th>Immeuble</th><th>Nom</th><th>Document</th><th>Type Doc</th>
     <th>Nb Pers.</th><th>Personnes</th><th>Date</th><th>Action</th><th>Statut</th>
     </tr>
     </thead>
@@ -379,26 +379,26 @@ auth.onAuthStateChanged((user) => {
 
 async function creerUtilisateur(){
     hideInlineMsg('userWarn');
+    const email = document.getElementById('userEmail').value.trim();
     const appart = (document.getElementById('appartAdmin').value || "").trim();
     const bat = (document.getElementById('batAdmin').value || "").trim();
-    const pass = (document.getElementById('passAdmin').value || "").trim();
-    if(!appart || !bat || !pass){
-        showInlineMsg('userWarn','warn','Tous les champs utilisateur sont obligatoires.');
+    if(!email || !appart || !bat){
+        showInlineMsg('userWarn','warn','Tous les champs sont obligatoires.');
         return;
     }
-    const userId = appart + bat;
     try {
-        const snapshot = await database.ref('users/' + userId).once('value');
+        const snapshot = await database.ref('users/' + email.replace(/\./g, '_')).once('value');
         if(snapshot.exists()){
-            showInlineMsg('userWarn','warn','L\'utilisateur ' + userId + ' existe déjà.');
+            showInlineMsg('userWarn','warn','L\'utilisateur ' + email + ' existe déjà.');
         } else {
-            await database.ref('users/' + userId).set({
-                user: userId,
+            const password = Math.random().toString(36).slice(-8);
+            await database.ref('users/' + email.replace(/\./g, '_')).set({
+                email: email,
                 appart: appart,
                 bat: bat,
-                pass: pass
+                password: password
             });
-            showBanner('ok', 'Utilisateur ' + userId + ' créé.');
+            showBanner('ok', 'Utilisateur ' + email + ' créé. Mot de passe: ' + password);
             refreshAdmin();
         }
     } catch (error) {
@@ -413,7 +413,7 @@ async function refreshAdmin(){
         const usersSnapshot = await database.ref('users').once('value');
         const users = usersSnapshot.val() || {};
         Object.values(users).forEach(u => {
-            tbodyU.insertAdjacentHTML('beforeend','<tr><td>'+u.user+'</td><td>'+u.appart+'</td><td>'+u.bat+'</td><td>'+u.pass+'</td></tr>');
+            tbodyU.insertAdjacentHTML('beforeend','<tr><td>'+u.email+'</td><td>'+u.appart+'</td><td>'+u.bat+'</td><td>'+u.password+'</td></tr>');
         });
     } catch (error) {
         showBanner('err', "Erreur lors du chargement des utilisateurs.");
@@ -426,7 +426,7 @@ async function refreshAdmin(){
         Object.entries(records).slice(-200).forEach(([id, r]) => {
             const personnesList = r.personnes ? Object.values(r.personnes).map(p => p.nom + ' (' + p.typeDoc + ') - ' + p.doc).join(', ') : "";
             const sendBtn = '<button onclick="envoyerWhatsApp(\''+id+'\')">Envoyer</button>';
-            tbody.insertAdjacentHTML('beforeend', '<tr><td>'+id+'</td><td>'+r.appart+'</td><td>'+r.bat+'</td><td>'+r.nom+'</td><td>'+r.doc+'</td><td>'+ (r.typeDoc || 'Non spécifié') +'</td><td>'+ (r.personnes ? Object.keys(r.personnes).length + 1 : 1) +'</td><td>'+personnesList+'</td><td>'+r.date+'</td><td>'+sendBtn+'</td><td>'+ (r.sent ? "Envoyé" : "Non envoyé") +'</td></tr>');
+            tbody.insertAdjacentHTML('beforeend', '<tr><td>'+id+'</td><td>'+ (r.email || '') +'</td><td>'+r.appart+'</td><td>'+r.bat+'</td><td>'+r.nom+'</td><td>'+r.doc+'</td><td>'+ (r.typeDoc || 'Non spécifié') +'</td><td>'+ (r.personnes ? Object.keys(r.personnes).length + 1 : 1) +'</td><td>'+personnesList+'</td><td>'+r.date+'</td><td>'+sendBtn+'</td><td>'+ (r.sent ? "Envoyé" : "Non envoyé") +'</td></tr>');
         });
     } catch (error) {
         showBanner('err', "Erreur lors du chargement des enregistrements.");
@@ -440,7 +440,7 @@ async function refreshUser(){
         const recordsSnapshot = await database.ref('records').once('value');
         const records = recordsSnapshot.val() || {};
         Object.entries(records)
-        .filter(([id, r]) => r.appart === currentUser.appart && r.bat === currentUser.bat)
+        .filter(([id, r]) => r.email === currentUser.email)
         .slice(-200)
         .forEach(([id, r]) => {
             const personnesList = r.personnes ? Object.values(r.personnes).map(p => p.nom + ' (' + p.typeDoc + ') - ' + p.doc).join(', ') : "";
@@ -468,7 +468,7 @@ async function supprimerEnregistrement(id) {
 
 function genererLien(){
     const base = location.href.split('?')[0];
-    const lien = base + '?invite=' + encodeURIComponent(currentUser.id);
+    const lien = base + '?invite=' + encodeURIComponent(currentUser.email);
     const p = document.getElementById('lienInvite');
     p.innerHTML = 'Lien pour vos invités : <a href="'+lien+'" target="_blank">'+lien+'</a>';
     showBanner('info', "Copiez/partagez ce lien avec vos invités.");
@@ -577,13 +577,14 @@ async function registerSignature() {
     const bat = document.getElementById('invBat').value;
     signatureData = canvas.toDataURL('image/png');
     const rec = {
-        appart,
-        bat,
-        nom,
-        doc,
-        typeDoc,
-        personnes,
-        date,
+        email: currentUser.email,
+        appart: appart,
+        bat: bat,
+        nom: nom,
+        doc: doc,
+        typeDoc: typeDoc,
+        personnes: personnes,
+        date: date,
         sent: false
     };
     try {
@@ -627,9 +628,10 @@ function setupSignatureEvents() {
     window.addEventListener('resize', initCanvas);
 }
 
-async function enterInviteMode(userId){
+async function enterInviteMode(userEmail){
     try {
-        const snapshot = await database.ref('users/' + userId).once('value');
+        const emailKey = userEmail.replace(/\./g, '_');
+        const snapshot = await database.ref('users/' + emailKey).once('value');
         const user = snapshot.val();
         if(!user){
             showBanner('err','Lien invalide ou utilisateur introuvable.');
