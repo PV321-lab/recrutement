@@ -1,159 +1,156 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Test Firebase</title>
+    <title>Test Firebase Connexion</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        input, button { margin: 5px; padding: 10px; }
+        #result { margin-top: 20px; padding: 15px; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .loading { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+    </style>
 </head>
 <body>
     <h2>Test de connexion Firebase</h2>
     
-    <h3>Étape 1 : Obtenez votre configuration</h3>
-    <ol>
-        <li>Allez sur <a href="https://console.firebase.google.com" target="_blank">Firebase Console</a></li>
-        <li>Cliquez sur votre projet</li>
-        <li>Cliquez sur ⚙️ → "Paramètres du projet"</li>
-        <li>Allez dans "Vos applications" → "Application Web" (ou créez-en une)</li>
-        <li>Copiez la configuration qui ressemble à ceci :</li>
-    </ol>
+    <input type="email" id="email" placeholder="Email" value="g.marouane@outlook.fr"><br>
+    <input type="password" id="password" placeholder="Mot de passe" value="M@ra10"><br>
+    <button onclick="testConnexion()">Tester la connexion et la lecture</button>
     
-    <textarea id="configTemplate" rows="8" cols="50" readonly>
-// VOTRE CONFIGURATION VRAIE RESSEMBLE À ÇA :
-const firebaseConfig = {
-  apiKey: "AIzaSyB123456789abcdefghijklmnopqrstuvwxyz",
-  authDomain: "mon-projet-12345.firebaseapp.com",
-  databaseURL: "https://mon-projet-12345.firebaseio.com",
-  projectId: "mon-projet-12345",
-  storageBucket: "mon-projet-12345.appspot.com",
-  messagingSenderId: "123456789012",
-  appId: "1:123456789012:web:abcdef1234567890"
-};</textarea>
-    <button onclick="copyConfig()">Copier le modèle</button>
-    
-    <h3>Étape 2 : Collez votre configuration ici</h3>
-    <textarea id="userConfig" rows="8" cols="50" placeholder="Collez votre configuration Firebase ici..."></textarea>
-    
-    <h3>Étape 3 : Testez</h3>
-    <input type="email" id="email" placeholder="Email" value="g.marouane@outlook.fr"><br><br>
-    <input type="password" id="password" placeholder="Mot de passe" value="M@ra10"><br><br>
-    
-    <button onclick="testFirebase()">Tester la connexion</button>
-    
-    <div id="result" style="margin-top: 20px; padding: 10px; border: 1px solid #ccc;"></div>
+    <div id="result"></div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
     <script>
-        function copyConfig() {
-            const template = document.getElementById('configTemplate');
-            template.select();
-            document.execCommand('copy');
-            alert('Modèle copié !');
+        // VOTRE CONFIGURATION
+        const firebaseConfig = {
+            apiKey: "AIzaSyC6uSDTNCuw5sHNVaNgq0EzJqJZ9jgic7U",
+            authDomain: "dddiii-2b58b.firebaseapp.com",
+            databaseURL: "https://dddiii-2b58b-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "dddiii-2b58b",
+            storageBucket: "dddiii-2b58b.firebasestorage.app",
+            messagingSenderId: "721468171485",
+            appId: "1:721468171485:web:420e2e0ab98b95fa2ae734",
+            measurementId: "G-QGFM2N76VK"
+        };
+
+        // Initialiser Firebase
+        let app, auth, database;
+        
+        function initFirebase() {
+            try {
+                // Fermer les anciennes instances
+                if (firebase.apps.length > 0) {
+                    firebase.apps.forEach(app => {
+                        try {
+                            app.delete();
+                        } catch (e) {
+                            console.log("Erreur fermeture app:", e);
+                        }
+                    });
+                }
+                
+                // Initialiser avec votre config
+                app = firebase.initializeApp(firebaseConfig);
+                auth = firebase.auth();
+                database = firebase.database();
+                
+                console.log("Firebase initialisé avec succès");
+                return true;
+            } catch (error) {
+                console.error("Erreur initialisation Firebase:", error);
+                return false;
+            }
         }
 
-        async function testFirebase() {
-            const userConfig = document.getElementById('userConfig').value;
+        async function testConnexion() {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const resultDiv = document.getElementById('result');
             
-            if (!userConfig.trim()) {
-                resultDiv.innerHTML = "<span style='color:red'>❌ Collez d'abord votre configuration Firebase</span>";
-                return;
-            }
+            // Afficher chargement
+            resultDiv.innerHTML = "Initialisation...";
+            resultDiv.className = "loading";
             
-            resultDiv.innerHTML = "Initialisation de Firebase...";
-            resultDiv.style.color = "blue";
-
             try {
-                // Extraire la configuration de l'objet
-                const configMatch = userConfig.match(/{[\s\S]*}/);
-                if (!configMatch) {
-                    throw new Error("Format de configuration invalide");
+                // 1. Initialiser Firebase
+                if (!initFirebase()) {
+                    throw new Error("Échec de l'initialisation Firebase");
                 }
                 
-                const configText = configMatch[0];
-                const firebaseConfig = eval('(' + configText + ')');
+                resultDiv.innerHTML = "Connexion en cours...";
                 
-                // Charger Firebase dynamiquement
-                if (!window.firebase) {
-                    await loadFirebaseSDK();
-                }
-                
-                // Réinitialiser Firebase s'il était déjà initialisé
-                if (firebase.apps.length > 0) {
-                    firebase.apps.forEach(app => app.delete());
-                }
-                
-                // Initialiser Firebase
-                firebase.initializeApp(firebaseConfig);
-                const auth = firebase.auth();
-                const database = firebase.database();
-                
-                resultDiv.innerHTML += "<br>Firebase initialisé, connexion en cours...";
-                
-                // Se connecter
+                // 2. Se connecter avec email/mot de passe
                 const userCredential = await auth.signInWithEmailAndPassword(email, password);
-                resultDiv.innerHTML += "<br>✓ Connecté avec succès!";
+                const user = userCredential.user;
                 
-                // Tester la lecture
-                resultDiv.innerHTML += "<br>Test de lecture de la base de données...";
-                const snapshot = await database.ref('/').limitToFirst(1).once('value');
+                resultDiv.innerHTML = `✓ Connecté !<br>UID: ${user.uid}<br>Email: ${user.email}<br>Test de lecture...`;
                 
-                if (snapshot.exists()) {
-                    resultDiv.innerHTML += "<br>✓ Lecture réussie!";
-                    resultDiv.innerHTML += "<br>Premières données: " + JSON.stringify(snapshot.val());
-                } else {
-                    resultDiv.innerHTML += "<br>✓ Lecture réussie (base vide)";
+                // 3. Tester la lecture de la base de données
+                try {
+                    // Essayer de lire à la racine
+                    const snapshot = await database.ref('/').limitToFirst(3).once('value');
+                    
+                    if (snapshot.exists()) {
+                        const data = snapshot.val();
+                        resultDiv.innerHTML += `<br><br>✓ Lecture réussie !`;
+                        resultDiv.innerHTML += `<br>Données trouvées: ${JSON.stringify(data).substring(0, 300)}...`;
+                        
+                        // Afficher les chemins disponibles
+                        resultDiv.innerHTML += `<br><br>Chemins disponibles:`;
+                        Object.keys(data).forEach(key => {
+                            resultDiv.innerHTML += `<br>• ${key}`;
+                        });
+                    } else {
+                        resultDiv.innerHTML += `<br><br>✓ Connexion DB OK mais aucune donnée trouvée à la racine`;
+                    }
+                    
+                } catch (dbError) {
+                    resultDiv.innerHTML += `<br><br>❌ Erreur lecture DB: ${dbError.message}`;
+                    resultDiv.innerHTML += `<br><strong>Vérifiez vos règles de sécurité:</strong>`;
+                    resultDiv.innerHTML += `<br>Allez sur Firebase Console → Realtime Database → Règles`;
+                    resultDiv.innerHTML += `<br>Essayez ces règles temporaires:`;
+                    resultDiv.innerHTML += `<pre>{
+  "rules": {
+    ".read": "auth != null",
+    ".write": false
+  }
+}</pre>`;
                 }
                 
-                resultDiv.style.color = "green";
+                resultDiv.className = "success";
                 
             } catch (error) {
-                resultDiv.innerHTML = "❌ Erreur: " + error.message;
-                resultDiv.style.color = "red";
-                console.error("Détails:", error);
+                resultDiv.innerHTML = `❌ Erreur: ${error.message}`;
+                resultDiv.className = "error";
                 
-                // Aide supplémentaire selon l'erreur
-                if (error.message.includes('api-key')) {
-                    resultDiv.innerHTML += "<br><br><strong>Solution :</strong>";
-                    resultDiv.innerHTML += "<br>1. Allez sur Firebase Console";
-                    resultDiv.innerHTML += "<br>2. Vérifiez que vous copiez la BONNE clé API";
-                    resultDiv.innerHTML += "<br>3. La clé doit commencer par 'AIzaSy'";
-                } else if (error.message.includes('auth/')) {
-                    resultDiv.innerHTML += "<br><br><strong>Solution :</strong>";
-                    resultDiv.innerHTML += "<br>1. Vérifiez l'email/mot de passe";
-                    resultDiv.innerHTML += "<br>2. Activez 'Email/Password' dans Authentication";
+                // Aide selon le type d'erreur
+                if (error.code === 'auth/user-not-found') {
+                    resultDiv.innerHTML += `<br><br>L'utilisateur n'existe pas dans Firebase Authentication.`;
+                    resultDiv.innerHTML += `<br>Créez-le dans Firebase Console → Authentication`;
+                } else if (error.code === 'auth/wrong-password') {
+                    resultDiv.innerHTML += `<br><br>Mot de passe incorrect.`;
+                } else if (error.code === 'auth/invalid-api-key') {
+                    resultDiv.innerHTML += `<br><br>Clé API invalide. Vérifiez votre configuration.`;
+                } else if (error.code === 'auth/network-request-failed') {
+                    resultDiv.innerHTML += `<br><br>Problème réseau. Vérifiez votre connexion.`;
+                } else if (error.message.includes('asia-southeast1')) {
+                    resultDiv.innerHTML += `<br><br>Région de la DB: asia-southeast1`;
+                    resultDiv.innerHTML += `<br>Assurez-vous que c'est la bonne région.`;
                 }
+                
+                console.error("Détails erreur:", error);
             }
         }
 
-        function loadFirebaseSDK() {
-            return new Promise((resolve, reject) => {
-                if (window.firebase) {
-                    resolve();
-                    return;
-                }
-                
-                // Créer les scripts
-                const scripts = [
-                    'https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js',
-                    'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js',
-                    'https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js'
-                ];
-                
-                let loaded = 0;
-                
-                scripts.forEach(src => {
-                    const script = document.createElement('script');
-                    script.src = src;
-                    script.onload = () => {
-                        loaded++;
-                        if (loaded === scripts.length) {
-                            resolve();
-                        }
-                    };
-                    script.onerror = reject;
-                    document.head.appendChild(script);
-                });
-            });
-        }
+        // Initialiser au chargement
+        window.onload = function() {
+            initFirebase();
+        };
     </script>
 </body>
 </html>
