@@ -28,7 +28,12 @@
             margin: 10px 0;
         }
         
-        button:hover {
+        button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        button:hover:not(:disabled) {
             background: #3367d6;
         }
         
@@ -84,6 +89,34 @@
             border-bottom: 2px solid #4285f4;
             padding-bottom: 5px;
         }
+        
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4285f4;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .retry-btn {
+            background: #ff9800;
+            margin-left: 10px;
+            font-size: 14px;
+            padding: 8px 16px;
+        }
+        
+        .retry-btn:hover {
+            background: #f57c00;
+        }
     </style>
 </head>
 <body>
@@ -96,7 +129,13 @@
         Région DB: <code>asia-southeast1</code>
     </div>
     
-    <button onclick="testerConnexion()">🔗 TESTER LA CONNEXION ET LIRE LES DONNÉES</button>
+    <button onclick="testerConnexion()" id="testBtn">
+        <span id="btnText">🔗 TESTER LA CONNEXION ET LIRE LES DONNÉES</span>
+    </button>
+    
+    <button onclick="testerConnexion()" id="retryBtn" class="retry-btn" style="display: none;">
+        🔄 Réessayer
+    </button>
     
     <div id="result"></div>
     
@@ -120,31 +159,109 @@
             measurementId: "G-QGFM2N76VK"
         };
 
+        let firebaseInitialized = false;
         let auth = null;
         let database = null;
+        let currentUser = null;
+
+        // Initialiser Firebase dès le chargement de la page
+        function initialiserFirebase() {
+            if (firebaseInitialized) {
+                return Promise.resolve();
+            }
+            
+            return new Promise((resolve, reject) => {
+                try {
+                    // Vérifier si Firebase est déjà chargé
+                    if (typeof firebase === 'undefined') {
+                        reject(new Error("Firebase SDK non chargé"));
+                        return;
+                    }
+                    
+                    // Fermer les anciennes instances si elles existent
+                    if (firebase.apps.length > 0) {
+                        const defaultApp = firebase.apps.find(app => app.name === '[DEFAULT]');
+                        if (defaultApp) {
+                            resolve(); // Firebase déjà initialisé
+                            return;
+                        }
+                    }
+                    
+                    // Initialiser Firebase
+                    const app = firebase.initializeApp(firebaseConfig);
+                    auth = firebase.auth();
+                    database = firebase.database();
+                    
+                    // Configurer le timeout pour les requêtes réseau
+                    database.ref('.info/connected').on('value', (snap) => {
+                        console.log("État connexion DB:", snap.val() ? "connecté" : "déconnecté");
+                    });
+                    
+                    firebaseInitialized = true;
+                    console.log("Firebase initialisé avec succès");
+                    resolve();
+                    
+                } catch (error) {
+                    console.error("Erreur initialisation Firebase:", error);
+                    reject(error);
+                }
+            });
+        }
+
+        // Tester la connexion réseau
+        async function testerConnexionReseau() {
+            return new Promise((resolve) => {
+                const timeout = setTimeout(() => {
+                    resolve(false);
+                }, 3000);
+                
+                fetch('https://firebase.googleapis.com', { mode: 'no-cors' })
+                    .then(() => {
+                        clearTimeout(timeout);
+                        resolve(true);
+                    })
+                    .catch(() => {
+                        clearTimeout(timeout);
+                        resolve(false);
+                    });
+            });
+        }
 
         async function testerConnexion() {
             const resultDiv = document.getElementById('result');
             const dataDiv = document.getElementById('dataDisplay');
+            const testBtn = document.getElementById('testBtn');
+            const retryBtn = document.getElementById('retryBtn');
+            const btnText = document.getElementById('btnText');
             
             // Réinitialiser l'affichage
             resultDiv.innerHTML = "";
             dataDiv.innerHTML = "";
             resultDiv.className = "loading";
             
+            // Désactiver le bouton pendant le test
+            testBtn.disabled = true;
+            btnText.innerHTML = '<span class="spinner"></span> Test en cours...';
+            retryBtn.style.display = 'none';
+            
             try {
-                // Étape 1: Initialiser Firebase
-                resultDiv.innerHTML = "1. Initialisation de Firebase...\n";
+                // Étape 0: Vérifier la connexion réseau
+                resultDiv.innerHTML = "🔍 Vérification de la connexion réseau...\n";
                 
-                // Fermer les anciennes instances
-                if (firebase.apps.length > 0) {
-                    await Promise.all(firebase.apps.map(app => app.delete()));
+                const reseauOK = await testerConnexionReseau();
+                if (!reseauOK) {
+                    throw new Error("Problème de connexion réseau détecté");
                 }
                 
-                // Initialiser avec votre config
-                const app = firebase.initializeApp(firebaseConfig);
-                auth = firebase.auth();
-                database = firebase.database();
+                resultDiv.innerHTML += "✓ Connexion réseau OK\n";
+                
+                // Étape 1: Initialiser Firebase (attendre que ce soit prêt)
+                resultDiv.innerHTML += "1. Initialisation de Firebase...\n";
+                
+                await initialiserFirebase();
+                
+                // Attendre que Firebase soit vraiment prêt
+                await new Promise(resolve => setTimeout(resolve, 500));
                 
                 resultDiv.innerHTML += "✓ Firebase initialisé\n";
                 resultDiv.innerHTML += "2. Connexion avec les identifiants...\n";
@@ -153,17 +270,42 @@
                 const email = "g.marouane@outlook.fr";
                 const password = "M@ra10";
                 
-                const userCredential = await auth.signInWithEmailAndPassword(email, password);
-                const user = userCredential.user;
+                // Ajouter un timeout pour la connexion
+                const loginPromise = auth.signInWithEmailAndPassword(email, password);
+                const timeoutPromise = new Promise((_, reject) => {
+                    setTimeout(() => reject(new Error("Timeout de connexion")), 10000);
+                });
+                
+                const userCredential = await Promise.race([loginPromise, timeoutPromise]);
+                currentUser = userCredential.user;
                 
                 resultDiv.innerHTML += `✓ Connecté avec succès!\n`;
-                resultDiv.innerHTML += `   UID: ${user.uid}\n`;
-                resultDiv.innerHTML += `   Email: ${user.email}\n`;
-                resultDiv.innerHTML += `   Email vérifié: ${user.emailVerified}\n`;
+                resultDiv.innerHTML += `   UID: ${currentUser.uid}\n`;
+                resultDiv.innerHTML += `   Email: ${currentUser.email}\n`;
                 resultDiv.innerHTML += "3. Lecture de la base de données...\n";
                 
-                // Étape 3: Lire TOUTES les données
-                const snapshot = await database.ref('/').once('value');
+                // Étape 3: Lire TOUTES les données avec retry
+                let retryCount = 0;
+                let snapshot = null;
+                
+                while (retryCount < 3 && !snapshot) {
+                    try {
+                        const readPromise = database.ref('/').once('value');
+                        const readTimeout = new Promise((_, reject) => {
+                            setTimeout(() => reject(new Error("Timeout de lecture")), 8000);
+                        });
+                        
+                        snapshot = await Promise.race([readPromise, readTimeout]);
+                    } catch (readError) {
+                        retryCount++;
+                        if (retryCount < 3) {
+                            resultDiv.innerHTML += `   Tentative ${retryCount + 1}/3...\n`;
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+                        } else {
+                            throw readError;
+                        }
+                    }
+                }
                 
                 if (snapshot.exists()) {
                     const allData = snapshot.val();
@@ -207,6 +349,10 @@
                     resultDiv.className = "success";
                 }
                 
+                // Réactiver le bouton
+                testBtn.disabled = false;
+                btnText.innerHTML = '🔗 TESTER LA CONNEXION ET LIRE LES DONNÉES';
+                
             } catch (error) {
                 // Afficher l'erreur détaillée
                 resultDiv.innerHTML = `❌ ERREUR:\n`;
@@ -216,46 +362,60 @@
                 // Diagnostic selon le type d'erreur
                 resultDiv.innerHTML += `🔍 DIAGNOSTIC:\n`;
                 
-                if (error.code === 'auth/invalid-api-key') {
+                if (error.code === 'auth/network-request-failed' || error.message.includes('network') || error.message.includes('Network')) {
+                    resultDiv.innerHTML += `- Problème réseau détecté\n`;
+                    resultDiv.innerHTML += `- Solution: Réessayez en cliquant sur le bouton "Réessayer"\n`;
+                    resultDiv.innerHTML += `- Conseil: Attendez que la page soit complètement chargée\n`;
+                    
+                    // Afficher le bouton de réessai
+                    retryBtn.style.display = 'inline-block';
+                }
+                else if (error.code === 'auth/invalid-api-key') {
                     resultDiv.innerHTML += `- La clé API est invalide\n`;
-                    resultDiv.innerHTML += `- Vérifiez: ${firebaseConfig.apiKey.substring(0, 20)}...\n`;
                 } 
                 else if (error.code === 'auth/user-not-found') {
                     resultDiv.innerHTML += `- L'utilisateur n'existe pas\n`;
-                    resultDiv.innerHTML += `- Créez-le dans Firebase Console → Authentication\n`;
                 }
                 else if (error.code === 'auth/wrong-password') {
                     resultDiv.innerHTML += `- Mot de passe incorrect\n`;
                 }
-                else if (error.code === 'auth/network-request-failed') {
-                    resultDiv.innerHTML += `- Problème réseau\n`;
-                    resultDiv.innerHTML += `- Vérifiez votre connexion internet\n`;
-                }
                 else if (error.message.includes('permission_denied')) {
                     resultDiv.innerHTML += `- Permission refusée par les règles de sécurité\n`;
-                    resultDiv.innerHTML += `- Allez sur Firebase Console → Realtime Database → Règles\n`;
-                    resultDiv.innerHTML += `- Utilisez temporairement:\n`;
-                    resultDiv.innerHTML += `{\n  "rules": {\n    ".read": true,\n    ".write": false\n  }\n}\n`;
                 }
                 else {
-                    resultDiv.innerHTML += `- Erreur inconnue: ${error.message}\n`;
+                    resultDiv.innerHTML += `- Erreur: ${error.message}\n`;
                 }
                 
-                resultDiv.innerHTML += `\n📋 CONFIG UTILISÉE:\n`;
-                resultDiv.innerHTML += JSON.stringify(firebaseConfig, null, 2);
+                resultDiv.innerHTML += `\n💡 CONSEIL: Cliquez sur "Réessayer" - la 2ème tentative marche souvent mieux`;
                 
                 resultDiv.className = "error";
+                
+                // Réactiver le bouton principal
+                testBtn.disabled = false;
+                btnText.innerHTML = '🔗 TESTER À NOUVEAU';
                 
                 console.error("Erreur complète:", error);
             }
         }
 
-        // Message d'accueil
-        document.getElementById('result').innerHTML = 
-            "Cliquez sur le bouton pour tester la connexion Firebase\n" +
-            "et lire toutes les données de la base.\n\n" +
-            "➡️ Vérifiera: 1. Clé API 2. Authentification 3. Règles DB 4. Données";
-        document.getElementById('result').className = "info-box";
+        // Initialiser Firebase au chargement de la page
+        window.addEventListener('load', async function() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 
+                "📱 Page chargée. Initialisation de Firebase en arrière-plan...\n" +
+                "➡️ Cliquez sur le bouton pour tester la connexion\n\n" +
+                "💡 Conseil: Attendez 2-3 secondes après le chargement de la page\n" +
+                "            avant de cliquer pour éviter les erreurs réseau.";
+            resultDiv.className = "info-box";
+            
+            // Initialiser Firebase silencieusement
+            try {
+                await initialiserFirebase();
+                console.log("Firebase pré-initialisé avec succès");
+            } catch (error) {
+                console.warn("Initialisation silencieuse échouée, mais ce n'est pas grave:", error.message);
+            }
+        });
     </script>
 </body>
 </html>
