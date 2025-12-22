@@ -1,70 +1,158 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Test Firebase Lecture</title>
+    <title>Test Firebase</title>
 </head>
 <body>
-    <h2>Test de lecture Firebase</h2>
+    <h2>Test de connexion Firebase</h2>
     
+    <h3>Étape 1 : Obtenez votre configuration</h3>
+    <ol>
+        <li>Allez sur <a href="https://console.firebase.google.com" target="_blank">Firebase Console</a></li>
+        <li>Cliquez sur votre projet</li>
+        <li>Cliquez sur ⚙️ → "Paramètres du projet"</li>
+        <li>Allez dans "Vos applications" → "Application Web" (ou créez-en une)</li>
+        <li>Copiez la configuration qui ressemble à ceci :</li>
+    </ol>
+    
+    <textarea id="configTemplate" rows="8" cols="50" readonly>
+// VOTRE CONFIGURATION VRAIE RESSEMBLE À ÇA :
+const firebaseConfig = {
+  apiKey: "AIzaSyB123456789abcdefghijklmnopqrstuvwxyz",
+  authDomain: "mon-projet-12345.firebaseapp.com",
+  databaseURL: "https://mon-projet-12345.firebaseio.com",
+  projectId: "mon-projet-12345",
+  storageBucket: "mon-projet-12345.appspot.com",
+  messagingSenderId: "123456789012",
+  appId: "1:123456789012:web:abcdef1234567890"
+};</textarea>
+    <button onclick="copyConfig()">Copier le modèle</button>
+    
+    <h3>Étape 2 : Collez votre configuration ici</h3>
+    <textarea id="userConfig" rows="8" cols="50" placeholder="Collez votre configuration Firebase ici..."></textarea>
+    
+    <h3>Étape 3 : Testez</h3>
     <input type="email" id="email" placeholder="Email" value="g.marouane@outlook.fr"><br><br>
     <input type="password" id="password" placeholder="Mot de passe" value="M@ra10"><br><br>
     
-    <button onclick="testLecture()">Tester la lecture</button>
+    <button onclick="testFirebase()">Tester la connexion</button>
     
-    <div id="result" style="margin-top: 20px;"></div>
-
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <div id="result" style="margin-top: 20px; padding: 10px; border: 1px solid #ccc;"></div>
 
     <script>
-        // REMPLACEZ CE CONFIG AVEC VOTRE CONFIG FIREBASE
-        const firebaseConfig = {
-            apiKey: "AIzaSyBxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-            authDomain: "votre-projet.firebaseapp.com",
-            databaseURL: "https://votre-projet.firebaseio.com",
-            projectId: "votre-projet",
-            storageBucket: "votre-projet.appspot.com",
-            messagingSenderId: "123456789",
-            appId: "1:123456789:web:abc123def456"
-        };
-
-        // Initialiser Firebase
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
+        function copyConfig() {
+            const template = document.getElementById('configTemplate');
+            template.select();
+            document.execCommand('copy');
+            alert('Modèle copié !');
         }
-        const auth = firebase.auth();
-        const database = firebase.database();
 
-        async function testLecture() {
+        async function testFirebase() {
+            const userConfig = document.getElementById('userConfig').value;
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const resultDiv = document.getElementById('result');
             
-            resultDiv.innerHTML = "Connexion en cours...";
+            if (!userConfig.trim()) {
+                resultDiv.innerHTML = "<span style='color:red'>❌ Collez d'abord votre configuration Firebase</span>";
+                return;
+            }
+            
+            resultDiv.innerHTML = "Initialisation de Firebase...";
             resultDiv.style.color = "blue";
 
             try {
-                // 1. Se connecter
-                const userCredential = await auth.signInWithEmailAndPassword(email, password);
-                resultDiv.innerHTML = "✓ Connecté avec succès!<br>Test de lecture...";
+                // Extraire la configuration de l'objet
+                const configMatch = userConfig.match(/{[\s\S]*}/);
+                if (!configMatch) {
+                    throw new Error("Format de configuration invalide");
+                }
                 
-                // 2. Tester la lecture
-                const snapshot = await database.ref('test').once('value');
+                const configText = configMatch[0];
+                const firebaseConfig = eval('(' + configText + ')');
+                
+                // Charger Firebase dynamiquement
+                if (!window.firebase) {
+                    await loadFirebaseSDK();
+                }
+                
+                // Réinitialiser Firebase s'il était déjà initialisé
+                if (firebase.apps.length > 0) {
+                    firebase.apps.forEach(app => app.delete());
+                }
+                
+                // Initialiser Firebase
+                firebase.initializeApp(firebaseConfig);
+                const auth = firebase.auth();
+                const database = firebase.database();
+                
+                resultDiv.innerHTML += "<br>Firebase initialisé, connexion en cours...";
+                
+                // Se connecter
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                resultDiv.innerHTML += "<br>✓ Connecté avec succès!";
+                
+                // Tester la lecture
+                resultDiv.innerHTML += "<br>Test de lecture de la base de données...";
+                const snapshot = await database.ref('/').limitToFirst(1).once('value');
                 
                 if (snapshot.exists()) {
-                    resultDiv.innerHTML = "✓ Lecture réussie!<br>Données: " + JSON.stringify(snapshot.val());
-                    resultDiv.style.color = "green";
+                    resultDiv.innerHTML += "<br>✓ Lecture réussie!";
+                    resultDiv.innerHTML += "<br>Premières données: " + JSON.stringify(snapshot.val());
                 } else {
-                    resultDiv.innerHTML = "✓ Lecture réussie!<br>Aucune donnée au chemin 'test'";
-                    resultDiv.style.color = "orange";
+                    resultDiv.innerHTML += "<br>✓ Lecture réussie (base vide)";
                 }
-
+                
+                resultDiv.style.color = "green";
+                
             } catch (error) {
-                resultDiv.innerHTML = "✗ Erreur: " + error.message;
+                resultDiv.innerHTML = "❌ Erreur: " + error.message;
                 resultDiv.style.color = "red";
                 console.error("Détails:", error);
+                
+                // Aide supplémentaire selon l'erreur
+                if (error.message.includes('api-key')) {
+                    resultDiv.innerHTML += "<br><br><strong>Solution :</strong>";
+                    resultDiv.innerHTML += "<br>1. Allez sur Firebase Console";
+                    resultDiv.innerHTML += "<br>2. Vérifiez que vous copiez la BONNE clé API";
+                    resultDiv.innerHTML += "<br>3. La clé doit commencer par 'AIzaSy'";
+                } else if (error.message.includes('auth/')) {
+                    resultDiv.innerHTML += "<br><br><strong>Solution :</strong>";
+                    resultDiv.innerHTML += "<br>1. Vérifiez l'email/mot de passe";
+                    resultDiv.innerHTML += "<br>2. Activez 'Email/Password' dans Authentication";
+                }
             }
+        }
+
+        function loadFirebaseSDK() {
+            return new Promise((resolve, reject) => {
+                if (window.firebase) {
+                    resolve();
+                    return;
+                }
+                
+                // Créer les scripts
+                const scripts = [
+                    'https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js',
+                    'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js',
+                    'https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js'
+                ];
+                
+                let loaded = 0;
+                
+                scripts.forEach(src => {
+                    const script = document.createElement('script');
+                    script.src = src;
+                    script.onload = () => {
+                        loaded++;
+                        if (loaded === scripts.length) {
+                            resolve();
+                        }
+                    };
+                    script.onerror = reject;
+                    document.head.appendChild(script);
+                });
+            });
         }
     </script>
 </body>
