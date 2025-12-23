@@ -9,65 +9,32 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            line-height: 1.6;
-        }
-        button {
-            background-color: #4CAF50;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            margin: 5px;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        button:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
-        }
-        .status {
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 4px;
-        }
-        .connected {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .disconnected {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        .data-container {
-            background-color: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 4px;
-            padding: 15px;
-            margin-top: 20px;
-            max-height: 400px;
-            overflow-y: auto;
-        }
-        pre {
-            white-space: pre-wrap;
-            word-wrap: break-word;
-        }
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.6; }
+        button { background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin: 5px; }
+        button:hover { background-color: #45a049; }
+        button:disabled { background-color: #cccccc; cursor: not-allowed; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .connected { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .disconnected { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .data-container { background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 15px; margin-top: 20px; max-height: 400px; overflow-y: auto; }
+        pre { white-space: pre-wrap; word-wrap: break-word; }
+        .info { background-color: #e7f3ff; color: #004085; padding: 10px; border-radius: 4px; margin: 15px 0; border: 1px solid #b8daff; }
+        code { background-color: #eee; padding: 2px 4px; border-radius: 3px; }
     </style>
 </head>
 <body>
     <h1>Test d'accès Firebase Database</h1>
     
-    <div class="status disconnected" id="status">
-        Non connecté à Firebase
+    <div class="info">
+        <strong>Instructions :</strong> 
+        <ol>
+            <li>Vérifiez que l'utilisateur <code>g.marouane@outlook.fe</code> existe dans Firebase Authentication.</li>
+            <li>Définissez les règles de la base de données (onglet "Règles" dans la console) pour autoriser la lecture.</li>
+            <li>Cliquez sur "Se connecter à Firebase", puis sur "Charger les données".</li>
+        </ol>
     </div>
+    
+    <div class="status disconnected" id="status">Non connecté à Firebase</div>
     
     <div>
         <button id="connectBtn" onclick="connectToFirebase()">Se connecter à Firebase</button>
@@ -81,23 +48,21 @@
     </div>
     
     <script>
-        // Configuration Firebase
+        // Configuration Firebase - À COMPLÉTER AVEC VOS VALEURS
         const firebaseConfig = {
-            apiKey: "AIzaSyC6uSDTNCuw5sHNVaNgq0EzJq",
+            apiKey: "AIzaSyC6uSDTNCuw5sHNVaNgq0EzJqJZ9jgic7U",
             authDomain: "dddiii-2b58b.firebaseapp.com",
             databaseURL: "https://dddiii-2b58b-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "dddiii-2b58b",
-            storageBucket: "dddiii-2b58b.appspot.com",
-            messagingSenderId: "VOTRE_MESSAGING_SENDER_ID",
-            appId: "VOTRE_APP_ID"
+            projectId: "dddiii-2b58b", // À confirmer/vérifier
+            storageBucket: "dddiii-2b58b.appspot.com", // À confirmer/vérifier
+            messagingSenderId: "123456789012", // À remplacer
+            appId: "1:123456789012:web:a1b2c3d4e5f67890" // À remplacer
         };
         
-        // Variables globales
         let app;
         let database;
         let user = null;
         
-        // Initialiser Firebase
         function initializeFirebase() {
             try {
                 app = firebase.initializeApp(firebaseConfig);
@@ -108,7 +73,6 @@
             }
         }
         
-        // Se connecter à Firebase
         async function connectToFirebase() {
             const email = "g.marouane@outlook.fe";
             const password = "M@ra10";
@@ -124,11 +88,17 @@
                 document.getElementById('disconnectBtn').disabled = false;
                 
             } catch (error) {
-                updateStatus("Erreur de connexion: " + error.message, true);
+                let errorMsg = "Erreur de connexion: " + error.message;
+                // Messages d'erreur courants[citation:2][citation:6]
+                if (error.code === 'auth/invalid-api-key') {
+                    errorMsg += " La clé API est invalide ou a été révoquée[citation:6]. Vérifiez-la dans la console Firebase.";
+                } else if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                    errorMsg += " L'email ou le mot de passe est incorrect, ou l'utilisateur n'existe pas.";
+                }
+                updateStatus(errorMsg, true);
             }
         }
         
-        // Charger les données de la base
         function loadData() {
             if (!user) {
                 updateStatus("Vous devez d'abord vous connecter", true);
@@ -136,25 +106,26 @@
             }
             
             updateStatus("Chargement des données...", false);
-            
-            // Référence à la racine de la base de données
             const dbRef = database.ref();
             
             dbRef.get().then((snapshot) => {
                 if (snapshot.exists()) {
-                    const data = snapshot.val();
-                    document.getElementById('dataOutput').textContent = JSON.stringify(data, null, 2);
+                    document.getElementById('dataOutput').textContent = JSON.stringify(snapshot.val(), null, 2);
                     updateStatus("Données chargées avec succès", false);
                 } else {
-                    document.getElementById('dataOutput').textContent = "Aucune donnée trouvée dans la base";
+                    document.getElementById('dataOutput').textContent = "Aucune donnée trouvée dans la base.";
                     updateStatus("Base de données vide", false);
                 }
             }).catch((error) => {
-                updateStatus("Erreur lors du chargement: " + error.message, true);
+                let errorMsg = "Erreur lors du chargement: " + error.message;
+                // Erreur courante liée aux règles de sécurité[citation:3]
+                if (error.code === 'PERMISSION_DENIED') {
+                    errorMsg += " Accès refusé. Vérifiez les règles de sécurité de votre base de données Realtime.";
+                }
+                updateStatus(errorMsg, true);
             });
         }
         
-        // Se déconnecter
         function disconnectFromFirebase() {
             firebase.auth().signOut().then(() => {
                 user = null;
@@ -168,14 +139,12 @@
             });
         }
         
-        // Mettre à jour le statut
         function updateStatus(message, isError) {
             const statusElement = document.getElementById('status');
             statusElement.textContent = message;
             statusElement.className = "status " + (isError ? "disconnected" : "connected");
         }
         
-        // Initialiser Firebase au chargement de la page
         window.onload = initializeFirebase;
     </script>
 </body>
