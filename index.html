@@ -5,7 +5,6 @@
   <title>Enregistrement des invités</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
-  <!-- Intégration de Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
   <style>
@@ -55,7 +54,6 @@
 
   <div id="banner" class="banner info hidden"></div>
 
-  <!-- Connexion -->
   <div id="loginCard" class="card">
     <div class="toolbar">
       <div><strong>Connexion</strong></div>
@@ -69,7 +67,6 @@
     <p id="loginMsg" class="banner err hidden"></p>
   </div>
 
-  <!-- Interface Admin -->
   <div id="adminPanel" class="hidden">
     <div class="toolbar card">
       <div><strong>Panneau administrateur</strong></div>
@@ -128,7 +125,6 @@
     </div>
   </div>
 
-  <!-- Interface Utilisateur -->
   <div id="userPanel" class="hidden">
     <div class="toolbar card">
       <div><strong>Mon espace</strong></div>
@@ -158,7 +154,6 @@
     </div>
   </div>
 
-  <!-- NOUVEAU Formulaire d'invité (via lien) -->
   <div id="invitePanel" class="hidden">
     <div class="guest-form-container">
       <div class="toolbar" style="margin-bottom: 20px;">
@@ -270,38 +265,29 @@
   </div>
 
   <script>
-    /* =======================
-       CONFIGURATION FIREBASE
-    ======================== */
     const firebaseConfig = {
       apiKey: "AIzaSyC6uSDTNCuw5sHNVaNgq0EzJq",
       authDomain: "dddiii-2b58b.firebaseapp.com",
-      databaseURL: "https://dddiii-2b58b-default-rtdb.asia-southeast1.firebasedatabase.app/",
+      databaseURL: "https://dddiii-2b58b-default-rtdb.asia-southeast1.firebasedatabase.app",
       projectId: "dddiii-2b58b",
       storageBucket: "dddiii-2b58b.appspot.com",
-      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-      appId: "YOUR_APP_ID"
+      messagingSenderId: "123456789",
+      appId: "1:123456789:web:abcdef123456"
     };
     
-    // Initialiser Firebase
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    /* =======================
-       ÉTAT / CONSTANTES
-    ======================== */
     let currentUser = null;
-    const SESSION_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
+    const SESSION_TIMEOUT_MS = 10 * 60 * 1000;
     let sessionTimer = null;
     let qrCode = null;
 
-    // Configuration d'authentification
     const ADMIN_CREDENTIALS = {
       username: "g.marouane@outlook.fr",
       password: "M@ra10"
     };
 
-    // Banner helpers
     function showBanner(type, text){
       const b = document.getElementById('banner');
       b.className = 'banner ' + type;
@@ -321,9 +307,6 @@
       el.classList.add('hidden');
     }
 
-    /* =======================
-       SESSION / SÉCURITÉ
-    ======================== */
     function startSessionTimer(){
       stopSessionTimer();
       sessionTimer = setTimeout(()=>{
@@ -344,7 +327,6 @@
     function logout(expired=false){
       currentUser = null;
       stopSessionTimer();
-      // UI reset
       document.getElementById('adminPanel').classList.add('hidden');
       document.getElementById('userPanel').classList.add('hidden');
       document.getElementById('invitePanel').classList.add('hidden');
@@ -353,13 +335,10 @@
     }
 
     function retourAccueil(){
-      window.history.replaceState({}, document.title, location.pathname); // nettoie ?invite
+      window.history.replaceState({}, document.title, location.pathname);
       logout(false);
     }
 
-    /* =======================
-       AUTH
-    ======================== */
     async function login(){
       hideInlineMsg('loginMsg');
       const u = document.getElementById('loginUser').value.trim();
@@ -370,7 +349,6 @@
         return;
       }
 
-      // Vérifier les identifiants admin
       if(u === ADMIN_CREDENTIALS.username && p === ADMIN_CREDENTIALS.password){
         currentUser = { role:'admin' };
         document.getElementById('loginCard').classList.add('hidden');
@@ -381,7 +359,6 @@
         return;
       }
 
-      // Vérifier l'utilisateur dans Firebase
       try {
         const snapshot = await database.ref('users/' + u).once('value');
         const user = snapshot.val();
@@ -397,13 +374,11 @@
           showInlineMsg('loginMsg','err',"Identifiants incorrects.");
         }
       } catch (error) {
-        showInlineMsg('loginMsg','err',"Erreur d'accès à la base de données.");
+        console.error("Erreur Firebase:", error);
+        showInlineMsg('loginMsg','err',"Erreur d'accès à la base de données: " + error.message);
       }
     }
 
-    /* =======================
-       ADMIN : UTILISATEURS
-    ======================== */
     async function creerUtilisateur(){
       hideInlineMsg('userWarn');
       const appart = (document.getElementById('appartAdmin').value || '').trim();
@@ -418,13 +393,11 @@
       const userId = appart + bat;
       
       try {
-        // Vérifier si l'utilisateur existe déjà
         const snapshot = await database.ref('users/' + userId).once('value');
         
         if(snapshot.exists()){
           showInlineMsg('userWarn','warn',`L'utilisateur ${userId} existe déjà.`);
         } else {
-          // Créer le nouvel utilisateur
           await database.ref('users/' + userId).set({
             user: userId,
             appart: appart,
@@ -441,7 +414,6 @@
     }
 
     async function refreshAdmin(){
-      // Liste utilisateurs
       const tbodyU = document.querySelector('#tableUsers tbody');
       tbodyU.innerHTML = '';
       
@@ -457,7 +429,6 @@
         showBanner('err', "Erreur lors du chargement des utilisateurs.");
       }
 
-      // Enregistrements
       const tbody = document.querySelector('#tableAdmin tbody');
       tbody.innerHTML = '';
       
@@ -488,9 +459,6 @@
       }
     }
 
-    /* =======================
-       UTILISATEUR : MES ENREG.
-    ======================== */
     async function refreshUser(){
       const tbody = document.querySelector('#tableUser tbody');
       tbody.innerHTML = '';
@@ -524,7 +492,6 @@
       }
     }
 
-    // Fonction pour supprimer un enregistrement
     async function supprimerEnregistrement(id) {
       if (!confirm("Êtes-vous sûr de vouloir supprimer cet enregistrement ?")) {
         return;
@@ -547,9 +514,6 @@
       showBanner('info', "Copiez/partagez ce lien avec vos invités.");
     }
 
-    /* =======================
-       MODE INVITÉ
-    ======================== */
     async function enterInviteMode(userId){
       try {
         const snapshot = await database.ref('users/' + userId).once('value');
@@ -564,10 +528,9 @@
         document.getElementById('invitePanel').classList.remove('hidden');
         document.getElementById('invAppart').value = user.appart;
         document.getElementById('invBat').value = user.bat;
-        genererChamps(); // init 1 personne
+        genererChamps();
         hideBanner();
         
-        // Initialiser QR Code Styling
         qrCode = new QRCodeStyling({
           width: 250,
           height: 250,
@@ -579,7 +542,6 @@
           cornersDotOptions: { type: "dot", color: "#1E40AF" }
         });
         
-        // Ajouter les gestionnaires d'événements
         document.getElementById('guestForm').addEventListener('submit', function(e) {
           e.preventDefault();
           enregistrer();
@@ -696,7 +658,6 @@ Merci
       return message;
     }
 
-    // Fonction pour générer le contenu du QR Code avec les informations de l'invité
     function buildQRContent(rec) {
       const nb = rec.personnes ? Object.keys(rec.personnes).length + 1 : 1;
       const nomPrincipal = rec.nom;
@@ -730,20 +691,17 @@ ID: ${rec.id}
     }
 
     async function enregistrer(){
-      // Vérifier la case d'acceptation
       if(!document.getElementById('consentCheckbox').checked){
         showBanner('warn', "Veuillez accepter le règlement intérieur et les conditions de traitement des données.");
         return;
       }
 
-      // Vérifier la signature
       const signature = (document.getElementById('signature').value || '').trim();
       if(!signature){
         showBanner('warn', "Veuillez saisir votre signature numérique (nom complet).");
         return;
       }
 
-      // validations
       const nom = (document.getElementById('nomPrincipal').value || '').trim();
       const doc = (document.getElementById('docPrincipal').value || '').trim();
       const nb = parseInt(document.getElementById('nbPers').value || '0', 10);
@@ -782,22 +740,16 @@ ID: ${rec.id}
         sent:false 
       };
       
-      const msg = buildMessage(rec);
-
       try {
-        // Ajouter l'enregistrement à Firebase
         const newRecordRef = database.ref('records').push();
         await newRecordRef.set(rec);
         
-        // Récupérer l'ID généré
         const id = newRecordRef.key;
         rec.id = id;
         
-        // Afficher le message de succès et le QR code
         document.getElementById('successMessage').classList.remove('hidden');
         document.getElementById('qrcodeContainer').classList.remove('hidden');
         
-        // Générer le QR Code avec les informations de l'invité
         const qrContent = buildQRContent(rec);
         if(qrCode) {
           qrCode.update({ data: qrContent });
@@ -805,16 +757,12 @@ ID: ${rec.id}
           qrCode.append(document.getElementById('qrcode'));
         }
 
-        // Masquer le formulaire
         document.getElementById('guestForm').style.display = 'none';
       } catch (error) {
         showBanner('err',"Erreur lors de l'enregistrement. Réessayez.");
       }
     }
 
-    /* =======================
-       ADMIN : ENVOI WHATSAPP
-    ======================== */
     async function envoyerWhatsApp(id){
       try {
         const snapshot = await database.ref('records/' + id).once('value');
@@ -829,7 +777,6 @@ ID: ${rec.id}
         const url = "https://wa.me/?text=" + encodeURIComponent(msg);
         window.open(url, "_blank");
         
-        // marquer envoyé
         await database.ref('records/' + id).update({ sent: true });
         
         if(currentUser.role === 'admin') refreshAdmin();
@@ -839,16 +786,10 @@ ID: ${rec.id}
       }
     }
 
-    /* =======================
-       DÉMARRAGE
-    ======================== */
-    // Initialisation du bouton de connexion
     document.getElementById('btnLogin').disabled = false;
     
-    // Vérifier si on a un paramètre invite dans l'URL
     const params = new URLSearchParams(location.search);
     if(params.has("invite")) {
-      // Ouvrir directement le formulaire d'invité sans bouton retour
       enterInviteMode(params.get("invite"));
     }
   </script>
