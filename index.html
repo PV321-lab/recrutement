@@ -3,149 +3,140 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test Firebase Database</title>
-    <!-- Firebase SDK -->
+    <title>Test Firebase - Correction Clé API</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.6; }
-        button { background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin: 5px; }
-        button:hover { background-color: #45a049; }
-        button:disabled { background-color: #cccccc; cursor: not-allowed; }
-        .status { padding: 10px; margin: 10px 0; border-radius: 4px; }
-        .connected { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .disconnected { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        .data-container { background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 15px; margin-top: 20px; max-height: 400px; overflow-y: auto; }
-        pre { white-space: pre-wrap; word-wrap: break-word; }
-        .info { background-color: #e7f3ff; color: #004085; padding: 10px; border-radius: 4px; margin: 15px 0; border: 1px solid #b8daff; }
-        code { background-color: #eee; padding: 2px 4px; border-radius: 3px; }
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .error { background-color: #ffebee; color: #c62828; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .success { background-color: #e8f5e9; color: #2e7d32; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .config-box { background-color: #f5f5f5; padding: 15px; border-left: 4px solid #2196f3; margin: 20px 0; }
+        code { background-color: #eee; padding: 2px 6px; border-radius: 3px; }
+        button { background-color: #2196f3; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin: 5px; }
+        button:hover { background-color: #1976d2; }
     </style>
 </head>
 <body>
-    <h1>Test d'accès Firebase Database</h1>
+    <h1>🔧 Test Firebase - Problème de Clé API</h1>
     
-    <div class="info">
-        <strong>Instructions :</strong> 
+    <div class="error">
+        <h3>❌ Erreur détectée : Clé API invalide</h3>
+        <p>La clé API <code>AIzaSyC6uSDTNCuw5sHNVaNgq0EzJqJZ9jgic7U</code> n'est pas valide.</p>
+    </div>
+    
+    <div class="config-box">
+        <h3>📋 Étapes pour corriger le problème :</h3>
         <ol>
-            <li>Vérifiez que l'utilisateur <code>g.marouane@outlook.fe</code> existe dans Firebase Authentication.</li>
-            <li>Définissez les règles de la base de données (onglet "Règles" dans la console) pour autoriser la lecture.</li>
-            <li>Cliquez sur "Se connecter à Firebase", puis sur "Charger les données".</li>
+            <li><strong>Connectez-vous à la console Firebase</strong> : <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a></li>
+            <li><strong>Sélectionnez votre projet</strong> : dddiii-2b58b</li>
+            <li><strong>Cliquez sur ⚙️ > Paramètres du projet</strong></li>
+            <li><strong>Faites défiler à "Vos applications"</strong></li>
+            <li><strong>Cliquez sur votre application web</strong> (ou créez-en une)</li>
+            <li><strong>Copiez la configuration complète</strong></li>
+            <li><strong>Collez-la dans le code ci-dessous</strong></li>
         </ol>
     </div>
     
-    <div class="status disconnected" id="status">Non connecté à Firebase</div>
-    
-    <div>
-        <button id="connectBtn" onclick="connectToFirebase()">Se connecter à Firebase</button>
-        <button id="loadDataBtn" onclick="loadData()" disabled>Charger les données</button>
-        <button id="disconnectBtn" onclick="disconnectFromFirebase()" disabled>Déconnexion</button>
+    <h3>🛠 Configuration à compléter :</h3>
+    <div id="firebaseConfig">
+        <p>Remplacer ces valeurs par celles de votre console Firebase :</p>
+        <pre>
+const firebaseConfig = {
+    apiKey: "<span id="apiKey">À remplacer</span>",
+    authDomain: "<span id="authDomain">À remplacer</span>",
+    databaseURL: "<span id="databaseURL">À remplacer</span>",
+    projectId: "<span id="projectId">À remplacer</span>",
+    storageBucket: "<span id="storageBucket">À remplacer</span>",
+    messagingSenderId: "<span id="messagingSenderId">À remplacer</span>",
+    appId: "<span id="appId">À remplacer</span>"
+};</pre>
     </div>
     
-    <div class="data-container">
-        <h3>Données de la base :</h3>
-        <pre id="dataOutput">Aucune donnée chargée</pre>
-    </div>
+    <button onclick="testFirebase()">Tester la connexion Firebase</button>
+    <div id="testResult"></div>
     
     <script>
-        // Configuration Firebase - À COMPLÉTER AVEC VOS VALEURS
-        const firebaseConfig = {
-            apiKey: "AIzaSyC6uSDTNCuw5sHNVaNgq0EzJqJZ9jgic7U",
+        // Configuration TEMPORAIRE - À REMPLACER
+        let firebaseConfig = {
+            apiKey: "AIzaSyC6uSDTNCuw5sHNVaNgq0EzJqJZ9jgic7U", // Clé probablement invalide
             authDomain: "dddiii-2b58b.firebaseapp.com",
             databaseURL: "https://dddiii-2b58b-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "dddiii-2b58b", // À confirmer/vérifier
-            storageBucket: "dddiii-2b58b.appspot.com", // À confirmer/vérifier
-            messagingSenderId: "123456789012", // À remplacer
-            appId: "1:123456789012:web:a1b2c3d4e5f67890" // À remplacer
+            projectId: "dddiii-2b58b",
+            storageBucket: "dddiii-2b58b.appspot.com",
+            messagingSenderId: "123456789012",
+            appId: "1:123456789012:web:a1b2c3d4e5f67890"
         };
         
-        let app;
-        let database;
-        let user = null;
-        
-        function initializeFirebase() {
-            try {
-                app = firebase.initializeApp(firebaseConfig);
-                database = firebase.database();
-                updateStatus("Firebase initialisé", false);
-            } catch (error) {
-                updateStatus("Erreur d'initialisation: " + error.message, true);
-            }
-        }
-        
-        async function connectToFirebase() {
-            const email = "g.marouane@outlook.fe";
-            const password = "M@ra10";
+        async function testFirebase() {
+            const resultDiv = document.getElementById('testResult');
+            resultDiv.innerHTML = '<p>Test en cours...</p>';
             
             try {
-                updateStatus("Connexion en cours...", false);
-                const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
-                user = userCredential.user;
+                // Initialiser Firebase
+                const app = firebase.initializeApp(firebaseConfig);
                 
-                updateStatus(`Connecté en tant que: ${user.email}`, false);
-                document.getElementById('connectBtn').disabled = true;
-                document.getElementById('loadDataBtn').disabled = false;
-                document.getElementById('disconnectBtn').disabled = false;
+                // Tester l'authentification
+                const auth = firebase.auth();
+                resultDiv.innerHTML = '<p class="success">✅ Firebase initialisé avec succès</p>';
                 
-            } catch (error) {
-                let errorMsg = "Erreur de connexion: " + error.message;
-                // Messages d'erreur courants[citation:2][citation:6]
-                if (error.code === 'auth/invalid-api-key') {
-                    errorMsg += " La clé API est invalide ou a été révoquée[citation:6]. Vérifiez-la dans la console Firebase.";
-                } else if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-                    errorMsg += " L'email ou le mot de passe est incorrect, ou l'utilisateur n'existe pas.";
+                // Essayer de se connecter
+                try {
+                    await auth.signInWithEmailAndPassword("g.marouane@outlook.fe", "M@ra10");
+                    resultDiv.innerHTML += '<p class="success">✅ Authentification réussie</p>';
+                    
+                    // Tester la base de données
+                    const database = firebase.database();
+                    const snapshot = await database.ref().limitToFirst(1).get();
+                    
+                    if (snapshot.exists()) {
+                        resultDiv.innerHTML += '<p class="success">✅ Connexion à la base de données réussie</p>';
+                        resultDiv.innerHTML += `<pre>Données: ${JSON.stringify(snapshot.val(), null, 2)}</pre>`;
+                    } else {
+                        resultDiv.innerHTML += '<p class="success">✅ Base de données accessible (mais vide)</p>';
+                    }
+                    
+                } catch (authError) {
+                    resultDiv.innerHTML += `<p class="error">❌ Erreur d'authentification: ${authError.message}</p>`;
+                    resultDiv.innerHTML += '<p>Vérifiez que l\'utilisateur existe dans Firebase Authentication</p>';
                 }
-                updateStatus(errorMsg, true);
+                
+            } catch (initError) {
+                resultDiv.innerHTML = `<div class="error">
+                    <h3>❌ Erreur d'initialisation Firebase</h3>
+                    <p><strong>Message:</strong> ${initError.message}</p>
+                    <p><strong>Code:</strong> ${initError.code || 'N/A'}</p>
+                    <p><strong>Solution:</strong> Vérifiez votre configuration Firebase dans la console.</p>
+                    <p>La clé API semble invalide. Vérifiez:</p>
+                    <ul>
+                        <li>Que la clé API est correcte</li>
+                        <li>Que les restrictions de clé autorisent votre domaine</li>
+                        <li>Que l'API Firebase Authentication est activée</li>
+                    </ul>
+                </div>`;
             }
         }
         
-        function loadData() {
-            if (!user) {
-                updateStatus("Vous devez d'abord vous connecter", true);
-                return;
-            }
-            
-            updateStatus("Chargement des données...", false);
-            const dbRef = database.ref();
-            
-            dbRef.get().then((snapshot) => {
-                if (snapshot.exists()) {
-                    document.getElementById('dataOutput').textContent = JSON.stringify(snapshot.val(), null, 2);
-                    updateStatus("Données chargées avec succès", false);
-                } else {
-                    document.getElementById('dataOutput').textContent = "Aucune donnée trouvée dans la base.";
-                    updateStatus("Base de données vide", false);
-                }
-            }).catch((error) => {
-                let errorMsg = "Erreur lors du chargement: " + error.message;
-                // Erreur courante liée aux règles de sécurité[citation:3]
-                if (error.code === 'PERMISSION_DENIED') {
-                    errorMsg += " Accès refusé. Vérifiez les règles de sécurité de votre base de données Realtime.";
-                }
-                updateStatus(errorMsg, true);
-            });
-        }
+        // Instructions détaillées
+        console.log(`
+        ========================================
+        INSTRUCTIONS POUR CORRIGER LA CLÉ API :
+        ========================================
+        1. Allez sur: https://console.firebase.google.com
+        2. Sélectionnez le projet: dddiii-2b58b
+        3. Cliquez sur ⚙️ > Paramètres du projet
+        4. Faites défiler à "Vos applications"
+        5. Cliquez sur l'icône "</>" (Application web)
+        6. Copiez TOUT l'objet de configuration
+        7. Remplacez firebaseConfig dans ce code
         
-        function disconnectFromFirebase() {
-            firebase.auth().signOut().then(() => {
-                user = null;
-                updateStatus("Déconnecté", true);
-                document.getElementById('connectBtn').disabled = false;
-                document.getElementById('loadDataBtn').disabled = true;
-                document.getElementById('disconnectBtn').disabled = true;
-                document.getElementById('dataOutput').textContent = "Aucune donnée chargée";
-            }).catch((error) => {
-                updateStatus("Erreur de déconnexion: " + error.message, true);
-            });
-        }
-        
-        function updateStatus(message, isError) {
-            const statusElement = document.getElementById('status');
-            statusElement.textContent = message;
-            statusElement.className = "status " + (isError ? "disconnected" : "connected");
-        }
-        
-        window.onload = initializeFirebase;
+        Si aucune application n'existe:
+        1. Cliquez sur "Ajouter une application"
+        2. Sélectionnez "</>" Web
+        3. Donnez un nom à votre application
+        4. Cliquez sur "Enregistrer l'application"
+        5. Copiez la configuration
+        `);
     </script>
 </body>
 </html>
