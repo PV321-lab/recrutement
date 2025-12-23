@@ -274,7 +274,13 @@
        CONFIGURATION FIREBASE
     ======================== */
     const firebaseConfig = {
-      databaseURL: "https://dddiii-2b58b-default-rtdb.asia-southeast1.firebasedatabase.app/"
+      apiKey: "AIzaSyC6uSDTNCuw5sHNVaNgq0EzJq",
+      authDomain: "dddiii-2b58b.firebaseapp.com",
+      databaseURL: "https://dddiii-2b58b-default-rtdb.asia-southeast1.firebasedatabase.app/",
+      projectId: "dddiii-2b58b",
+      storageBucket: "dddiii-2b58b.appspot.com",
+      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+      appId: "YOUR_APP_ID"
     };
     
     // Initialiser Firebase
@@ -288,6 +294,12 @@
     const SESSION_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
     let sessionTimer = null;
     let qrCode = null;
+
+    // Configuration d'authentification
+    const ADMIN_CREDENTIALS = {
+      username: "g.marouane@outlook.fr",
+      password: "M@ra10"
+    };
 
     // Banner helpers
     function showBanner(type, text){
@@ -358,7 +370,8 @@
         return;
       }
 
-      if(u === 'admin' && p === 'admin'){
+      // Vérifier les identifiants admin
+      if(u === ADMIN_CREDENTIALS.username && p === ADMIN_CREDENTIALS.password){
         currentUser = { role:'admin' };
         document.getElementById('loginCard').classList.add('hidden');
         document.getElementById('adminPanel').classList.remove('hidden');
