@@ -266,8 +266,14 @@
 
   <script>
     const firebaseConfig = {
-      apiKey: "AIzaSyC6uSDTNCuw5sHNVaNgq0EzJq",
-      databaseURL: "https://dddiii-2b58b-default-rtdb.asia-southeast1.firebasedatabase.app/"
+      apiKey: "AIzaSyC6uSDTNCuw5sHNVaNgq0EzJqJZ9jgic7U",
+      authDomain: "dddiii-2b58b.firebaseapp.com",
+      databaseURL: "https://dddiii-2b58b-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "dddiii-2b58b",
+      storageBucket: "dddiii-2b58b.firebasestorage.app",
+      messagingSenderId: "721468171485",
+      appId: "1:721468171485:web:420e2e0ab98b95fa2ae734",
+      measurementId: "G-QGFM2N76VK"
     };
     
     firebase.initializeApp(firebaseConfig);
@@ -359,6 +365,7 @@
           showInlineMsg('loginMsg','err',"Identifiants incorrects.");
         }
       } catch (error) {
+        console.error("Erreur Firebase:", error);
         showInlineMsg('loginMsg','err',"Erreur d'accès à la base de données.");
       }
     }
