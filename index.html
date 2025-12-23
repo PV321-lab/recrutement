@@ -266,7 +266,6 @@
 
   <script>
     const firebaseConfig = {
-      apiKey: "AIzaSyC6uSDTNCuw5sHNVaNgq0EzJq",
       databaseURL: "https://dddiii-2b58b-default-rtdb.asia-southeast1.firebasedatabase.app/"
     };
     
@@ -324,11 +323,6 @@
       if(!expired) showBanner('info', "Vous êtes déconnecté.");
     }
 
-    function retourAccueil(){
-      window.history.replaceState({}, document.title, location.pathname);
-      logout(false);
-    }
-
     async function login(){
       hideInlineMsg('loginMsg');
       const u = document.getElementById('loginUser').value.trim();
@@ -339,7 +333,7 @@
         return;
       }
 
-      if(u === 'g.marouane@outlook.fr' && p === 'M@ro10'){
+      if(u === 'g.marouane@outlook.fr' && p === 'M@ra10'){
         currentUser = { role:'admin' };
         document.getElementById('loginCard').classList.add('hidden');
         document.getElementById('adminPanel').classList.remove('hidden');
@@ -364,7 +358,6 @@
           showInlineMsg('loginMsg','err',"Identifiants incorrects.");
         }
       } catch (error) {
-        console.error("Erreur Firebase:", error);
         showInlineMsg('loginMsg','err',"Erreur d'accès à la base de données.");
       }
     }
