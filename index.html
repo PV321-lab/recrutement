@@ -2,111 +2,187 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test de connexion à la base de données</title>
+    <title>Test Firebase Simple</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 500px;
-            margin: 50px auto;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-        .container {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-        button {
-            background-color: #4CAF50;
-            color: white;
-            padding: 15px 30px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            margin: 20px 0;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        button:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
-        }
-        #result {
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 5px;
-            display: none;
-        }
-        .success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        .loading {
-            color: #666;
-        }
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        button { padding: 10px 15px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+        .loading { color: orange; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>Test de connexion à la base de données</h2>
-        <p>Cliquez sur le bouton pour tester la connexion :</p>
-        
-        <button id="testBtn">Tester la connexion</button>
-        
-        <div id="result"></div>
-        
-        <p style="font-size: 12px; color: #666; margin-top: 30px;">
-            Note : Ce test nécessite un serveur web avec PHP et une base de données MySQL/MariaDB.
-        </p>
+    <h1>Test de Connexion Firebase</h1>
+    
+    <div class="test-section">
+        <h3>Test 1: Connexion Simple</h3>
+        <button onclick="testBasicConnection()">Tester la connexion de base</button>
+        <div id="result1"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test 2: Écrire une donnée</h3>
+        <button onclick="testWriteData()">Écrire des données test</button>
+        <div id="result2"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test 3: Lire des données</h3>
+        <button onclick="testReadData()">Lire des données test</button>
+        <div id="result3"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test 4: Vérifier le projet</h3>
+        <button onclick="testProjectInfo()">Vérifier les infos du projet</button>
+        <div id="result4"></div>
     </div>
 
-    <script>
-        document.getElementById('testBtn').addEventListener('click', function() {
-            const btn = this;
-            const resultDiv = document.getElementById('result');
+<script>
+const firebaseConfig = {
+    apiKey: "AIzaSyDExwKQehI0-l10J1Ykq3sCR8eTTqGOH7g",
+    authDomain: "dddiii-2b58b.firebaseapp.com",
+    databaseURL: "https://dddiii-2b58b-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "dddiii-2b58b",
+    storageBucket: "dddiii-2b58b.appspot.com",
+    messagingSenderId: "1061640484898",
+    appId: "1:1061640484898:web:9d4b74d8c9e33005efd7df"
+};
+
+let app = null;
+let db = null;
+
+function testBasicConnection() {
+    const resultDiv = document.getElementById('result1');
+    resultDiv.innerHTML = '<span class="loading">Connexion en cours...</span>';
+    
+    try {
+        // Vérifier si Firebase est déjà initialisé
+        const existingApps = firebase.apps;
+        if (existingApps.length > 0) {
+            app = existingApps[0];
+            resultDiv.innerHTML = '<span class="success">✅ Firebase déjà initialisé</span>';
+        } else {
+            app = firebase.initializeApp(firebaseConfig);
+            resultDiv.innerHTML = '<span class="success">✅ Firebase initialisé avec succès!</span>';
+        }
+        
+        db = firebase.database();
+        console.log("Firebase initialisé:", app);
+        
+    } catch (error) {
+        resultDiv.innerHTML = `<span class="error">❌ Erreur: ${error.message}</span>`;
+        console.error("Erreur Firebase:", error);
+    }
+}
+
+function testWriteData() {
+    if (!db) {
+        document.getElementById('result2').innerHTML = '<span class="error">❌ Firebase non initialisé</span>';
+        return;
+    }
+    
+    const resultDiv = document.getElementById('result2');
+    resultDiv.innerHTML = '<span class="loading">Écriture en cours...</span>';
+    
+    const testData = {
+        testMessage: "Ceci est un test de connexion",
+        timestamp: new Date().toISOString(),
+        randomId: Math.random().toString(36).substr(2, 9)
+    };
+    
+    try {
+        // Essayer plusieurs chemins possibles
+        const testRef = db.ref('connection_test/' + Date.now());
+        testRef.set(testData)
+            .then(() => {
+                resultDiv.innerHTML = '<span class="success">✅ Données écrites avec succès!</span>';
+                console.log("Données écrites:", testData);
+            })
+            .catch(error => {
+                resultDiv.innerHTML = `<span class="error">❌ Erreur écriture: ${error.message}</span>`;
+                console.error("Erreur d'écriture:", error);
+            });
             
-            // Désactiver le bouton pendant le test
-            btn.disabled = true;
-            btn.textContent = 'Connexion en cours...';
+    } catch (error) {
+        resultDiv.innerHTML = `<span class="error">❌ Erreur: ${error.message}</span>`;
+        console.error("Erreur:", error);
+    }
+}
+
+function testReadData() {
+    if (!db) {
+        document.getElementById('result3').innerHTML = '<span class="error">❌ Firebase non initialisé</span>';
+        return;
+    }
+    
+    const resultDiv = document.getElementById('result3');
+    resultDiv.innerHTML = '<span class="loading">Lecture en cours...</span>';
+    
+    try {
+        // Essayer de lire à la racine pour voir la structure
+        db.ref('/').once('value')
+            .then(snapshot => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    resultDiv.innerHTML = `<span class="success">✅ Données lues avec succès!</span><br>
+                                          <small>Structure: ${Object.keys(data || {}).join(', ')}</small>`;
+                    console.log("Données lues:", data);
+                } else {
+                    resultDiv.innerHTML = '<span class="success">✅ Base de données vide (pas d\'erreur de connexion)</span>';
+                }
+            })
+            .catch(error => {
+                resultDiv.innerHTML = `<span class="error">❌ Erreur lecture: ${error.message}</span>`;
+                console.error("Erreur de lecture:", error);
+            });
             
-            // Afficher le statut de chargement
-            resultDiv.innerHTML = '<div class="loading">Tentative de connexion...</div>';
-            resultDiv.style.display = 'block';
-            resultDiv.className = '';
-            
-            // Envoyer la requête AJAX
-            fetch('test_connection.php')
-                .then(response => response.text())
-                .then(data => {
-                    // Afficher le résultat
-                    if (data.includes('Connexion réussie')) {
-                        resultDiv.className = 'success';
-                    } else {
-                        resultDiv.className = 'error';
-                    }
-                    resultDiv.innerHTML = data;
-                })
-                .catch(error => {
-                    resultDiv.className = 'error';
-                    resultDiv.innerHTML = 'Erreur lors du test: ' + error;
-                })
-                .finally(() => {
-                    // Réactiver le bouton
-                    btn.disabled = false;
-                    btn.textContent = 'Tester la connexion';
-                });
+    } catch (error) {
+        resultDiv.innerHTML = `<span class="error">❌ Erreur: ${error.message}</span>`;
+        console.error("Erreur:", error);
+    }
+}
+
+function testProjectInfo() {
+    const resultDiv = document.getElementById('result4');
+    
+    // Afficher les informations de configuration
+    let info = `<strong>Informations de configuration:</strong><br>`;
+    info += `Projet ID: ${firebaseConfig.projectId}<br>`;
+    info += `URL Base de données: ${firebaseConfig.databaseURL}<br>`;
+    info += `Région: ${firebaseConfig.databaseURL.includes('asia-southeast1') ? 'Asia-Southeast1' : 'Autre'}<br>`;
+    
+    // Tester la connexion avec fetch
+    resultDiv.innerHTML = info + '<span class="loading">Test de ping en cours...</span>';
+    
+    // Tester si l'URL est accessible
+    fetch(firebaseConfig.databaseURL + '/.json')
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            }
+            throw new Error(`HTTP ${response.status}`);
+        })
+        .then(data => {
+            resultDiv.innerHTML = info + '<span class="success">✅ URL accessible! La base de données répond.</span>';
+            console.log("Réponse directe:", data);
+        })
+        .catch(error => {
+            resultDiv.innerHTML = info + `<span class="error">❌ URL non accessible: ${error.message}</span>`;
         });
-    </script>
+}
+
+// Tester automatiquement au chargement
+window.onload = function() {
+    console.log("Configuration Firebase:", firebaseConfig);
+    
+    // Tester la connexion automatiquement après 1 seconde
+    setTimeout(testBasicConnection, 1000);
+};
+</script>
+
 </body>
 </html>
