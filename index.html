@@ -47,54 +47,6 @@
     .rules-section-title { color: #1E40AF; font-weight: bold; margin-top: 15px; margin-bottom: 5px; }
     .signature-box { margin-top: 15px; padding-top: 15px; border-top: 1px solid #dee2e6; }
     .signature-label { font-weight: bold; margin-bottom: 5px; }
-    
-    /* Styles pour la zone de signature */
-    .signature-canvas-container {
-      border: 2px solid #1E40AF;
-      border-radius: 8px;
-      padding: 10px;
-      background: white;
-      margin: 10px 0;
-    }
-    #signatureCanvas {
-      width: 100%;
-      height: 150px;
-      background: #f8f9fa;
-      cursor: crosshair;
-      border: 1px solid #ced4da;
-      border-radius: 4px;
-    }
-    .signature-tools {
-      display: flex;
-      gap: 10px;
-      margin-top: 10px;
-      flex-wrap: wrap;
-    }
-    .signature-tools button {
-      margin-top: 0;
-      padding: 8px 12px;
-      font-size: 14px;
-    }
-    .btn-clear {
-      background: #6c757d !important;
-    }
-    .signature-preview {
-      margin-top: 10px;
-      padding: 10px;
-      background: #f8f9fa;
-      border-radius: 4px;
-      border: 1px dashed #ced4da;
-      text-align: center;
-    }
-    .signature-preview img {
-      max-width: 200px;
-      max-height: 80px;
-    }
-    .signature-instruction {
-      font-size: 12px;
-      color: #6c757d;
-      margin-top: 5px;
-    }
   </style>
 </head>
 <body>
@@ -283,29 +235,14 @@
             </div>
             
             <div class="signature-box">
-              <div class="signature-label">Signature numérique *</div>
-              <div class="signature-instruction">Dessinez votre signature dans la zone ci-dessous :</div>
-              
-              <div class="signature-canvas-container">
-                <canvas id="signatureCanvas">Votre navigateur ne supporte pas le canvas HTML5.</canvas>
-                <div class="signature-tools">
-                  <button type="button" onclick="clearSignature()" class="btn-clear">Effacer la signature</button>
-                  <button type="button" onclick="undoSignature()">Annuler le dernier trait</button>
-                </div>
-                <div class="signature-preview">
-                  <div id="signaturePreviewText">Aucune signature dessinée</div>
-                  <img id="signaturePreview" class="hidden">
-                </div>
-              </div>
-              
-              <input type="hidden" id="signatureData" required>
-              
-              <div class="note" style="margin-top: 10px; font-size: 12px;">
-                En dessinant votre signature, vous confirmez avoir lu et accepté toutes les conditions ci-dessus.
+              <div class="signature-label">Signature numérique (tapez votre nom complet) *</div>
+              <input type="text" id="signature" required placeholder="Nom et prénom pour signature électronique" class="guest-input">
+              <div class="note" style="margin-top: 5px; font-size: 12px;">
+                En tapant votre nom complet, vous confirmez avoir lu et accepté toutes les conditions ci-dessus.
               </div>
             </div>
             
-            <label style="display: flex; align-items: center; margin-top: 15px;">
+            <label style="display: flex; align-items: center; margin-top: 10px;">
               <input type="checkbox" id="consentCheckbox" required style="margin-right: 10px; width: auto;">
               <span>J'accepte le règlement intérieur et les conditions de traitement des données</span>
             </label>
@@ -351,174 +288,6 @@
     const SESSION_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
     let sessionTimer = null;
     let qrCode = null;
-
-    /* =======================
-       VARIABLES DE SIGNATURE
-    ======================== */
-    let signatureCanvas = null;
-    let signatureCtx = null;
-    let isDrawing = false;
-    let lastX = 0;
-    let lastY = 0;
-    let signaturePaths = [];
-    let currentPath = [];
-
-    /* =======================
-       FONCTIONS DE SIGNATURE
-    ======================== */
-    function initSignatureCanvas() {
-      signatureCanvas = document.getElementById('signatureCanvas');
-      signatureCtx = signatureCanvas.getContext('2d');
-      
-      // Ajuster la taille du canvas pour l'affichage
-      const rect = signatureCanvas.getBoundingClientRect();
-      signatureCanvas.width = rect.width;
-      signatureCanvas.height = 150;
-      
-      // Configurer le contexte
-      signatureCtx.lineWidth = 2;
-      signatureCtx.lineCap = 'round';
-      signatureCtx.lineJoin = 'round';
-      signatureCtx.strokeStyle = '#1E40AF';
-      
-      // Ajouter les écouteurs d'événements
-      signatureCanvas.addEventListener('mousedown', startDrawing);
-      signatureCanvas.addEventListener('mousemove', draw);
-      signatureCanvas.addEventListener('mouseup', stopDrawing);
-      signatureCanvas.addEventListener('mouseout', stopDrawing);
-      
-      // Support tactile
-      signatureCanvas.addEventListener('touchstart', handleTouchStart);
-      signatureCanvas.addEventListener('touchmove', handleTouchMove);
-      signatureCanvas.addEventListener('touchend', handleTouchEnd);
-      
-      // Empêcher le défilement sur mobile
-      signatureCanvas.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
-    }
-    
-    function startDrawing(e) {
-      isDrawing = true;
-      const pos = getMousePos(e);
-      [lastX, lastY] = [pos.x, pos.y];
-      currentPath = [{x: lastX, y: lastY}];
-    }
-    
-    function draw(e) {
-      if (!isDrawing) return;
-      e.preventDefault();
-      
-      const pos = getMousePos(e);
-      signatureCtx.beginPath();
-      signatureCtx.moveTo(lastX, lastY);
-      signatureCtx.lineTo(pos.x, pos.y);
-      signatureCtx.stroke();
-      
-      currentPath.push({x: pos.x, y: pos.y});
-      [lastX, lastY] = [pos.x, pos.y];
-    }
-    
-    function stopDrawing() {
-      if (!isDrawing) return;
-      isDrawing = false;
-      if (currentPath.length > 0) {
-        signaturePaths.push([...currentPath]);
-        updateSignaturePreview();
-      }
-    }
-    
-    function getMousePos(e) {
-      const rect = signatureCanvas.getBoundingClientRect();
-      let clientX, clientY;
-      
-      if (e.type.includes('mouse')) {
-        clientX = e.clientX;
-        clientY = e.clientY;
-      } else if (e.touches && e.touches.length > 0) {
-        clientX = e.touches[0].clientX;
-        clientY = e.touches[0].clientY;
-      }
-      
-      return {
-        x: clientX - rect.left,
-        y: clientY - rect.top
-      };
-    }
-    
-    function handleTouchStart(e) {
-      if (e.touches.length === 1) {
-        e.preventDefault();
-        startDrawing(e.touches[0]);
-      }
-    }
-    
-    function handleTouchMove(e) {
-      if (e.touches.length === 1) {
-        e.preventDefault();
-        draw(e.touches[0]);
-      }
-    }
-    
-    function handleTouchEnd(e) {
-      if (e.touches.length === 0) {
-        stopDrawing();
-      }
-    }
-    
-    function clearSignature() {
-      signatureCtx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
-      signaturePaths = [];
-      currentPath = [];
-      document.getElementById('signaturePreviewText').textContent = 'Aucune signature dessinée';
-      document.getElementById('signaturePreview').classList.add('hidden');
-      document.getElementById('signatureData').value = '';
-    }
-    
-    function undoSignature() {
-      if (signaturePaths.length > 0) {
-        signaturePaths.pop();
-        redrawSignature();
-        updateSignaturePreview();
-      }
-    }
-    
-    function redrawSignature() {
-      signatureCtx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
-      signatureCtx.beginPath();
-      
-      signaturePaths.forEach(path => {
-        if (path.length > 0) {
-          signatureCtx.moveTo(path[0].x, path[0].y);
-          for (let i = 1; i < path.length; i++) {
-            signatureCtx.lineTo(path[i].x, path[i].y);
-          }
-          signatureCtx.stroke();
-        }
-      });
-    }
-    
-    function updateSignaturePreview() {
-      const hasSignature = signaturePaths.length > 0;
-      const previewText = document.getElementById('signaturePreviewText');
-      const previewImg = document.getElementById('signaturePreview');
-      const signatureDataInput = document.getElementById('signatureData');
-      
-      if (hasSignature) {
-        // Convertir le canvas en image pour la prévisualisation
-        const dataURL = signatureCanvas.toDataURL('image/png');
-        previewImg.src = dataURL;
-        previewImg.classList.remove('hidden');
-        previewText.textContent = 'Signature enregistrée';
-        signatureDataInput.value = dataURL;
-      } else {
-        previewText.textContent = 'Aucune signature dessinée';
-        previewImg.classList.add('hidden');
-        signatureDataInput.value = '';
-      }
-    }
-    
-    function hasSignature() {
-      return signaturePaths.length > 0;
-    }
 
     // Banner helpers
     function showBanner(type, text){
@@ -783,12 +552,6 @@
         document.getElementById('invAppart').value = user.appart;
         document.getElementById('invBat').value = user.bat;
         genererChamps(); // init 1 personne
-        
-        // Initialiser le canvas de signature
-        setTimeout(() => {
-          initSignatureCanvas();
-        }, 100);
-        
         hideBanner();
         
         // Initialiser QR Code Styling
@@ -913,7 +676,7 @@ Merci
       }
 
       message += `
-ملاحظة: الرجاء عدم السماح لأي أشpersonnes autres, seulement les personnes mentionnées dans la réservation.
+ملاحظة: الرجاء عدم السماح لأي أشخاص آخرين، فقط الأشخاص المذكورين في الحجز.
 
 شكرًا.`;
 
@@ -947,7 +710,6 @@ Document: ${docPrincipal}
       }
 
       qrContent += `
-Signature numérique: OUI
 ID: ${rec.id}
 `;
 
@@ -962,14 +724,9 @@ ID: ${rec.id}
       }
 
       // Vérifier la signature
-      if(!hasSignature()){
-        showBanner('warn', "Veuillez dessiner votre signature numérique.");
-        return;
-      }
-
-      const signatureData = document.getElementById('signatureData').value;
-      if(!signatureData){
-        showBanner('warn', "Signature invalide. Veuillez redessiner votre signature.");
+      const signature = (document.getElementById('signature').value || '').trim();
+      if(!signature){
+        showBanner('warn', "Veuillez saisir votre signature numérique (nom complet).");
         return;
       }
 
@@ -1007,7 +764,7 @@ ID: ${rec.id}
         doc, 
         personnes, 
         date, 
-        signature: signatureData, // Enregistrer l'image de la signature
+        signature,
         acceptedRules: true,
         sent:false 
       };
