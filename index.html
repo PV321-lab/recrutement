@@ -1,6 +1,182 @@
-<?php
-session_start();
-session_destroy();
-header("Location: index.php");
-exit();
-?>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Firebase Database</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .connected {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .data-container {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test d'accès Firebase Database</h1>
+    
+    <div class="status disconnected" id="status">
+        Non connecté à Firebase
+    </div>
+    
+    <div>
+        <button id="connectBtn" onclick="connectToFirebase()">Se connecter à Firebase</button>
+        <button id="loadDataBtn" onclick="loadData()" disabled>Charger les données</button>
+        <button id="disconnectBtn" onclick="disconnectFromFirebase()" disabled>Déconnexion</button>
+    </div>
+    
+    <div class="data-container">
+        <h3>Données de la base :</h3>
+        <pre id="dataOutput">Aucune donnée chargée</pre>
+    </div>
+    
+    <script>
+        // Configuration Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyC6uSDTNCuw5sHNVaNgq0EzJq",
+            authDomain: "dddiii-2b58b.firebaseapp.com",
+            databaseURL: "https://dddiii-2b58b-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "dddiii-2b58b",
+            storageBucket: "dddiii-2b58b.appspot.com",
+            messagingSenderId: "VOTRE_MESSAGING_SENDER_ID",
+            appId: "VOTRE_APP_ID"
+        };
+        
+        // Variables globales
+        let app;
+        let database;
+        let user = null;
+        
+        // Initialiser Firebase
+        function initializeFirebase() {
+            try {
+                app = firebase.initializeApp(firebaseConfig);
+                database = firebase.database();
+                updateStatus("Firebase initialisé", false);
+            } catch (error) {
+                updateStatus("Erreur d'initialisation: " + error.message, true);
+            }
+        }
+        
+        // Se connecter à Firebase
+        async function connectToFirebase() {
+            const email = "g.marouane@outlook.fe";
+            const password = "M@ra10";
+            
+            try {
+                updateStatus("Connexion en cours...", false);
+                const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
+                user = userCredential.user;
+                
+                updateStatus(`Connecté en tant que: ${user.email}`, false);
+                document.getElementById('connectBtn').disabled = true;
+                document.getElementById('loadDataBtn').disabled = false;
+                document.getElementById('disconnectBtn').disabled = false;
+                
+            } catch (error) {
+                updateStatus("Erreur de connexion: " + error.message, true);
+            }
+        }
+        
+        // Charger les données de la base
+        function loadData() {
+            if (!user) {
+                updateStatus("Vous devez d'abord vous connecter", true);
+                return;
+            }
+            
+            updateStatus("Chargement des données...", false);
+            
+            // Référence à la racine de la base de données
+            const dbRef = database.ref();
+            
+            dbRef.get().then((snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    document.getElementById('dataOutput').textContent = JSON.stringify(data, null, 2);
+                    updateStatus("Données chargées avec succès", false);
+                } else {
+                    document.getElementById('dataOutput').textContent = "Aucune donnée trouvée dans la base";
+                    updateStatus("Base de données vide", false);
+                }
+            }).catch((error) => {
+                updateStatus("Erreur lors du chargement: " + error.message, true);
+            });
+        }
+        
+        // Se déconnecter
+        function disconnectFromFirebase() {
+            firebase.auth().signOut().then(() => {
+                user = null;
+                updateStatus("Déconnecté", true);
+                document.getElementById('connectBtn').disabled = false;
+                document.getElementById('loadDataBtn').disabled = true;
+                document.getElementById('disconnectBtn').disabled = true;
+                document.getElementById('dataOutput').textContent = "Aucune donnée chargée";
+            }).catch((error) => {
+                updateStatus("Erreur de déconnexion: " + error.message, true);
+            });
+        }
+        
+        // Mettre à jour le statut
+        function updateStatus(message, isError) {
+            const statusElement = document.getElementById('status');
+            statusElement.textContent = message;
+            statusElement.className = "status " + (isError ? "disconnected" : "connected");
+        }
+        
+        // Initialiser Firebase au chargement de la page
+        window.onload = initializeFirebase;
+    </script>
+</body>
+</html>
