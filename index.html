@@ -1,3 +1,5 @@
+Voici le code complet avec la configuration Firebase mise à jour et les identifiants d'authentification intégrés :
+
 ```html
 <!DOCTYPE html>
 <html lang="fr">
@@ -266,6 +268,7 @@
   </div>
 
   <script>
+    // Configuration Firebase avec authentification par email/mot de passe
     const firebaseConfig = {
       apiKey: "AIzaSyC6uSDTNCuw5sHNVaNgq0EzJqJZ9jgic7U",
       authDomain: "dddiii-2b58b.firebaseapp.com",
@@ -277,19 +280,24 @@
       measurementId: "G-QGFM2N76VK"
     };
     
+    // Initialisation Firebase
     firebase.initializeApp(firebaseConfig);
     
+    // Références aux services Firebase
     const auth = firebase.auth();
     const database = firebase.database();
 
+    // Variables d'état
     let currentUser = null;
-    const SESSION_TIMEOUT_MS = 10 * 60 * 1000;
+    const SESSION_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
     let sessionTimer = null;
     let signatureData = '';
     let hasSignature = false;
 
+    // Initialisation jsPDF
     const { jsPDF } = window.jspdf;
 
+    // Fonctions d'affichage des messages
     function showBanner(type, text){
       const b = document.getElementById('banner');
       b.className = 'banner ' + type;
@@ -313,6 +321,7 @@
       el.classList.add('hidden');
     }
 
+    // Gestion de la session utilisateur
     function startSessionTimer(){
       stopSessionTimer();
       sessionTimer = setTimeout(()=>{
@@ -332,10 +341,12 @@
       if(currentUser) startSessionTimer();
     }
     
+    // Réinitialisation du timer à chaque interaction utilisateur
     ['click','keydown','touchstart'].forEach(evt=>{
       document.addEventListener(evt, resetSessionTimer, {passive:true});
     });
 
+    // Déconnexion
     async function logout(expired=false){
       try {
         await auth.signOut();
@@ -352,6 +363,7 @@
       if(!expired) showBanner('info', "Vous êtes déconnecté.");
     }
 
+    // Connexion avec l'email et mot de passe fournis
     async function login(){
       hideInlineMsg('loginMsg');
       const email = document.getElementById('loginEmail').value.trim();
@@ -366,6 +378,7 @@
         const userCredential = await auth.signInWithEmailAndPassword(email, password);
         const user = userCredential.user;
         
+        // Détermination du rôle (admin si email correspond)
         currentUser = { 
           uid: user.uid,
           email: user.email,
@@ -402,6 +415,7 @@
       }
     }
 
+    // Écouteur d'état d'authentification
     auth.onAuthStateChanged((user) => {
       if (user) {
         currentUser = { 
@@ -426,6 +440,7 @@
       }
     });
 
+    // Création d'un utilisateur (admin seulement)
     async function creerUtilisateur(){
       hideInlineMsg('userWarn');
       const appart = (document.getElementById('appartAdmin').value || '').trim();
@@ -460,6 +475,7 @@
       }
     }
 
+    // Rafraîchissement du panneau admin
     async function refreshAdmin(){
       const tbodyU = document.querySelector('#tableUsers tbody');
       tbodyU.innerHTML = '';
@@ -509,6 +525,7 @@
       }
     }
 
+    // Rafraîchissement du panneau utilisateur
     async function refreshUser(){
       const tbody = document.querySelector('#tableUser tbody');
       tbody.innerHTML = '';
@@ -542,6 +559,7 @@
       }
     }
 
+    // Affichage du document en modal
     function showDocument(imageSrc) {
       document.getElementById('modalImage').src = imageSrc;
       document.getElementById('documentModal').style.display = 'block';
@@ -558,6 +576,7 @@
       }
     }
 
+    // Suppression d'un enregistrement
     async function supprimerEnregistrement(id) {
       if (!confirm("Êtes-vous sûr de vouloir supprimer cet enregistrement ?")) {
         return;
@@ -572,6 +591,7 @@
       }
     }
 
+    // Génération du lien d'invitation
     function genererLien(){
       const base = location.href.split('?')[0];
       const lien = `${base}?invite=${encodeURIComponent(currentUser.uid)}`;
@@ -580,6 +600,7 @@
       showBanner('info', "Copiez/partagez ce lien avec vos invités.");
     }
 
+    // Gestion de la signature
     const canvas = document.getElementById('signatureCanvas');
     const clearBtn = document.getElementById('clearBtn');
     const registerBtn = document.getElementById('registerBtn');
@@ -686,6 +707,7 @@
       window.addEventListener('resize', initCanvas);
     }
 
+    // Enregistrement de la signature et des données
     async function registerSignature() {
       if(!document.getElementById('consentCheckbox').checked){
         showBanner('warn', "Veuillez accepter les conditions.");
@@ -777,6 +799,7 @@
       }
     }
 
+    // Génération de l'image du document signé
     async function generateDocumentImage(nom, doc, typeDoc, nationalite, totalPersons, appart, bat, date, personnes, signature) {
       return new Promise((resolve, reject) => {
         try {
@@ -842,6 +865,7 @@
       });
     }
 
+    // Mode invité via lien
     async function enterInviteMode(userId){
       try {
         const snapshot = await database.ref('users/' + userId).once('value');
@@ -867,6 +891,7 @@
       }
     }
 
+    // Génération des champs pour personnes supplémentaires
     function genererChamps(){
       const nb = Math.max(1, parseInt(document.getElementById('nbPers').value || '1', 10));
       const cont = document.getElementById('personnes');
@@ -940,6 +965,7 @@
       }
     }
 
+    // Construction du message WhatsApp
     function buildMessage(rec){
       const nb = rec.personnes ? Object.keys(rec.personnes).length + 1 : 1;
       const nomPrincipal = rec.nom;
@@ -1000,6 +1026,7 @@ Merci
       return message;
     }
 
+    // Envoi du message WhatsApp
     async function envoyerWhatsApp(id){
       try {
         const snapshot = await database.ref('records/' + id).once('value');
@@ -1023,6 +1050,7 @@ Merci
       }
     }
 
+    // Initialisation
     document.getElementById('btnLogin').disabled = false;
     
     const params = new URLSearchParams(location.search);
