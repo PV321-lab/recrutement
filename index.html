@@ -5,7 +5,7 @@
   <title>Enregistrement des invités</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
-  <!-- Intégration de Firebase - AJOUT DU MODULE AUTH -->
+  <!-- Intégration de Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
@@ -42,6 +42,8 @@
     .consent-container { margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6; }
     .consent-text { max-height: 150px; overflow-y: auto; padding: 10px; background: white; border-radius: 5px; border: 1px solid #ced4da; margin: 10px 0; }
     .btn-delete { background: var(--err) !important; margin-left: 5px; }
+    .loader { border: 3px solid #f3f3f3; border-top: 3px solid #3498db; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; margin-left: 10px; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
@@ -237,30 +239,38 @@
     // Initialiser Firebase
     const app = firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
-    const auth = firebase.auth(); // AJOUT DE L'AUTH
+    const auth = firebase.auth();
 
     /* =======================
        ÉTAT / CONSTANTES
     ======================== */
     let currentUser = null;
+    let firebaseAuthenticated = false;
     const SESSION_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
     let sessionTimer = null;
     let qrCode = null;
 
-    // Fonction pour configurer les règles de sécurité de la base de données
-    async function configureDatabaseSecurity() {
+    // Fonction pour s'authentifier anonymement avec Firebase
+    async function authenticateFirebase() {
       try {
-        // Essayer d'accéder à la base de données
-        const testRef = database.ref('.info/connected');
-        testRef.on('value', (snapshot) => {
-          console.log('Connecté à Firebase:', snapshot.val());
-        });
-        
+        // S'authentifier anonymement
+        const userCredential = await auth.signInAnonymously();
+        firebaseAuthenticated = true;
+        console.log('Authentifié anonymement avec Firebase');
         return true;
       } catch (error) {
-        console.error('Erreur de configuration Firebase:', error);
-        showBanner('err', 'Erreur de connexion à Firebase. Vérifiez la configuration.');
-        return false;
+        console.error('Erreur d\'authentification Firebase:', error);
+        
+        // Essayer avec l'authentification par email/mot de passe
+        try {
+          await auth.signInWithEmailAndPassword('g.marouane@outlook.fr', 'M@ra10');
+          firebaseAuthenticated = true;
+          console.log('Authentifié avec email/mot de passe');
+          return true;
+        } catch (emailError) {
+          console.error('Erreur d\'authentification email:', emailError);
+          return false;
+        }
       }
     }
 
@@ -333,19 +343,38 @@
         return;
       }
 
-      // Admin classique
-      if(u === 'admin' && p === 'admin'){
-        currentUser = { role:'admin' };
-        document.getElementById('loginCard').classList.add('hidden');
-        document.getElementById('adminPanel').classList.remove('hidden');
-        showBanner('ok', "Connecté en tant qu'administrateur.");
-        startSessionTimer();
-        refreshAdmin();
-        return;
-      }
+      // Désactiver le bouton pendant la connexion
+      const btn = document.getElementById('btnLogin');
+      const originalText = btn.textContent;
+      btn.disabled = true;
+      btn.innerHTML = 'Connexion en cours... <span class="loader"></span>';
 
-      // Vérifier l'utilisateur dans Firebase
       try {
+        // Vérifier d'abord si Firebase est authentifié
+        if (!firebaseAuthenticated) {
+          const authSuccess = await authenticateFirebase();
+          if (!authSuccess) {
+            showInlineMsg('loginMsg','err',"Erreur d'authentification Firebase. Veuillez réessayer.");
+            btn.disabled = false;
+            btn.textContent = originalText;
+            return;
+          }
+        }
+
+        // Admin classique
+        if(u === 'admin' && p === 'admin'){
+          currentUser = { role:'admin' };
+          document.getElementById('loginCard').classList.add('hidden');
+          document.getElementById('adminPanel').classList.remove('hidden');
+          showBanner('ok', "Connecté en tant qu'administrateur.");
+          startSessionTimer();
+          refreshAdmin();
+          btn.disabled = false;
+          btn.textContent = originalText;
+          return;
+        }
+
+        // Vérifier l'utilisateur dans Firebase
         const snapshot = await database.ref('users/' + u).once('value');
         const user = snapshot.val();
         
@@ -361,7 +390,10 @@
         }
       } catch (error) {
         console.error('Erreur Firebase:', error);
-        showInlineMsg('loginMsg','err',"Erreur d'accès à la base de données. Vérifiez votre connexion.");
+        showInlineMsg('loginMsg','err',"Erreur d'accès à la base de données. Code: " + error.code);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
       }
     }
 
@@ -516,6 +548,15 @@
     ======================== */
     async function enterInviteMode(userId){
       try {
+        // S'assurer que Firebase est authentifié
+        if (!firebaseAuthenticated) {
+          const authSuccess = await authenticateFirebase();
+          if (!authSuccess) {
+            showBanner('err', "Erreur d'authentification Firebase.");
+            return;
+          }
+        }
+
         const snapshot = await database.ref('users/' + userId).once('value');
         const user = snapshot.val();
         
@@ -740,6 +781,15 @@ ID: ${rec.id}
       const msg = buildMessage(rec);
 
       try {
+        // S'assurer que Firebase est authentifié
+        if (!firebaseAuthenticated) {
+          const authSuccess = await authenticateFirebase();
+          if (!authSuccess) {
+            showBanner('err', "Erreur d'authentification Firebase.");
+            return;
+          }
+        }
+
         // Ajouter l'enregistrement à Firebase
         const newRecordRef = database.ref('records').push();
         await newRecordRef.set(rec);
@@ -797,22 +847,27 @@ ID: ${rec.id}
     /* =======================
        DÉMARRAGE
     ======================== */
-    // Initialisation du bouton de connexion
-    document.getElementById('btnLogin').disabled = false;
-    
-    // Configurer la sécurité au démarrage
-    configureDatabaseSecurity().then(success => {
-      if(success) {
-        console.log('Firebase configuré avec succès');
+    // Initialisation au chargement
+    window.addEventListener('DOMContentLoaded', async function() {
+      try {
+        // Essayer de s'authentifier automatiquement
+        const authSuccess = await authenticateFirebase();
+        if (authSuccess) {
+          console.log('Firebase authentifié au démarrage');
+        } else {
+          showBanner('warn', 'Connexion Firebase en attente...');
+        }
+        
+        // Vérifier si on a un paramètre invite dans l'URL
+        const params = new URLSearchParams(location.search);
+        if(params.has("invite")) {
+          // Ouvrir directement le formulaire d'invité
+          enterInviteMode(params.get("invite"));
+        }
+      } catch (error) {
+        console.error('Erreur au démarrage:', error);
       }
     });
-    
-    // Vérifier si on a un paramètre invite dans l'URL
-    const params = new URLSearchParams(location.search);
-    if(params.has("invite")) {
-      // Ouvrir directement le formulaire d'invité sans bouton retour
-      enterInviteMode(params.get("invite"));
-    }
   </script>
 
 </body>
