@@ -1,22 +1,364 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
-    <title>Test</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Connexion Firebase</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+        
+        .button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: bold;
+            margin: 10px 0;
+            transition: transform 0.2s;
+        }
+        
+        .button:hover {
+            transform: translateY(-2px);
+        }
+        
+        .button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .status {
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+            font-weight: bold;
+            text-align: center;
+            display: none;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+        
+        .loading {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+            display: block;
+        }
+        
+        .data-display {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .data-item {
+            padding: 10px;
+            margin: 10px 0;
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+        }
+        
+        .user-info {
+            background: #e8f4fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #b3d7ff;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            color: #0056b3;
+        }
+        
+        .instructions {
+            background: #fff8e1;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            border: 1px solid #ffecb3;
+        }
+    </style>
 </head>
 <body>
-    <button onclick="test()">Test</button>
-    <div id="result"></div>
+    <div class="container">
+        <h1>🔗 Test Connexion Firebase</h1>
+        
+        <div class="instructions">
+            <p><strong>Instructions :</strong> Ce test va :</p>
+            <ol>
+                <li>Initialiser Firebase avec votre configuration</li>
+                <li>Authentifier l'utilisateur avec email/mot de passe</li>
+                <li>Tenter de lire des données depuis la base de données</li>
+                <li>Afficher les résultats</li>
+            </ol>
+        </div>
+        
+        <div class="user-info">
+            <p><span class="info-label">Email :</span> g.marouane@outlook.fr</p>
+            <p><span class="info-label">Base de données :</span> dddiii-2b58b</p>
+            <p><span class="info-label">Région :</span> asia-southeast1</p>
+        </div>
+        
+        <button id="testBtn" class="button">🚀 Tester la Connexion</button>
+        <button id="listDataBtn" class="button" style="display:none;">📋 Lister les Données</button>
+        <button id="logoutBtn" class="button" style="display:none; background:#dc3545;">🚪 Déconnexion</button>
+        
+        <div id="status" class="status"></div>
+        
+        <div id="dataDisplay" class="data-display" style="display:none;">
+            <h3>Données de la Base :</h3>
+            <div id="dataContent"></div>
+        </div>
+    </div>
 
     <script>
-    function test() {
-        try {
-            // Ton code à tester ici
-            let result = "Opération réussie";
-            document.getElementById("result").innerText = result;
-        } catch (error) {
-            document.getElementById("result").innerText = "Erreur : " + error.message;
+        // Configuration Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyC6uSDTNCuw5sHNVaNgq0EzJqJZ9jgic7U",
+            authDomain: "dddiii-2b58b.firebaseapp.com",
+            databaseURL: "https://dddiii-2b58b-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "dddiii-2b58b",
+            storageBucket: "dddiii-2b58b.firebasestorage.app",
+            messagingSenderId: "721468171485",
+            appId: "1:721468171485:web:420e2e0ab98b95fa2ae734",
+            measurementId: "G-QGFM2N76VK"
+        };
+
+        // Initialisation
+        let app;
+        let auth;
+        let database;
+        let isInitialized = false;
+
+        // Éléments DOM
+        const testBtn = document.getElementById('testBtn');
+        const listDataBtn = document.getElementById('listDataBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const statusDiv = document.getElementById('status');
+        const dataDisplay = document.getElementById('dataDisplay');
+        const dataContent = document.getElementById('dataContent');
+
+        // Fonction pour afficher le statut
+        function showStatus(message, type = 'info') {
+            statusDiv.textContent = message;
+            statusDiv.className = 'status ' + type;
+            statusDiv.style.display = 'block';
+            
+            if (type === 'success') {
+                console.log('✅ ' + message);
+            } else if (type === 'error') {
+                console.error('❌ ' + message);
+            } else {
+                console.log('ℹ️ ' + message);
+            }
         }
-    }
+
+        // Fonction pour initialiser Firebase
+        async function initializeFirebase() {
+            try {
+                showStatus('Initialisation de Firebase...', 'loading');
+                
+                // Initialiser Firebase
+                app = firebase.initializeApp(firebaseConfig);
+                auth = firebase.auth();
+                database = firebase.database();
+                
+                isInitialized = true;
+                showStatus('Firebase initialisé avec succès !', 'success');
+                return true;
+            } catch (error) {
+                showStatus(`Erreur d'initialisation : ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        // Fonction pour authentifier l'utilisateur
+        async function authenticateUser() {
+            try {
+                showStatus('Authentification en cours...', 'loading');
+                
+                const email = "g.marouane@outlook.fr";
+                const password = "M@ra10";
+                
+                // Authentifier l'utilisateur
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                
+                showStatus(`Authentification réussie ! Utilisateur : ${userCredential.user.email}`, 'success');
+                
+                // Afficher les boutons supplémentaires
+                listDataBtn.style.display = 'block';
+                logoutBtn.style.display = 'block';
+                
+                return userCredential.user;
+            } catch (error) {
+                showStatus(`Erreur d'authentification : ${error.message}`, 'error');
+                throw error;
+            }
+        }
+
+        // Fonction pour lire les données de la base
+        async function readDatabaseData() {
+            try {
+                showStatus('Lecture des données depuis la base...', 'loading');
+                
+                // Essayer de lire à la racine de la base de données
+                const snapshot = await database.ref('/').limitToFirst(5).once('value');
+                
+                if (!snapshot.exists()) {
+                    showStatus('La base de données existe mais ne contient pas de données.', 'success');
+                    dataContent.innerHTML = '<p>Aucune donnée trouvée à la racine. Essayez de créer des données via la console Firebase.</p>';
+                } else {
+                    const data = snapshot.val();
+                    showStatus(`Données lues avec succès ! (${Object.keys(data).length} clés trouvées)`, 'success');
+                    
+                    // Afficher les données
+                    displayData(data);
+                }
+                
+                dataDisplay.style.display = 'block';
+                
+            } catch (error) {
+                showStatus(`Erreur de lecture : ${error.message}`, 'error');
+            }
+        }
+
+        // Fonction pour afficher les données
+        function displayData(data) {
+            dataContent.innerHTML = '';
+            
+            function createDataItem(key, value, level = 0) {
+                const item = document.createElement('div');
+                item.className = 'data-item';
+                item.style.paddingLeft = (level * 20) + 'px';
+                
+                if (typeof value === 'object' && value !== null) {
+                    item.innerHTML = `<strong>📁 ${key}:</strong>`;
+                    
+                    Object.entries(value).forEach(([childKey, childValue]) => {
+                        item.appendChild(createDataItem(childKey, childValue, level + 1));
+                    });
+                } else {
+                    item.innerHTML = `<strong>${key}:</strong> ${JSON.stringify(value)}`;
+                }
+                
+                return item;
+            }
+            
+            Object.entries(data).forEach(([key, value]) => {
+                dataContent.appendChild(createDataItem(key, value));
+            });
+        }
+
+        // Fonction pour se déconnecter
+        async function logout() {
+            try {
+                await auth.signOut();
+                showStatus('Déconnexion réussie !', 'success');
+                listDataBtn.style.display = 'none';
+                logoutBtn.style.display = 'none';
+                dataDisplay.style.display = 'none';
+            } catch (error) {
+                showStatus(`Erreur de déconnexion : ${error.message}`, 'error');
+            }
+        }
+
+        // Fonction principale de test
+        async function testConnection() {
+            testBtn.disabled = true;
+            
+            try {
+                // Étape 1: Initialiser Firebase
+                if (!isInitialized) {
+                    const initialized = await initializeFirebase();
+                    if (!initialized) return;
+                }
+                
+                // Étape 2: Authentifier l'utilisateur
+                const user = await authenticateUser();
+                
+                // Étape 3: Lire les données
+                await readDatabaseData();
+                
+            } catch (error) {
+                console.error('Erreur complète:', error);
+            } finally {
+                testBtn.disabled = false;
+            }
+        }
+
+        // Événements
+        testBtn.addEventListener('click', testConnection);
+        listDataBtn.addEventListener('click', readDatabaseData);
+        logoutBtn.addEventListener('click', logout);
+
+        // Vérifier si l'utilisateur est déjà connecté au chargement
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const initialized = await initializeFirebase();
+                if (initialized) {
+                    // Observer l'état d'authentification
+                    auth.onAuthStateChanged((user) => {
+                        if (user) {
+                            showStatus(`Déjà connecté en tant que : ${user.email}`, 'success');
+                            listDataBtn.style.display = 'block';
+                            logoutBtn.style.display = 'block';
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Erreur au chargement:', error);
+            }
+        });
     </script>
 </body>
 </html>
