@@ -7,6 +7,7 @@
   <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <style>
     :root{
       --c1:#007bff; --bg:#f0f2f5; --ok:#0f9d58; --warn:#f4b400; --err:#d93025; --info:#4285f4;
@@ -227,11 +228,24 @@
     
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
+    const auth = firebase.auth();
 
     let currentUser = null;
+    let firebaseAuthenticated = false;
     const SESSION_TIMEOUT_MS = 10 * 60 * 1000;
     let sessionTimer = null;
     let qrCode = null;
+
+    async function authenticateFirebase() {
+      try {
+        await auth.signInAnonymously();
+        firebaseAuthenticated = true;
+        return true;
+      } catch (error) {
+        console.error('Erreur auth anonyme:', error);
+        return false;
+      }
+    }
 
     function showBanner(type, text){
       const b = document.getElementById('banner');
@@ -279,11 +293,6 @@
       if(!expired) showBanner('info', "Vous êtes déconnecté.");
     }
 
-    function retourAccueil(){
-      window.history.replaceState({}, document.title, location.pathname);
-      logout(false);
-    }
-
     async function login(){
       hideInlineMsg('loginMsg');
       const u = document.getElementById('loginUser').value.trim();
@@ -305,6 +314,10 @@
       }
 
       try {
+        if (!firebaseAuthenticated) {
+          await authenticateFirebase();
+        }
+        
         const snapshot = await database.ref('users/' + u).once('value');
         const user = snapshot.val();
         
@@ -320,7 +333,7 @@
         }
       } catch (error) {
         console.error('Erreur Firebase:', error);
-        showInlineMsg('loginMsg','err',"Erreur d'accès à la base de données. Vérifiez votre connexion internet.");
+        showInlineMsg('loginMsg','err',"Erreur d'accès à la base de données.");
       }
     }
 
@@ -461,6 +474,10 @@
 
     async function enterInviteMode(userId){
       try {
+        if (!firebaseAuthenticated) {
+          await authenticateFirebase();
+        }
+        
         const snapshot = await database.ref('users/' + userId).once('value');
         const user = snapshot.val();
         
@@ -681,6 +698,10 @@ ID: ${rec.id}
       const msg = buildMessage(rec);
 
       try {
+        if (!firebaseAuthenticated) {
+          await authenticateFirebase();
+        }
+        
         const newRecordRef = database.ref('records').push();
         await newRecordRef.set(rec);
         
@@ -727,6 +748,12 @@ ID: ${rec.id}
     }
 
     document.getElementById('btnLogin').disabled = false;
+    
+    authenticateFirebase().then(success => {
+      if(success) {
+        console.log('Firebase authentifié');
+      }
+    });
     
     const params = new URLSearchParams(location.search);
     if(params.has("invite")) {
