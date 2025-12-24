@@ -5,10 +5,8 @@
   <title>Enregistrement des invités</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
-  <!-- Intégration de Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <style>
     :root{
       --c1:#007bff; --bg:#f0f2f5; --ok:#0f9d58; --warn:#f4b400; --err:#d93025; --info:#4285f4;
@@ -42,8 +40,6 @@
     .consent-container { margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6; }
     .consent-text { max-height: 150px; overflow-y: auto; padding: 10px; background: white; border-radius: 5px; border: 1px solid #ced4da; margin: 10px 0; }
     .btn-delete { background: var(--err) !important; margin-left: 5px; }
-    .loader { border: 3px solid #f3f3f3; border-top: 3px solid #3498db; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; margin-left: 10px; }
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
@@ -52,7 +48,6 @@
 
   <div id="banner" class="banner info hidden"></div>
 
-  <!-- Connexion -->
   <div id="loginCard" class="card">
     <div class="toolbar">
       <div><strong>Connexion</strong></div>
@@ -66,7 +61,6 @@
     <p id="loginMsg" class="banner err hidden"></p>
   </div>
 
-  <!-- Interface Admin -->
   <div id="adminPanel" class="hidden">
     <div class="toolbar card">
       <div><strong>Panneau administrateur</strong></div>
@@ -125,7 +119,6 @@
     </div>
   </div>
 
-  <!-- Interface Utilisateur -->
   <div id="userPanel" class="hidden">
     <div class="toolbar card">
       <div><strong>Mon espace</strong></div>
@@ -155,7 +148,6 @@
     </div>
   </div>
 
-  <!-- NOUVEAU Formulaire d'invité (via lien) -->
   <div id="invitePanel" class="hidden">
     <div class="guest-form-container">
       <div class="toolbar" style="margin-bottom: 20px;">
@@ -222,9 +214,6 @@
   </div>
 
   <script>
-    /* =======================
-       CONFIGURATION FIREBASE
-    ======================== */
     const firebaseConfig = {
       apiKey: "AIzaSyC6uSDTNCuw5sHNVaNgq0EzJqJZ9jgic7U",
       authDomain: "dddiii-2b58b.firebaseapp.com",
@@ -236,45 +225,14 @@
       measurementId: "G-QGFM2N76VK"
     };
     
-    // Initialiser Firebase
-    const app = firebase.initializeApp(firebaseConfig);
+    firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
-    const auth = firebase.auth();
 
-    /* =======================
-       ÉTAT / CONSTANTES
-    ======================== */
     let currentUser = null;
-    let firebaseAuthenticated = false;
-    const SESSION_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
+    const SESSION_TIMEOUT_MS = 10 * 60 * 1000;
     let sessionTimer = null;
     let qrCode = null;
 
-    // Fonction pour s'authentifier anonymement avec Firebase
-    async function authenticateFirebase() {
-      try {
-        // S'authentifier anonymement
-        const userCredential = await auth.signInAnonymously();
-        firebaseAuthenticated = true;
-        console.log('Authentifié anonymement avec Firebase');
-        return true;
-      } catch (error) {
-        console.error('Erreur d\'authentification Firebase:', error);
-        
-        // Essayer avec l'authentification par email/mot de passe
-        try {
-          await auth.signInWithEmailAndPassword('g.marouane@outlook.fr', 'M@ra10');
-          firebaseAuthenticated = true;
-          console.log('Authentifié avec email/mot de passe');
-          return true;
-        } catch (emailError) {
-          console.error('Erreur d\'authentification email:', emailError);
-          return false;
-        }
-      }
-    }
-
-    // Banner helpers
     function showBanner(type, text){
       const b = document.getElementById('banner');
       b.className = 'banner ' + type;
@@ -294,9 +252,6 @@
       el.classList.add('hidden');
     }
 
-    /* =======================
-       SESSION / SÉCURITÉ
-    ======================== */
     function startSessionTimer(){
       stopSessionTimer();
       sessionTimer = setTimeout(()=>{
@@ -317,7 +272,6 @@
     function logout(expired=false){
       currentUser = null;
       stopSessionTimer();
-      // UI reset
       document.getElementById('adminPanel').classList.add('hidden');
       document.getElementById('userPanel').classList.add('hidden');
       document.getElementById('invitePanel').classList.add('hidden');
@@ -326,13 +280,10 @@
     }
 
     function retourAccueil(){
-      window.history.replaceState({}, document.title, location.pathname); // nettoie ?invite
+      window.history.replaceState({}, document.title, location.pathname);
       logout(false);
     }
 
-    /* =======================
-       AUTH
-    ======================== */
     async function login(){
       hideInlineMsg('loginMsg');
       const u = document.getElementById('loginUser').value.trim();
@@ -343,38 +294,17 @@
         return;
       }
 
-      // Désactiver le bouton pendant la connexion
-      const btn = document.getElementById('btnLogin');
-      const originalText = btn.textContent;
-      btn.disabled = true;
-      btn.innerHTML = 'Connexion en cours... <span class="loader"></span>';
+      if(u === 'admin' && p === 'admin'){
+        currentUser = { role:'admin' };
+        document.getElementById('loginCard').classList.add('hidden');
+        document.getElementById('adminPanel').classList.remove('hidden');
+        showBanner('ok', "Connecté en tant qu'administrateur.");
+        startSessionTimer();
+        refreshAdmin();
+        return;
+      }
 
       try {
-        // Vérifier d'abord si Firebase est authentifié
-        if (!firebaseAuthenticated) {
-          const authSuccess = await authenticateFirebase();
-          if (!authSuccess) {
-            showInlineMsg('loginMsg','err',"Erreur d'authentification Firebase. Veuillez réessayer.");
-            btn.disabled = false;
-            btn.textContent = originalText;
-            return;
-          }
-        }
-
-        // Admin classique
-        if(u === 'admin' && p === 'admin'){
-          currentUser = { role:'admin' };
-          document.getElementById('loginCard').classList.add('hidden');
-          document.getElementById('adminPanel').classList.remove('hidden');
-          showBanner('ok', "Connecté en tant qu'administrateur.");
-          startSessionTimer();
-          refreshAdmin();
-          btn.disabled = false;
-          btn.textContent = originalText;
-          return;
-        }
-
-        // Vérifier l'utilisateur dans Firebase
         const snapshot = await database.ref('users/' + u).once('value');
         const user = snapshot.val();
         
@@ -389,17 +319,10 @@
           showInlineMsg('loginMsg','err',"Identifiants incorrects.");
         }
       } catch (error) {
-        console.error('Erreur Firebase:', error);
-        showInlineMsg('loginMsg','err',"Erreur d'accès à la base de données. Code: " + error.code);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = originalText;
+        showInlineMsg('loginMsg','err',"Erreur d'accès à la base de données.");
       }
     }
 
-    /* =======================
-       ADMIN : UTILISATEURS
-    ======================== */
     async function creerUtilisateur(){
       hideInlineMsg('userWarn');
       const appart = (document.getElementById('appartAdmin').value || '').trim();
@@ -414,13 +337,11 @@
       const userId = appart + bat;
       
       try {
-        // Vérifier si l'utilisateur existe déjà
         const snapshot = await database.ref('users/' + userId).once('value');
         
         if(snapshot.exists()){
           showInlineMsg('userWarn','warn',`L'utilisateur ${userId} existe déjà.`);
         } else {
-          // Créer le nouvel utilisateur
           await database.ref('users/' + userId).set({
             user: userId,
             appart: appart,
@@ -432,12 +353,11 @@
           refreshAdmin();
         }
       } catch (error) {
-        showInlineMsg('userWarn','err',"Erreur lors de la création de l'utilisateur: " + error.message);
+        showInlineMsg('userWarn','err',"Erreur lors de la création de l'utilisateur.");
       }
     }
 
     async function refreshAdmin(){
-      // Liste utilisateurs
       const tbodyU = document.querySelector('#tableUsers tbody');
       tbodyU.innerHTML = '';
       
@@ -450,10 +370,9 @@
             `<tr><td>${u.user}</td><td>${u.appart}</td><td>${u.bat}</td><td>${u.pass}</td></tr>`);
         });
       } catch (error) {
-        showBanner('err', "Erreur lors du chargement des utilisateurs: " + error.message);
+        showBanner('err', "Erreur lors du chargement des utilisateurs.");
       }
 
-      // Enregistrements
       const tbody = document.querySelector('#tableAdmin tbody');
       tbody.innerHTML = '';
       
@@ -480,13 +399,10 @@
             </tr>`);
         });
       } catch (error) {
-        showBanner('err', "Erreur lors du chargement des enregistrements: " + error.message);
+        showBanner('err', "Erreur lors du chargement des enregistrements.");
       }
     }
 
-    /* =======================
-       UTILISATEUR : MES ENREG.
-    ======================== */
     async function refreshUser(){
       const tbody = document.querySelector('#tableUser tbody');
       tbody.innerHTML = '';
@@ -516,11 +432,10 @@
               </tr>`);
           });
       } catch (error) {
-        showBanner('err', "Erreur de lecture des enregistrements: " + error.message);
+        showBanner('err', "Erreur de lecture des enregistrements.");
       }
     }
 
-    // Fonction pour supprimer un enregistrement
     async function supprimerEnregistrement(id) {
       if (!confirm("Êtes-vous sûr de vouloir supprimer cet enregistrement ?")) {
         return;
@@ -531,7 +446,7 @@
         showBanner('ok', "Enregistrement supprimé avec succès.");
         refreshUser();
       } catch (error) {
-        showBanner('err', "Erreur lors de la suppression de l'enregistrement: " + error.message);
+        showBanner('err', "Erreur lors de la suppression de l'enregistrement.");
       }
     }
 
@@ -543,20 +458,8 @@
       showBanner('info', "Copiez/partagez ce lien avec vos invités.");
     }
 
-    /* =======================
-       MODE INVITÉ
-    ======================== */
     async function enterInviteMode(userId){
       try {
-        // S'assurer que Firebase est authentifié
-        if (!firebaseAuthenticated) {
-          const authSuccess = await authenticateFirebase();
-          if (!authSuccess) {
-            showBanner('err', "Erreur d'authentification Firebase.");
-            return;
-          }
-        }
-
         const snapshot = await database.ref('users/' + userId).once('value');
         const user = snapshot.val();
         
@@ -569,10 +472,9 @@
         document.getElementById('invitePanel').classList.remove('hidden');
         document.getElementById('invAppart').value = user.appart;
         document.getElementById('invBat').value = user.bat;
-        genererChamps(); // init 1 personne
+        genererChamps();
         hideBanner();
         
-        // Initialiser QR Code Styling
         qrCode = new QRCodeStyling({
           width: 250,
           height: 250,
@@ -584,7 +486,6 @@
           cornersDotOptions: { type: "dot", color: "#1E40AF" }
         });
         
-        // Ajouter les gestionnaires d'événements
         document.getElementById('guestForm').addEventListener('submit', function(e) {
           e.preventDefault();
           enregistrer();
@@ -596,7 +497,7 @@
           }
         });
       } catch (error) {
-        showBanner('err', "Erreur lors du chargement des données utilisateur: " + error.message);
+        showBanner('err', "Erreur lors du chargement des données utilisateur.");
       }
     }
 
@@ -701,7 +602,6 @@ Merci
       return message;
     }
 
-    // Fonction pour générer le contenu du QR Code avec les informations de l'invité
     function buildQRContent(rec) {
       const nb = rec.personnes ? Object.keys(rec.personnes).length + 1 : 1;
       const nomPrincipal = rec.nom;
@@ -735,13 +635,11 @@ ID: ${rec.id}
     }
 
     async function enregistrer(){
-      // Vérifier la case d'acceptation
       if(!document.getElementById('consentCheckbox').checked){
         showBanner('warn', "Veuillez accepter les conditions de traitement des données.");
         return;
       }
 
-      // validations
       const nom = (document.getElementById('nomPrincipal').value || '').trim();
       const doc = (document.getElementById('docPrincipal').value || '').trim();
       const nb = parseInt(document.getElementById('nbPers').value || '0', 10);
@@ -781,28 +679,15 @@ ID: ${rec.id}
       const msg = buildMessage(rec);
 
       try {
-        // S'assurer que Firebase est authentifié
-        if (!firebaseAuthenticated) {
-          const authSuccess = await authenticateFirebase();
-          if (!authSuccess) {
-            showBanner('err', "Erreur d'authentification Firebase.");
-            return;
-          }
-        }
-
-        // Ajouter l'enregistrement à Firebase
         const newRecordRef = database.ref('records').push();
         await newRecordRef.set(rec);
         
-        // Récupérer l'ID généré
         const id = newRecordRef.key;
         rec.id = id;
         
-        // Afficher le message de succès et le QR code
         document.getElementById('successMessage').classList.remove('hidden');
         document.getElementById('qrcodeContainer').classList.remove('hidden');
         
-        // Générer le QR Code avec les informations de l'invité
         const qrContent = buildQRContent(rec);
         if(qrCode) {
           qrCode.update({ data: qrContent });
@@ -810,16 +695,12 @@ ID: ${rec.id}
           qrCode.append(document.getElementById('qrcode'));
         }
 
-        // Masquer le formulaire
         document.getElementById('guestForm').style.display = 'none';
       } catch (error) {
-        showBanner('err',"Erreur lors de l'enregistrement. Réessayez: " + error.message);
+        showBanner('err',"Erreur lors de l'enregistrement. Réessayez.");
       }
     }
 
-    /* =======================
-       ADMIN : ENVOI WHATSAPP
-    ======================== */
     async function envoyerWhatsApp(id){
       try {
         const snapshot = await database.ref('records/' + id).once('value');
@@ -834,40 +715,21 @@ ID: ${rec.id}
         const url = "https://wa.me/?text=" + encodeURIComponent(msg);
         window.open(url, "_blank");
         
-        // marquer envoyé
         await database.ref('records/' + id).update({ sent: true });
         
         if(currentUser.role === 'admin') refreshAdmin();
         else refreshUser();
       } catch (error) {
-        showBanner('err',"Erreur de lecture de l'enregistrement: " + error.message);
+        showBanner('err',"Erreur de lecture de l'enregistrement.");
       }
     }
 
-    /* =======================
-       DÉMARRAGE
-    ======================== */
-    // Initialisation au chargement
-    window.addEventListener('DOMContentLoaded', async function() {
-      try {
-        // Essayer de s'authentifier automatiquement
-        const authSuccess = await authenticateFirebase();
-        if (authSuccess) {
-          console.log('Firebase authentifié au démarrage');
-        } else {
-          showBanner('warn', 'Connexion Firebase en attente...');
-        }
-        
-        // Vérifier si on a un paramètre invite dans l'URL
-        const params = new URLSearchParams(location.search);
-        if(params.has("invite")) {
-          // Ouvrir directement le formulaire d'invité
-          enterInviteMode(params.get("invite"));
-        }
-      } catch (error) {
-        console.error('Erreur au démarrage:', error);
-      }
-    });
+    document.getElementById('btnLogin').disabled = false;
+    
+    const params = new URLSearchParams(location.search);
+    if(params.has("invite")) {
+      enterInviteMode(params.get("invite"));
+    }
   </script>
 
 </body>
