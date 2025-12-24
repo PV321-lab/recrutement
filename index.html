@@ -319,7 +319,8 @@
           showInlineMsg('loginMsg','err',"Identifiants incorrects.");
         }
       } catch (error) {
-        showInlineMsg('loginMsg','err',"Erreur d'accès à la base de données.");
+        console.error('Erreur Firebase:', error);
+        showInlineMsg('loginMsg','err',"Erreur d'accès à la base de données. Vérifiez votre connexion internet.");
       }
     }
 
@@ -497,6 +498,7 @@
           }
         });
       } catch (error) {
+        console.error('Erreur chargement données utilisateur:', error);
         showBanner('err', "Erreur lors du chargement des données utilisateur.");
       }
     }
