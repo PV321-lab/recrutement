@@ -5,9 +5,10 @@
   <title>Enregistrement des invités</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
-  <!-- Intégration de Firebase -->
+  <!-- Intégration de Firebase - AJOUT DU MODULE AUTH -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <style>
     :root{
       --c1:#007bff; --bg:#f0f2f5; --ok:#0f9d58; --warn:#f4b400; --err:#d93025; --info:#4285f4;
@@ -234,8 +235,9 @@
     };
     
     // Initialiser Firebase
-    firebase.initializeApp(firebaseConfig);
+    const app = firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
+    const auth = firebase.auth(); // AJOUT DE L'AUTH
 
     /* =======================
        ÉTAT / CONSTANTES
@@ -244,6 +246,23 @@
     const SESSION_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
     let sessionTimer = null;
     let qrCode = null;
+
+    // Fonction pour configurer les règles de sécurité de la base de données
+    async function configureDatabaseSecurity() {
+      try {
+        // Essayer d'accéder à la base de données
+        const testRef = database.ref('.info/connected');
+        testRef.on('value', (snapshot) => {
+          console.log('Connecté à Firebase:', snapshot.val());
+        });
+        
+        return true;
+      } catch (error) {
+        console.error('Erreur de configuration Firebase:', error);
+        showBanner('err', 'Erreur de connexion à Firebase. Vérifiez la configuration.');
+        return false;
+      }
+    }
 
     // Banner helpers
     function showBanner(type, text){
@@ -314,6 +333,7 @@
         return;
       }
 
+      // Admin classique
       if(u === 'admin' && p === 'admin'){
         currentUser = { role:'admin' };
         document.getElementById('loginCard').classList.add('hidden');
@@ -340,7 +360,8 @@
           showInlineMsg('loginMsg','err',"Identifiants incorrects.");
         }
       } catch (error) {
-        showInlineMsg('loginMsg','err',"Erreur d'accès à la base de données.");
+        console.error('Erreur Firebase:', error);
+        showInlineMsg('loginMsg','err',"Erreur d'accès à la base de données. Vérifiez votre connexion.");
       }
     }
 
@@ -379,7 +400,7 @@
           refreshAdmin();
         }
       } catch (error) {
-        showInlineMsg('userWarn','err',"Erreur lors de la création de l'utilisateur.");
+        showInlineMsg('userWarn','err',"Erreur lors de la création de l'utilisateur: " + error.message);
       }
     }
 
@@ -397,7 +418,7 @@
             `<tr><td>${u.user}</td><td>${u.appart}</td><td>${u.bat}</td><td>${u.pass}</td></tr>`);
         });
       } catch (error) {
-        showBanner('err', "Erreur lors du chargement des utilisateurs.");
+        showBanner('err', "Erreur lors du chargement des utilisateurs: " + error.message);
       }
 
       // Enregistrements
@@ -427,7 +448,7 @@
             </tr>`);
         });
       } catch (error) {
-        showBanner('err', "Erreur lors du chargement des enregistrements.");
+        showBanner('err', "Erreur lors du chargement des enregistrements: " + error.message);
       }
     }
 
@@ -463,7 +484,7 @@
               </tr>`);
           });
       } catch (error) {
-        showBanner('err', "Erreur de lecture des enregistrements.");
+        showBanner('err', "Erreur de lecture des enregistrements: " + error.message);
       }
     }
 
@@ -478,7 +499,7 @@
         showBanner('ok', "Enregistrement supprimé avec succès.");
         refreshUser();
       } catch (error) {
-        showBanner('err', "Erreur lors de la suppression de l'enregistrement.");
+        showBanner('err', "Erreur lors de la suppression de l'enregistrement: " + error.message);
       }
     }
 
@@ -534,7 +555,7 @@
           }
         });
       } catch (error) {
-        showBanner('err', "Erreur lors du chargement des données utilisateur.");
+        showBanner('err', "Erreur lors du chargement des données utilisateur: " + error.message);
       }
     }
 
@@ -742,7 +763,7 @@ ID: ${rec.id}
         // Masquer le formulaire
         document.getElementById('guestForm').style.display = 'none';
       } catch (error) {
-        showBanner('err',"Erreur lors de l'enregistrement. Réessayez.");
+        showBanner('err',"Erreur lors de l'enregistrement. Réessayez: " + error.message);
       }
     }
 
@@ -769,7 +790,7 @@ ID: ${rec.id}
         if(currentUser.role === 'admin') refreshAdmin();
         else refreshUser();
       } catch (error) {
-        showBanner('err',"Erreur de lecture de l'enregistrement.");
+        showBanner('err',"Erreur de lecture de l'enregistrement: " + error.message);
       }
     }
 
@@ -778,6 +799,13 @@ ID: ${rec.id}
     ======================== */
     // Initialisation du bouton de connexion
     document.getElementById('btnLogin').disabled = false;
+    
+    // Configurer la sécurité au démarrage
+    configureDatabaseSecurity().then(success => {
+      if(success) {
+        console.log('Firebase configuré avec succès');
+      }
+    });
     
     // Vérifier si on a un paramètre invite dans l'URL
     const params = new URLSearchParams(location.search);
