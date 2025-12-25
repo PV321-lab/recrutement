@@ -2,164 +2,214 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>Application Invités</title>
+<title>Gestion des invités</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
+<!-- jsPDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
 <style>
-body { font-family: Arial; background:#f2f2f2; padding:20px }
-.card { background:white; padding:15px; border-radius:10px; margin-bottom:15px }
-.hidden { display:none }
-input, button { width:100%; padding:10px; margin-top:8px }
-button { background:#007bff; color:white; border:none; border-radius:6px }
-table { width:100%; border-collapse:collapse }
-th, td { border:1px solid #ccc; padding:8px; text-align:center }
-th { background:#007bff; color:white }
+body{font-family:Arial;background:#f2f2f2;margin:0;padding:20px}
+.card{background:#fff;padding:15px;border-radius:10px;margin-bottom:15px}
+.hidden{display:none}
+input,button,select{width:100%;padding:10px;margin-top:8px}
+button{background:#007bff;color:#fff;border:none;border-radius:6px}
+table{width:100%;border-collapse:collapse;margin-top:10px}
+th,td{border:1px solid #ccc;padding:8px;text-align:center}
+th{background:#007bff;color:#fff}
+canvas{border:1px solid #000;width:100%;height:150px}
 </style>
 </head>
 
 <body>
 
-<h2>Gestion des invités</h2>
-
-<!-- ================= CONNEXION ================= -->
+<!-- CONNEXION -->
 <div id="loginCard" class="card">
   <input id="loginId" placeholder="Appartement + Bâtiment (ex: 12A)">
   <input id="loginPass" type="password" placeholder="Mot de passe">
   <button onclick="login()">Connexion</button>
+  <p id="loginMsg"></p>
 </div>
 
-<!-- ================= ADMIN ================= -->
-<div id="adminPanel" class="card hidden">
-  <h3>Admin</h3>
+<!-- PROPRIÉTAIRE -->
+<div id="ownerPanel" class="card hidden">
   <button onclick="logout()">Déconnexion</button>
-  <table>
-    <thead><tr><th>ID</th><th>Appartement</th><th>Bâtiment</th></tr></thead>
-    <tbody id="adminTable"></tbody>
-  </table>
-</div>
-
-<!-- ================= UTILISATEUR ================= -->
-<div id="userPanel" class="card hidden">
-  <h3>Mon appartement</h3>
-  <button onclick="logout()">Déconnexion</button>
-  <button onclick="createInvite()">Générer lien invité</button>
+  <button onclick="generateLink()">Générer lien invité</button>
   <p id="inviteLink"></p>
 
   <table>
-    <thead><tr><th>Nom</th><th>Document</th><th>Date</th></tr></thead>
-    <tbody id="userTable"></tbody>
+    <thead>
+      <tr>
+        <th>Nom</th>
+        <th>Document</th>
+        <th>Date</th>
+        <th>PDF</th>
+      </tr>
+    </thead>
+    <tbody id="recordsTable"></tbody>
   </table>
 </div>
 
-<!-- ================= INVITÉ ================= -->
-<div id="invitePanel" class="card hidden">
-  <h3>Formulaire invité</h3>
-  <input id="invApp" disabled>
-  <input id="invBat" disabled>
-  <input id="invNom" placeholder="Nom">
-  <input id="invDoc" placeholder="Document">
-  <button onclick="saveInvite()">Valider</button>
+<!-- INVITÉ -->
+<div id="inviteForm" class="card hidden">
+  <input id="appart" disabled>
+  <input id="bat" disabled>
+
+  <input id="nom" placeholder="Nom">
+  <select id="docType">
+    <option value="CIN">CIN</option>
+    <option value="Passeport">Passeport</option>
+  </select>
+
+  <label>
+    <input type="checkbox" id="acceptRules">
+    J’accepte le règlement intérieur
+  </label>
+
+  <p>Signature :</p>
+  <canvas id="signature"></canvas>
+  <button onclick="clearSignature()">Effacer signature</button>
+
+  <button onclick="saveInvite()">ENREGISTRER</button>
 </div>
 
 <script>
-// ================= FIREBASE CONFIG =================
+/* ================= FIREBASE ================= */
 firebase.initializeApp({
-  apiKey: "AIzaSyC6uSDTNCuw5sHNVaNgq0EzJqJZ9jgic7U",
-  authDomain: "dddiii-2b58b.firebaseapp.com",
-  databaseURL: "https://dddiii-2b58b-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "dddiii-2b58b"
+  apiKey: "API_KEY",
+  authDomain: "PROJECT.firebaseapp.com",
+  databaseURL: "https://PROJECT.firebaseio.com",
+  projectId: "PROJECT"
+});
+const db = firebase.database();
+
+/* ================= VARIABLES ================= */
+let CURRENT_APPART = null;
+let CURRENT_BAT = null;
+let SIGNED = false;
+
+/* ================= SIGNATURE ================= */
+const canvas = document.getElementById("signature");
+const ctx = canvas.getContext("2d");
+let drawing = false;
+
+canvas.addEventListener("mousedown", ()=>{drawing=true});
+canvas.addEventListener("mouseup", ()=>{drawing=false;SIGNED=true});
+canvas.addEventListener("mousemove", e=>{
+  if(!drawing) return;
+  ctx.lineTo(e.offsetX,e.offsetY);
+  ctx.stroke();
 });
 
-const db = firebase.database();
-let currentUser = null;
+function clearSignature(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  SIGNED=false;
+}
 
-// ================= LOGIN =================
-async function login() {
+/* ================= LOGIN ================= */
+async function login(){
   const id = loginId.value.trim();
   const pass = loginPass.value.trim();
+  loginMsg.textContent="";
 
-  const snap = await db.ref("users/" + id).once("value");
-  const user = snap.val();
+  try{
+    const snap = await db.ref("users/"+id).once("value");
+    if(!snap.exists()) return loginMsg.textContent="Utilisateur introuvable";
+    const u = snap.val();
+    if(u.pass!==pass) return loginMsg.textContent="Mot de passe incorrect";
 
-  if (!user || user.pass !== pass) {
-    alert("Identifiants incorrects");
-    return;
-  }
+    CURRENT_APPART=u.appart;
+    CURRENT_BAT=u.bat;
 
-  currentUser = user;
-  loginCard.classList.add("hidden");
-
-  if (id === "admin") {
-    adminPanel.classList.remove("hidden");
-    loadUsers();
-  } else {
-    userPanel.classList.remove("hidden");
+    loginCard.classList.add("hidden");
+    ownerPanel.classList.remove("hidden");
     loadRecords();
+  }catch(e){
+    loginMsg.textContent="Erreur base";
   }
 }
 
-// ================= ADMIN =================
-async function loadUsers() {
-  const snap = await db.ref("users").once("value");
-  const users = snap.val();
-  adminTable.innerHTML = "";
-  Object.values(users).forEach(u => {
-    adminTable.innerHTML += `<tr><td>${u.appart}${u.bat}</td><td>${u.appart}</td><td>${u.bat}</td></tr>`;
-  });
+/* ================= LOGOUT ================= */
+function logout(){
+  location.href=location.pathname;
 }
 
-// ================= UTILISATEUR =================
-async function loadRecords() {
+/* ================= RECORDS ================= */
+async function loadRecords(){
   const snap = await db.ref("records").once("value");
-  const recs = snap.val() || {};
-  userTable.innerHTML = "";
-  Object.values(recs).filter(r =>
-    r.appart === currentUser.appart && r.bat === currentUser.bat
-  ).forEach(r => {
-    userTable.innerHTML += `<tr><td>${r.nom}</td><td>${r.doc}</td><td>${r.date}</td></tr>`;
+  const data = snap.val()||{};
+  recordsTable.innerHTML="";
+  Object.values(data).filter(r=>r.appart===CURRENT_APPART && r.bat===CURRENT_BAT)
+  .forEach(r=>{
+    recordsTable.innerHTML+=`
+      <tr>
+        <td>${r.nom}</td>
+        <td>${r.docType}</td>
+        <td>${r.date}</td>
+        <td><a href="${r.pdfUrl}" target="_blank">PDF</a></td>
+      </tr>`;
   });
 }
 
-// ================= INVITE =================
-async function createInvite() {
-  const ref = db.ref("invites").push({
-    appart: currentUser.appart,
-    bat: currentUser.bat
+/* ================= LIEN ================= */
+function generateLink(){
+  const ref=db.ref("invites").push({
+    appart:CURRENT_APPART,
+    bat:CURRENT_BAT
   });
-  inviteLink.innerHTML = location.href + "?invite=" + ref.key;
+  inviteLink.textContent=location.href+"?invite="+ref.key;
 }
 
-async function saveInvite() {
-  await db.ref("records").push({
-    appart: invApp.value,
-    bat: invBat.value,
-    nom: invNom.value,
-    doc: invDoc.value,
-    date: new Date().toLocaleDateString()
+/* ================= INVITE MODE ================= */
+const params=new URLSearchParams(location.search);
+if(params.has("invite")){
+  db.ref("invites/"+params.get("invite")).once("value").then(s=>{
+    if(!s.exists()) return alert("Lien invalide");
+    const d=s.val();
+    CURRENT_APPART=d.appart;
+    CURRENT_BAT=d.bat;
+    appart.value=d.appart;
+    bat.value=d.bat;
+    loginCard.classList.add("hidden");
+    ownerPanel.classList.add("hidden");
+    inviteForm.classList.remove("hidden");
   });
-  alert("Enregistré");
 }
 
-// ================= LOGOUT =================
-function logout() {
-  location.reload();
-}
+/* ================= SAVE INVITE ================= */
+async function saveInvite(){
+  if(!acceptRules.checked) return alert("Acceptez le règlement");
+  if(!SIGNED) return alert("Signature obligatoire");
 
-// ================= INVITE MODE =================
-const params = new URLSearchParams(location.search);
-if (params.has("invite")) {
-  loginCard.classList.add("hidden");
-  invitePanel.classList.remove("hidden");
+  const recordRef=db.ref("records").push();
+  const date=new Date().toLocaleString();
 
-  db.ref("invites/" + params.get("invite")).once("value").then(s => {
-    const d = s.val();
-    invApp.value = d.appart;
-    invBat.value = d.bat;
+  const {jsPDF}=window.jspdf;
+  const pdf=new jsPDF();
+  pdf.text(`Appartement: ${CURRENT_APPART}`,10,10);
+  pdf.text(`Bâtiment: ${CURRENT_BAT}`,10,20);
+  pdf.text(`Nom: ${nom.value}`,10,30);
+  pdf.text(`Document: ${docType.value}`,10,40);
+  pdf.text(`Date: ${date}`,10,50);
+  pdf.addImage(canvas.toDataURL(),"PNG",10,60,180,40);
+
+  const blob=pdf.output("blob");
+  const url=URL.createObjectURL(blob);
+
+  await recordRef.set({
+    appart:CURRENT_APPART,
+    bat:CURRENT_BAT,
+    nom:nom.value,
+    docType:docType.value,
+    date,
+    pdfUrl:url
   });
+
+  window.open(url,"_blank");
 }
 </script>
 
