@@ -1,44 +1,34 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <title>Enregistrement des invités</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8">
+<title>Application Invités</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
-  <style>
-    body { font-family: Arial; background:#f0f2f5; margin:20px }
-    .card { background:#fff; padding:16px; border-radius:10px; margin-bottom:16px; box-shadow:0 2px 8px rgba(0,0,0,.15) }
-    label { font-weight:bold; display:block; margin-top:10px }
-    input, button { width:100%; padding:10px; margin-top:6px; font-size:16px }
-    button { background:#007bff; color:white; border:none; border-radius:8px; cursor:pointer }
-    button:disabled { opacity:.6 }
-    .hidden { display:none }
-    .banner { padding:10px; border-radius:8px; margin-bottom:10px; font-weight:bold }
-    .ok { background:#e6f4ea; color:#137333 }
-    .err { background:#fce8e6; color:#a50e0e }
-    table { width:100%; border-collapse:collapse }
-    th, td { border:1px solid #ccc; padding:8px; text-align:center }
-    th { background:#007bff; color:white }
-  </style>
+<style>
+body { font-family: Arial; background:#f2f2f2; padding:20px }
+.card { background:white; padding:15px; border-radius:10px; margin-bottom:15px }
+.hidden { display:none }
+input, button { width:100%; padding:10px; margin-top:8px }
+button { background:#007bff; color:white; border:none; border-radius:6px }
+table { width:100%; border-collapse:collapse }
+th, td { border:1px solid #ccc; padding:8px; text-align:center }
+th { background:#007bff; color:white }
+</style>
 </head>
+
 <body>
 
-<h2>Enregistrement des invités</h2>
-
-<div id="banner" class="banner hidden"></div>
+<h2>Gestion des invités</h2>
 
 <!-- ================= CONNEXION ================= -->
 <div id="loginCard" class="card">
-  <label>Identifiant (Appartement + Immeuble)</label>
-  <input id="loginUser" placeholder="Ex: 12A">
-
-  <label>Mot de passe</label>
-  <input type="password" id="loginPass">
-
+  <input id="loginId" placeholder="Appartement + Bâtiment (ex: 12A)">
+  <input id="loginPass" type="password" placeholder="Mot de passe">
   <button onclick="login()">Connexion</button>
 </div>
 
@@ -46,156 +36,130 @@
 <div id="adminPanel" class="card hidden">
   <h3>Admin</h3>
   <button onclick="logout()">Déconnexion</button>
-
-  <h4>Utilisateurs</h4>
-  <table id="tableUsers">
-    <thead><tr><th>ID</th><th>Appartement</th><th>Immeuble</th><th>Mot de passe</th></tr></thead>
-    <tbody></tbody>
+  <table>
+    <thead><tr><th>ID</th><th>Appartement</th><th>Bâtiment</th></tr></thead>
+    <tbody id="adminTable"></tbody>
   </table>
 </div>
 
 <!-- ================= UTILISATEUR ================= -->
 <div id="userPanel" class="card hidden">
-  <h3>Mon espace</h3>
+  <h3>Mon appartement</h3>
   <button onclick="logout()">Déconnexion</button>
+  <button onclick="createInvite()">Générer lien invité</button>
+  <p id="inviteLink"></p>
 
-  <button onclick="genererLien()">Générer lien invité</button>
-  <p id="lienInvite"></p>
-
-  <h4>Mes enregistrements</h4>
-  <table id="tableUser">
-    <thead>
-      <tr><th>ID</th><th>Nom</th><th>Document</th><th>Date</th></tr>
-    </thead>
-    <tbody></tbody>
+  <table>
+    <thead><tr><th>Nom</th><th>Document</th><th>Date</th></tr></thead>
+    <tbody id="userTable"></tbody>
   </table>
 </div>
 
+<!-- ================= INVITÉ ================= -->
+<div id="invitePanel" class="card hidden">
+  <h3>Formulaire invité</h3>
+  <input id="invApp" disabled>
+  <input id="invBat" disabled>
+  <input id="invNom" placeholder="Nom">
+  <input id="invDoc" placeholder="Document">
+  <button onclick="saveInvite()">Valider</button>
+</div>
+
 <script>
-/* =====================================================
-   CONFIGURATION FIREBASE (NOUVELLE – AVEC SÉCURITÉ)
-===================================================== */
-const firebaseConfig = {
+// ================= FIREBASE CONFIG =================
+firebase.initializeApp({
   apiKey: "AIzaSyC6uSDTNCuw5sHNVaNgq0EzJqJZ9jgic7U",
   authDomain: "dddiii-2b58b.firebaseapp.com",
   databaseURL: "https://dddiii-2b58b-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "dddiii-2b58b",
-  storageBucket: "dddiii-2b58b.firebasestorage.app",
-  messagingSenderId: "721468171485",
-  appId: "1:721468171485:web:420e2e0ab98b95fa2ae734",
-  measurementId: "G-QGFM2N76VK"
-};
+  projectId: "dddiii-2b58b"
+});
 
-firebase.initializeApp(firebaseConfig);
-const database = firebase.database();
-
-/* =====================================================
-   VARIABLES GLOBALES
-===================================================== */
+const db = firebase.database();
 let currentUser = null;
 
-/* =====================================================
-   UTILITAIRES UI
-===================================================== */
-function showBanner(type, msg) {
-  const b = document.getElementById("banner");
-  b.className = "banner " + type;
-  b.textContent = msg;
-  b.classList.remove("hidden");
-}
-
-/* =====================================================
-   CONNEXION UTILISATEUR
-===================================================== */
+// ================= LOGIN =================
 async function login() {
-  const id = loginUser.value.trim();
+  const id = loginId.value.trim();
   const pass = loginPass.value.trim();
 
-  if (!id || !pass) {
-    showBanner("err", "Identifiant et mot de passe obligatoires");
+  const snap = await db.ref("users/" + id).once("value");
+  const user = snap.val();
+
+  if (!user || user.pass !== pass) {
+    alert("Identifiants incorrects");
     return;
   }
 
-  try {
-    const snap = await database.ref("users/" + id).once("value");
-    const user = snap.val();
+  currentUser = user;
+  loginCard.classList.add("hidden");
 
-    if (!user || user.pass !== pass) {
-      showBanner("err", "Identifiants incorrects");
-      return;
-    }
-
-    currentUser = { id, ...user };
-    loginCard.classList.add("hidden");
-
-    if (id === "admin") {
-      adminPanel.classList.remove("hidden");
-      loadUsers();
-    } else {
-      userPanel.classList.remove("hidden");
-      loadUserRecords();
-    }
-
-    showBanner("ok", "Connexion réussie");
-
-  } catch (e) {
-    showBanner("err", "Erreur base de données");
+  if (id === "admin") {
+    adminPanel.classList.remove("hidden");
+    loadUsers();
+  } else {
+    userPanel.classList.remove("hidden");
+    loadRecords();
   }
 }
 
-/* =====================================================
-   DÉCONNEXION
-===================================================== */
-function logout() {
-  currentUser = null;
-  adminPanel.classList.add("hidden");
-  userPanel.classList.add("hidden");
-  loginCard.classList.remove("hidden");
-}
-
-/* =====================================================
-   ADMIN : LISTE DES UTILISATEURS
-===================================================== */
+// ================= ADMIN =================
 async function loadUsers() {
-  const tbody = document.querySelector("#tableUsers tbody");
-  tbody.innerHTML = "";
-
-  const snap = await database.ref("users").once("value");
-  const users = snap.val() || {};
-
+  const snap = await db.ref("users").once("value");
+  const users = snap.val();
+  adminTable.innerHTML = "";
   Object.values(users).forEach(u => {
-    tbody.insertAdjacentHTML("beforeend",
-      `<tr><td>${u.user}</td><td>${u.appart}</td><td>${u.bat}</td><td>${u.pass}</td></tr>`
-    );
+    adminTable.innerHTML += `<tr><td>${u.appart}${u.bat}</td><td>${u.appart}</td><td>${u.bat}</td></tr>`;
   });
 }
 
-/* =====================================================
-   UTILISATEUR : ENREGISTREMENTS
-===================================================== */
-async function loadUserRecords() {
-  const tbody = document.querySelector("#tableUser tbody");
-  tbody.innerHTML = "";
-
-  const snap = await database.ref("records").once("value");
-  const records = snap.val() || {};
-
-  Object.entries(records)
-    .filter(([_, r]) => r.appart === currentUser.appart && r.bat === currentUser.bat)
-    .forEach(([id, r]) => {
-      tbody.insertAdjacentHTML("beforeend",
-        `<tr><td>${id}</td><td>${r.nom}</td><td>${r.doc}</td><td>${r.date}</td></tr>`
-      );
-    });
+// ================= UTILISATEUR =================
+async function loadRecords() {
+  const snap = await db.ref("records").once("value");
+  const recs = snap.val() || {};
+  userTable.innerHTML = "";
+  Object.values(recs).filter(r =>
+    r.appart === currentUser.appart && r.bat === currentUser.bat
+  ).forEach(r => {
+    userTable.innerHTML += `<tr><td>${r.nom}</td><td>${r.doc}</td><td>${r.date}</td></tr>`;
+  });
 }
 
-/* =====================================================
-   GÉNÉRATION DU LIEN INVITÉ
-===================================================== */
-function genererLien() {
-  const base = location.href.split("?")[0];
-  const lien = base + "?invite=" + currentUser.id;
-  lienInvite.innerHTML = `<a href="${lien}" target="_blank">${lien}</a>`;
+// ================= INVITE =================
+async function createInvite() {
+  const ref = db.ref("invites").push({
+    appart: currentUser.appart,
+    bat: currentUser.bat
+  });
+  inviteLink.innerHTML = location.href + "?invite=" + ref.key;
+}
+
+async function saveInvite() {
+  await db.ref("records").push({
+    appart: invApp.value,
+    bat: invBat.value,
+    nom: invNom.value,
+    doc: invDoc.value,
+    date: new Date().toLocaleDateString()
+  });
+  alert("Enregistré");
+}
+
+// ================= LOGOUT =================
+function logout() {
+  location.reload();
+}
+
+// ================= INVITE MODE =================
+const params = new URLSearchParams(location.search);
+if (params.has("invite")) {
+  loginCard.classList.add("hidden");
+  invitePanel.classList.remove("hidden");
+
+  db.ref("invites/" + params.get("invite")).once("value").then(s => {
+    const d = s.val();
+    invApp.value = d.appart;
+    invBat.value = d.bat;
+  });
 }
 </script>
 
