@@ -74,8 +74,16 @@
       <div><strong>Connexion</strong></div>
       <div class="note">Veuillez entrer vos identifiants</div>
     </div>
-    <label>Email</label>
-    <input type="email" id="loginEmail" autocomplete="username" placeholder="votre@email.com" required />
+    <div class="row">
+      <div class="col">
+        <label>Appartement</label>
+        <input type="text" id="loginAppart" placeholder="Ex: 12" required />
+      </div>
+      <div class="col">
+        <label>Immeuble</label>
+        <input type="text" id="loginBat" placeholder="Ex: A" required />
+      </div>
+    </div>
     <label>Mot de passe</label>
     <input type="password" id="loginPass" autocomplete="current-password" placeholder="Mot de passe" required />
     <button id="btnLogin" onclick="login()">Connexion</button>
@@ -264,7 +272,7 @@
   </div>
 
   <script>
-    // Configuration Firebase mise à jour
+    // Configuration Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyC6uSDTNCuw5sHNVaNgq0EzJqJZ9jgic7U",
       authDomain: "dddiii-2b58b.firebaseapp.com",
@@ -278,7 +286,6 @@
     
     firebase.initializeApp(firebaseConfig);
     
-    const auth = firebase.auth();
     const database = firebase.database();
 
     let currentUser = null;
@@ -335,13 +342,7 @@
       document.addEventListener(evt, resetSessionTimer, {passive:true});
     });
 
-    async function logout(expired=false){
-      try {
-        await auth.signOut();
-      } catch (error) {
-        console.log("Erreur lors de la déconnexion:", error);
-      }
-      
+    function logout(expired=false){
       currentUser = null;
       stopSessionTimer();
       document.getElementById('adminPanel').classList.add('hidden');
@@ -353,33 +354,49 @@
 
     async function login(){
       hideInlineMsg('loginMsg');
-      const email = document.getElementById('loginEmail').value.trim();
+      const appart = document.getElementById('loginAppart').value.trim();
+      const bat = document.getElementById('loginBat').value.trim();
       const password = document.getElementById('loginPass').value.trim();
 
-      if(!email || !password){
-        showInlineMsg('loginMsg','err',"Saisissez l'email et le mot de passe.");
+      if(!appart || !bat || !password){
+        showInlineMsg('loginMsg','err',"Saisissez l'appartement, l'immeuble et le mot de passe.");
         return;
       }
 
+      const userId = appart + bat;
+      
       try {
-        const userCredential = await auth.signInWithEmailAndPassword(email, password);
-        const user = userCredential.user;
+        const snapshot = await database.ref('users/' + userId).once('value');
+        
+        if(!snapshot.exists()){
+          showInlineMsg('loginMsg','err',"Utilisateur non trouvé.");
+          return;
+        }
+        
+        const user = snapshot.val();
+        
+        if(user.pass !== password){
+          showInlineMsg('loginMsg','err',"Mot de passe incorrect.");
+          return;
+        }
         
         currentUser = { 
-          uid: user.uid,
-          email: user.email,
-          role: email === 'g.marouane@outlook.fr' ? 'admin' : 'user'
+          uid: userId,
+          appart: user.appart,
+          bat: user.bat,
+          role: userId === 'admin' ? 'admin' : 'user'  // Vous pouvez définir un ID admin spécifique
         };
         
         document.getElementById('loginCard').classList.add('hidden');
         
-        if(currentUser.role === 'admin'){
+        // Vérifier si c'est l'admin (vous pouvez adapter cette logique)
+        if(appart === 'admin' && bat === 'admin'){
           document.getElementById('adminPanel').classList.remove('hidden');
           showBanner('ok', "Connecté en tant qu'administrateur.");
           refreshAdmin();
         } else {
           document.getElementById('userPanel').classList.remove('hidden');
-          showBanner('ok', `Connecté en tant que ${user.email}.`);
+          showBanner('ok', `Connecté en tant que Appartement ${appart}, Immeuble ${bat}.`);
           refreshUser();
         }
         
@@ -387,43 +404,9 @@
         
       } catch (error) {
         console.error("Erreur d'authentification:", error);
-        let errorMessage = "Identifiants incorrects.";
-        
-        if (error.code === 'auth/user-not-found') {
-          errorMessage = "Utilisateur non trouvé.";
-        } else if (error.code === 'auth/wrong-password') {
-          errorMessage = "Mot de passe incorrect.";
-        } else if (error.code === 'auth/invalid-email') {
-          errorMessage = "Email invalide.";
-        }
-        
-        showInlineMsg('loginMsg','err', errorMessage);
+        showInlineMsg('loginMsg','err', "Erreur de connexion. Réessayez.");
       }
     }
-
-    auth.onAuthStateChanged((user) => {
-      if (user) {
-        currentUser = { 
-          uid: user.uid,
-          email: user.email,
-          role: user.email === 'g.marouane@outlook.fr' ? 'admin' : 'user'
-        };
-        
-        document.getElementById('loginCard').classList.add('hidden');
-        
-        if(currentUser.role === 'admin'){
-          document.getElementById('adminPanel').classList.remove('hidden');
-          refreshAdmin();
-        } else {
-          document.getElementById('userPanel').classList.remove('hidden');
-          refreshUser();
-        }
-        
-        startSessionTimer();
-      } else {
-        logout(true);
-      }
-    });
 
     async function creerUtilisateur(){
       hideInlineMsg('userWarn');
@@ -753,7 +736,7 @@
           documentImage: documentImage,
           sent: false,
           createdAt: new Date().toISOString(),
-          createdBy: currentUser.email
+          createdBy: currentUser.uid
         };
 
         const newRecordRef = database.ref('records').push();
