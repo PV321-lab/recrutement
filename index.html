@@ -1,217 +1,2020 @@
-<!DOCTYPE html>
 <html lang="fr">
+
 <head>
-<meta charset="UTF-8">
-<title>Gestion des invités</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
 
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <meta charset="UTF-8" />
 
-<!-- jsPDF -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <title>Enregistrement des invités</title>
 
-<style>
-body{font-family:Arial;background:#f2f2f2;margin:0;padding:20px}
-.card{background:#fff;padding:15px;border-radius:10px;margin-bottom:15px}
-.hidden{display:none}
-input,button,select{width:100%;padding:10px;margin-top:8px}
-button{background:#007bff;color:#fff;border:none;border-radius:6px}
-table{width:100%;border-collapse:collapse;margin-top:10px}
-th,td{border:1px solid #ccc;padding:8px;text-align:center}
-th{background:#007bff;color:#fff}
-canvas{border:1px solid #000;width:100%;height:150px}
-</style>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Intégration de Firebase -->
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+  <style>
+
+    :root{
+
+      --c1:#007bff; --bg:#f0f2f5; --ok:#0f9d58; --warn:#f4b400; --err:#d93025; --info:#4285f4;
+
+    }
+
+    body { font-family: Arial, sans-serif; margin: 16px; background: var(--bg); }
+
+    h2 { text-align: center; margin: 8px 0 16px; }
+
+    .card { background:#fff; padding:16px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.12); margin-bottom:16px; }
+
+    label { font-weight:600; display:block; margin-top:10px; }
+
+    input, select, button { font-size:16px; }
+
+    input, select { width:100%; padding:10px; margin-top:6px; border:1px solid #ccc; border-radius:8px; }
+
+    input[readonly]{ background:#e9ecef; }
+
+    button { margin-top:14px; padding:10px 14px; border:none; border-radius:10px; background:var(--c1); color:#fff; cursor:pointer; }
+
+    button:disabled{ opacity:.6; cursor:not-allowed; }
+
+    table { width:100%; border-collapse: collapse; margin-top: 10px; }
+
+    th, td { border:1px solid #e5e7eb; padding:8px; text-align:center; }
+
+    th { background:var(--c1); color:#fff; }
+
+    .hidden{ display:none !important; }
+
+    .row { display:flex; gap:12px; flex-wrap:wrap; }
+
+    .col { flex:1 1 220px; min-width:220px; }
+
+    .banner{ padding:10px 12px; border-radius:10px; margin-bottom:12px; font-weight:600; }
+
+    .banner.info{ background:#e8f0fe; color:#174ea6; border:1px solid #c6dafc; }
+
+    .banner.ok{ background:#e6f4ea; color:#137333; border:1px solid #cce8d3; }
+
+    .banner.warn{ background:#fef7e0; color:#a66300; border:1px solid #fde293; }
+
+    .banner.err{ background:#fce8e6; color:#a50e0e; border:1px solid #f7b9b4; }
+
+    .toolbar{ display:flex; gap:10px; justify-content:space-between; align-items:center; flex-wrap:wrap; }
+
+    .note{ font-size:13px; opacity:.8; }
+
+    .recap{ background:#fafafa; border:1px dashed #ccc; padding:10px; border-radius:8px; min-width:240px; }
+
+    .person-group { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #e9ecef; }
+
+    .person-group h4 { margin: 0 0 10px 0; color: #1E40AF; }
+
+    .consent-container { margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6; }
+
+    .consent-text { max-height: 150px; overflow-y: auto; padding: 10px; background: white; border-radius: 5px; border: 1px solid #ced4da; margin: 10px 0; }
+
+    .btn-delete { background: var(--err) !important; margin-left: 5px; }
+
+    .signature-area { margin: 40px 0; padding: 20px; border: 2px solid #ddd; border-radius: 8px; text-align: center; }
+
+    .signature-title { font-size: 18px; margin-bottom: 20px; color: #2c3e50; }
+
+    .signature-canvas { width: 100%; height: 200px; border: 1px solid #ccc; border-radius: 5px; background: white; cursor: crosshair; margin-bottom: 20px; }
+
+    .doc-type-row { display: flex; gap: 10px; }
+
+    .doc-type-row .col { flex: 1; }
+
+    .rules-container { 
+
+      margin: 20px 0; 
+
+      padding: 15px; 
+
+      background: #f8f9fa; 
+
+      border-radius: 8px; 
+
+      border: 1px solid #dee2e6;
+
+      max-height: 250px;
+
+      overflow-y: auto;
+
+    }
+
+    .rules-container h4 { margin-top: 0; color: #2c3e50; }
+
+    .rules-container ul { padding-left: 20px; margin: 10px 0; }
+
+    .rules-container li { margin-bottom: 8px; }
+
+    .signature-controls { display: flex; gap: 10px; justify-content: center; margin-top: 15px; }
+
+  </style>
+
 </head>
 
 <body>
 
-<!-- CONNEXION -->
-<div id="loginCard" class="card">
-  <input id="loginId" placeholder="Appartement + Bâtiment (ex: 12A)">
-  <input id="loginPass" type="password" placeholder="Mot de passe">
-  <button onclick="login()">Connexion</button>
-  <p id="loginMsg"></p>
-</div>
 
-<!-- PROPRIÉTAIRE -->
-<div id="ownerPanel" class="card hidden">
-  <button onclick="logout()">Déconnexion</button>
-  <button onclick="generateLink()">Générer lien invité</button>
-  <p id="inviteLink"></p>
+<h2>Enregistrement des invités</h2>
 
-  <table>
-    <thead>
-      <tr>
-        <th>Nom</th>
-        <th>Document</th>
-        <th>Date</th>
-        <th>PDF</th>
-      </tr>
-    </thead>
-    <tbody id="recordsTable"></tbody>
-  </table>
-</div>
 
-<!-- INVITÉ -->
-<div id="inviteForm" class="card hidden">
-  <input id="appart" disabled>
-  <input id="bat" disabled>
+  <div id="banner" class="banner info hidden"></div>
 
-  <input id="nom" placeholder="Nom">
-  <select id="docType">
-    <option value="CIN">CIN</option>
-    <option value="Passeport">Passeport</option>
-  </select>
 
-  <label>
-    <input type="checkbox" id="acceptRules">
-    J’accepte le règlement intérieur
-  </label>
+  <!-- Connexion -->
 
-  <p>Signature :</p>
-  <canvas id="signature"></canvas>
-  <button onclick="clearSignature()">Effacer signature</button>
+  <div id="loginCard" class="card">
 
-  <button onclick="saveInvite()">ENREGISTRER</button>
-</div>
+    <div class="toolbar">
 
-<script>
-/* ================= FIREBASE ================= */
-firebase.initializeApp({
-  apiKey: "API_KEY",
-  authDomain: "PROJECT.firebaseapp.com",
-  databaseURL: "https://PROJECT.firebaseio.com",
-  projectId: "PROJECT"
-});
-const db = firebase.database();
+      <div><strong>Connexion</strong></div>
 
-/* ================= VARIABLES ================= */
-let CURRENT_APPART = null;
-let CURRENT_BAT = null;
-let SIGNED = false;
+      <div class="note">Veuillez entrer vos identifiants</div>
 
-/* ================= SIGNATURE ================= */
-const canvas = document.getElementById("signature");
-const ctx = canvas.getContext("2d");
-let drawing = false;
+    </div>
 
-canvas.addEventListener("mousedown", ()=>{drawing=true});
-canvas.addEventListener("mouseup", ()=>{drawing=false;SIGNED=true});
-canvas.addEventListener("mousemove", e=>{
-  if(!drawing) return;
-  ctx.lineTo(e.offsetX,e.offsetY);
-  ctx.stroke();
-});
+    <label>Utilisateur</label>
 
-function clearSignature(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  SIGNED=false;
-}
+    <input type="text" id="loginUser" autocomplete="username" placeholder="Identifiant" required />
 
-/* ================= LOGIN ================= */
-async function login(){
-  const id = loginId.value.trim();
-  const pass = loginPass.value.trim();
-  loginMsg.textContent="";
+    <label>Mot de passe</label>
 
-  try{
-    const snap = await db.ref("users/"+id).once("value");
-    if(!snap.exists()) return loginMsg.textContent="Utilisateur introuvable";
-    const u = snap.val();
-    if(u.pass!==pass) return loginMsg.textContent="Mot de passe incorrect";
+    <input type="password" id="loginPass" autocomplete="current-password" placeholder="Mot de passe" required />
 
-    CURRENT_APPART=u.appart;
-    CURRENT_BAT=u.bat;
+    <button id="btnLogin" onclick="login()">Connexion</button>
 
-    loginCard.classList.add("hidden");
-    ownerPanel.classList.remove("hidden");
-    loadRecords();
-  }catch(e){
-    loginMsg.textContent="Erreur base";
-  }
-}
+    <p id="loginMsg" class="banner err hidden"></p>
 
-/* ================= LOGOUT ================= */
-function logout(){
-  location.href=location.pathname;
-}
+  </div>
 
-/* ================= RECORDS ================= */
-async function loadRecords(){
-  const snap = await db.ref("records").once("value");
-  const data = snap.val()||{};
-  recordsTable.innerHTML="";
-  Object.values(data).filter(r=>r.appart===CURRENT_APPART && r.bat===CURRENT_BAT)
-  .forEach(r=>{
-    recordsTable.innerHTML+=`
-      <tr>
-        <td>${r.nom}</td>
-        <td>${r.docType}</td>
-        <td>${r.date}</td>
-        <td><a href="${r.pdfUrl}" target="_blank">PDF</a></td>
-      </tr>`;
-  });
-}
 
-/* ================= LIEN ================= */
-function generateLink(){
-  const ref=db.ref("invites").push({
-    appart:CURRENT_APPART,
-    bat:CURRENT_BAT
-  });
-  inviteLink.textContent=location.href+"?invite="+ref.key;
-}
+  <!-- Interface Admin -->
 
-/* ================= INVITE MODE ================= */
-const params=new URLSearchParams(location.search);
-if(params.has("invite")){
-  db.ref("invites/"+params.get("invite")).once("value").then(s=>{
-    if(!s.exists()) return alert("Lien invalide");
-    const d=s.val();
-    CURRENT_APPART=d.appart;
-    CURRENT_BAT=d.bat;
-    appart.value=d.appart;
-    bat.value=d.bat;
-    loginCard.classList.add("hidden");
-    ownerPanel.classList.add("hidden");
-    inviteForm.classList.remove("hidden");
-  });
-}
+  <div id="adminPanel" class="hidden">
 
-/* ================= SAVE INVITE ================= */
-async function saveInvite(){
-  if(!acceptRules.checked) return alert("Acceptez le règlement");
-  if(!SIGNED) return alert("Signature obligatoire");
+    <div class="toolbar card">
 
-  const recordRef=db.ref("records").push();
-  const date=new Date().toLocaleString();
+      <div><strong>Panneau administrateur</strong></div>
 
-  const {jsPDF}=window.jspdf;
-  const pdf=new jsPDF();
-  pdf.text(`Appartement: ${CURRENT_APPART}`,10,10);
-  pdf.text(`Bâtiment: ${CURRENT_BAT}`,10,20);
-  pdf.text(`Nom: ${nom.value}`,10,30);
-  pdf.text(`Document: ${docType.value}`,10,40);
-  pdf.text(`Date: ${date}`,10,50);
-  pdf.addImage(canvas.toDataURL(),"PNG",10,60,180,40);
+      <div>
 
-  const blob=pdf.output("blob");
-  const url=URL.createObjectURL(blob);
+        <button onclick="logout()">Déconnexion</button>
 
-  await recordRef.set({
-    appart:CURRENT_APPART,
-    bat:CURRENT_BAT,
-    nom:nom.value,
-    docType:docType.value,
-    date,
-    pdfUrl:url
-  });
+      </div>
 
-  window.open(url,"_blank");
-}
-</script>
+    </div>
+
+
+    <div class="card">
+
+      <div class="toolbar">
+
+        <div><strong>Gestion des utilisateurs</strong></div>
+
+      </div>
+
+      <div class="row">
+
+        <div class="col">
+
+          <label>Appartement</label>
+
+          <input type="text" id="appartAdmin" placeholder="Ex: 12" />
+
+        </div>
+
+        <div class="col">
+
+          <label>Immeuble</label>
+
+          <input type="text" id="batAdmin" placeholder="Ex: A" />
+
+        </div>
+
+        <div class="col">
+
+          <label>Mot de passe</label>
+
+          <input type="text" id="passAdmin" placeholder="Mot de passe" />
+
+        </div>
+
+      </div>
+
+      <button onclick="creerUtilisateur()">Créer utilisateur</button>
+
+      <p id="userWarn" class="banner warn hidden"></p>
+
+    </div>
+
+
+    <div class="card">
+
+      <div class="toolbar">
+
+        <div><strong>Utilisateurs existants</strong></div>
+
+      </div>
+
+      <table id="tableUsers">
+
+        <thead>
+
+          <tr><th>ID</th><th>Appartement</th><th>Immeuble</th><th>Mot de passe</th></tr>
+
+        </thead>
+
+        <tbody></tbody>
+
+      </table>
+
+    </div>
+
+
+    <div class="card">
+
+      <div class="toolbar">
+
+        <div><strong>Enregistrements des invités</strong></div>
+
+      </div>
+
+      <table id="tableAdmin">
+
+        <thead>
+
+          <tr>
+
+            <th>ID</th><th>Appart.</th><th>Immeuble</th><th>Nom</th><th>Document</th><th>Type Doc</th>
+
+            <th>Nb Pers.</th><th>Personnes</th><th>Date</th><th>Action</th><th>Statut</th>
+
+          </tr>
+
+        </thead>
+
+        <tbody></tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+
+  <!-- Interface Utilisateur -->
+
+  <div id="userPanel" class="hidden">
+
+    <div class="toolbar card">
+
+      <div><strong>Mon espace</strong></div>
+
+      <div><button onclick="logout()">Déconnexion</button></div>
+
+    </div>
+
+
+    <div class="card">
+
+      <div class="toolbar">
+
+        <div><strong>Générer un lien d'invitation</strong></div>
+
+      </div>
+
+      <button onclick="genererLien()">Générer le lien</button>
+
+      <p id="lienInvite"></p>
+
+    </div>
+
+
+    <div class="card">
+
+      <div class="toolbar">
+
+        <div><strong>Mes enregistrements</strong></div>
+
+      </div>
+
+      <table id="tableUser">
+
+        <thead>
+
+          <tr>
+
+            <th>ID</th><th>Nom</th><th>Document</th><th>Type Doc</th><th>Nb Pers.</th><th>Personnes</th><th>Date</th><th>Statut</th><th>Action</th>
+
+          </tr>
+
+        </thead>
+
+        <tbody></tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+
+  <!-- NOUVEAU Formulaire d'invité (via lien) -->
+
+  <div id="invitePanel" class="hidden">
+
+    <div class="guest-form-container">
+
+      <div class="toolbar" style="margin-bottom: 20px;">
+
+        <h3 style="margin: 0; flex-grow: 1;">Enregistrement Invité</h3>
+
+      </div>
+
+
+      <div class="card">
+
+        <form id="guestForm">
+
+          <div class="row">
+
+            <div class="col">
+
+              <label>Appartement</label>
+
+              <input type="text" id="invAppart" readonly />
+
+            </div>
+
+            <div class="col">
+
+              <label>Immeuble</label>
+
+              <input type="text" id="invBat" readonly />
+
+            </div>
+
+          </div>
+
+
+          <label>Date d'arrivée *</label>
+
+          <input type="date" id="dateArrivee" required class="guest-input" />
+
+
+          <label>Nombre des invités *</label>
+
+          <input type="number" id="nbPers" min="1" value="1" onchange="genererChamps()" required class="guest-input" />
+
+
+          <label>Nom et Prénom de la personne principale *</label>
+
+          <input type="text" id="nomPrincipal" required placeholder="Nom complet" class="guest-input" />
+
+
+          <div class="row doc-type-row">
+
+            <div class="col">
+
+              <label>Type de document *</label>
+
+              <select id="typeDocPrincipal" required class="guest-input">
+
+                <option value="">Sélectionner</option>
+
+                <option value="Passeport">Passeport</option>
+
+                <option value="Carte d'identité">Carte d'identité</option>
+
+              </select>
+
+            </div>
+
+            <div class="col">
+
+              <label>Numéro de document *</label>
+
+              <input type="text" id="docPrincipal" required placeholder="N° de document" class="guest-input" />
+
+            </div>
+
+          </div>
+
+
+          <div id="personnes"></div>
+
+
+          <div class="consent-container">
+
+            <h4>Consentement à la collecte de données</h4>
+
+            <div class="consent-text">
+
+              <p>En acceptant, vous consentez à la collecte de vos informations personnelles. Conformément à la législation marocaine, ces données seront conservées temporairement et supprimées une fois leur utilisation terminée.</p>
+
+            </div>
+
+            <label style="display: flex; align-items: center; margin-top: 10px;">
+
+              <input type="checkbox" id="consentCheckbox" required style="margin-right: 10px; width: auto;">
+
+              <span>J'accepte les conditions de traitement des données</span>
+
+            </label>
+
+          </div>
+
+
+          <div class="rules-container">
+
+            <h4>Règlement intérieur à respecter :</h4>
+
+            <ul>
+
+              <li><strong>1. Couples marocains :</strong> Seuls les couples de la nationalité marocaine mariés sont acceptés.</li>
+
+              <li><strong>2. Tranquillité et bruit :</strong> Silence total obligatoire après 23h00. Pas de musique forte, cris ou nuisances sonores à toute heure.</li>
+
+              <li><strong>3. Tabagisme :</strong> Fumer est strictement interdit à l'intérieur. Autorisé uniquement en extérieur (terrasse ou jardin), avec obligation de nettoyer les mégots et cendres.</li>
+
+              <li><strong>4. Nombre de personnes :</strong> Maximum 5 personnes autorisées dans l'appartement.</li>
+
+              <li><strong>5. Piscine :</strong> Douche obligatoire avant la baignade. Pas de verre ni objets fragiles autour de la piscine. Surveillance permanente des enfants par un adulte. Horaires : fermeture à 20h00. Pas de courses ni plongeons.</li>
+
+              <li><strong>6. Propreté et entretien :</strong> Maintenir les lieux propres en permanence. Vider régulièrement les poubelles. Respecter les sols et surfaces (pas de traces, pas de nourriture hors cuisine).</li>
+
+            </ul>
+
+            <p style="margin-top: 15px; font-weight: bold; color: #2c3e50;">
+
+              En acceptant ce règlement, vous confirmez avoir lu et compris ces règles.
+
+              <br>J'accepte l'ensemble des règles ci-dessus.
+
+            </p>
+
+          </div>
+
+
+          <div class="signature-area">
+
+            <div class="signature-title">Signature du règlement intérieur</div>
+
+            <canvas id="signatureCanvas" class="signature-canvas">
+
+              Votre navigateur ne supporte pas la signature.
+
+            </canvas>
+
+            <div class="signature-controls">
+
+              <button type="button" id="clearBtn" class="btn" style="background: #e74c3c;">Effacer la signature</button>
+
+              <button type="button" id="registerBtn" class="btn" style="background: #27ae60;" disabled>Enregistrer</button>
+
+            </div>
+
+            <p style="margin-top: 10px; font-size: 14px; color: #666;">
+
+              Signez ci-dessus pour accepter le règlement intérieur et enregistrer votre réservation.
+
+            </p>
+
+          </div>
+
+        </form>
+
+      </div>
+
+
+      <div id="successMessage" class="banner ok hidden">
+
+        Enregistrement réussi ! Votre document signé s'ouvre dans un nouvel onglet.
+
+        <br><br>
+
+        <strong>Note importante :</strong> En cas de demande des agents de sécurité, présentez ce document signé.
+
+        Seules les personnes enregistrées dans cette réservation sont autorisées à entrer.
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  
+
+  <script>
+
+    const firebaseConfig = {
+
+      apiKey: "AIzaSyC6uSDTNCuw5sHNVaNgq0EzJqJZ9jgic7U",
+
+      authDomain: "dddiii-2b58b.firebaseapp.com",
+
+      databaseURL: "https://dddiii-2b58b-default-rtdb.asia-southeast1.firebasedatabase.app",
+
+      projectId: "dddiii-2b58b",
+
+      storageBucket: "dddiii-2b58b.firebasestorage.app",
+
+      messagingSenderId: "721468171485",
+
+      appId: "1:721468171485:web:420e2e0ab98b95fa2ae734",
+
+      measurementId: "G-QGFM2N76VK"
+
+    };
+
+    
+
+    firebase.initializeApp(firebaseConfig);
+
+    const database = firebase.database();
+
+
+    let currentUser = null;
+
+    const SESSION_TIMEOUT_MS = 10 * 60 * 1000;
+
+    let sessionTimer = null;
+
+    let signatureData = '';
+
+    let hasSignature = false;
+
+
+    function showBanner(type, text){
+
+      const b = document.getElementById('banner');
+
+      b.className = 'banner ' + type;
+
+      b.textContent = text;
+
+      b.classList.remove('hidden');
+
+    }
+
+    
+
+    function hideBanner(){ 
+
+      document.getElementById('banner').classList.add('hidden'); 
+
+    }
+
+
+    function showInlineMsg(elId, type, text){
+
+      const el = document.getElementById(elId);
+
+      el.textContent = text;
+
+      el.className = 'banner ' + type;
+
+      el.classList.remove('hidden');
+
+    }
+
+    
+
+    function hideInlineMsg(elId){
+
+      const el = document.getElementById(elId);
+
+      el.classList.add('hidden');
+
+    }
+
+
+    function startSessionTimer(){
+
+      stopSessionTimer();
+
+      sessionTimer = setTimeout(()=>{
+
+        logout(true);
+
+        showBanner('warn', "Session expirée (inactivité). Veuillez vous reconnecter.");
+
+      }, SESSION_TIMEOUT_MS);
+
+    }
+
+    
+
+    function stopSessionTimer(){
+
+      if(sessionTimer){ 
+
+        clearTimeout(sessionTimer); 
+
+        sessionTimer = null; 
+
+      }
+
+    }
+
+    
+
+    function resetSessionTimer(){
+
+      if(currentUser) startSessionTimer();
+
+    }
+
+    
+
+    ['click','keydown','touchstart'].forEach(evt=>{
+
+      document.addEventListener(evt, resetSessionTimer, {passive:true});
+
+    });
+
+
+    function logout(expired=false){
+
+      currentUser = null;
+
+      stopSessionTimer();
+
+      document.getElementById('adminPanel').classList.add('hidden');
+
+      document.getElementById('userPanel').classList.add('hidden');
+
+      document.getElementById('invitePanel').classList.add('hidden');
+
+      document.getElementById('loginCard').classList.remove('hidden');
+
+      if(!expired) showBanner('info', "Vous êtes déconnecté.");
+
+    }
+
+
+    async function login(){
+
+      hideInlineMsg('loginMsg');
+
+      const u = document.getElementById('loginUser').value.trim();
+
+      const p = document.getElementById('loginPass').value.trim();
+
+
+      if(!u || !p){
+
+        showInlineMsg('loginMsg','err',"Saisissez l'utilisateur et le mot de passe.");
+
+        return;
+
+      }
+
+
+      if(u === 'admin' && p === 'admin'){
+
+        currentUser = { role:'admin' };
+
+        document.getElementById('loginCard').classList.add('hidden');
+
+        document.getElementById('adminPanel').classList.remove('hidden');
+
+        showBanner('ok', "Connecté en tant qu'administrateur.");
+
+        startSessionTimer();
+
+        refreshAdmin();
+
+        return;
+
+      }
+
+
+      try {
+
+        const snapshot = await database.ref('users/' + u).once('value');
+
+        const user = snapshot.val();
+
+        
+
+        if(user && user.pass === p){
+
+          currentUser = { role:'user', id:u, appart:user.appart, bat:user.bat };
+
+          document.getElementById('loginCard').classList.add('hidden');
+
+          document.getElementById('userPanel').classList.remove('hidden');
+
+          showBanner('ok', `Connecté. Appartement ${user.appart} / Immeuble ${user.bat}.`);
+
+          startSessionTimer();
+
+          refreshUser();
+
+        } else {
+
+          showInlineMsg('loginMsg','err',"Identifiants incorrects.");
+
+        }
+
+      } catch (error) {
+
+        showInlineMsg('loginMsg','err',"Erreur d'accès à la base de données.");
+
+      }
+
+    }
+
+
+    async function creerUtilisateur(){
+
+      hideInlineMsg('userWarn');
+
+      const appart = (document.getElementById('appartAdmin').value || '').trim();
+
+      const bat = (document.getElementById('batAdmin').value || '').trim();
+
+      const pass = (document.getElementById('passAdmin').value || '').trim();
+
+      
+
+      if(!appart || !bat || !pass){
+
+        showInlineMsg('userWarn','warn',"Tous les champs utilisateur sont obligatoires.");
+
+        return;
+
+      }
+
+      
+
+      const userId = appart + bat;
+
+      
+
+      try {
+
+        const snapshot = await database.ref('users/' + userId).once('value');
+
+        
+
+        if(snapshot.exists()){
+
+          showInlineMsg('userWarn','warn',`L'utilisateur ${userId} existe déjà.`);
+
+        } else {
+
+          await database.ref('users/' + userId).set({
+
+            user: userId,
+
+            appart: appart,
+
+            bat: bat,
+
+            pass: pass
+
+          });
+
+          
+
+          showBanner('ok', `Utilisateur ${userId} créé.`);
+
+          refreshAdmin();
+
+        }
+
+      } catch (error) {
+
+        showInlineMsg('userWarn','err',"Erreur lors de la création de l'utilisateur.");
+
+      }
+
+    }
+
+
+    async function refreshAdmin(){
+
+      const tbodyU = document.querySelector('#tableUsers tbody');
+
+      tbodyU.innerHTML = '';
+
+      
+
+      try {
+
+        const usersSnapshot = await database.ref('users').once('value');
+
+        const users = usersSnapshot.val() || {};
+
+        
+
+        Object.values(users).forEach(u => {
+
+          tbodyU.insertAdjacentHTML('beforeend',
+
+            `<tr><td>${u.user}</td><td>${u.appart}</td><td>${u.bat}</td><td>${u.pass}</td></tr>`);
+
+        });
+
+      } catch (error) {
+
+        showBanner('err', "Erreur lors du chargement des utilisateurs.");
+
+      }
+
+
+      const tbody = document.querySelector('#tableAdmin tbody');
+
+      tbody.innerHTML = '';
+
+      
+
+      try {
+
+        const recordsSnapshot = await database.ref('records').once('value');
+
+        const records = recordsSnapshot.val() || {};
+
+        
+
+        Object.entries(records).slice(-200).forEach(([id, r]) => {
+
+          const personnesList = r.personnes ? Object.values(r.personnes).map(p => `${p.nom} (${p.typeDoc}) - ${p.doc}`).join(', ') : '';
+
+          const sendBtn = `<button onclick="envoyerWhatsApp('${id}')">Envoyer</button>`;
+
+          
+
+          tbody.insertAdjacentHTML('beforeend',
+
+            `<tr>
+
+              <td>${id}</td>
+
+              <td>${r.appart}</td>
+
+              <td>${r.bat}</td>
+
+              <td>${r.nom}</td>
+
+              <td>${r.doc}</td>
+
+              <td>${r.typeDoc || 'Non spécifié'}</td>
+
+              <td>${r.personnes ? Object.keys(r.personnes).length + 1 : 1}</td>
+
+              <td>${personnesList}</td>
+
+              <td>${r.date}</td>
+
+              <td>${sendBtn}</td>
+
+              <td>${r.sent ? "Envoyé" : "Non envoyé"}</td>
+
+            </tr>`);
+
+        });
+
+      } catch (error) {
+
+        showBanner('err', "Erreur lors du chargement des enregistrements.");
+
+      }
+
+    }
+
+
+    async function refreshUser(){
+
+      const tbody = document.querySelector('#tableUser tbody');
+
+      tbody.innerHTML = '';
+
+      
+
+      try {
+
+        const recordsSnapshot = await database.ref('records').once('value');
+
+        const records = recordsSnapshot.val() || {};
+
+        
+
+        Object.entries(records)
+
+          .filter(([id, r]) => r.appart === currentUser.appart && r.bat === currentUser.bat)
+
+          .slice(-200)
+
+          .forEach(([id, r]) => {
+
+            const personnesList = r.personnes ? Object.values(r.personnes).map(p => `${p.nom} (${p.typeDoc}) - ${p.doc}`).join(', ') : '';
+
+            const sendBtn = `<button onclick="envoyerWhatsApp('${id}')">Envoyer</button>`;
+
+            const deleteBtn = `<button class="btn-delete" onclick="supprimerEnregistrement('${id}')">Supprimer</button>`;
+
+            
+
+            tbody.insertAdjacentHTML('beforeend',
+
+              `<tr>
+
+                <td>${id}</td>
+
+                <td>${r.nom}</td>
+
+                <td>${r.doc}</td>
+
+                <td>${r.typeDoc || 'Non spécifié'}</td>
+
+                <td>${r.personnes ? Object.keys(r.personnes).length + 1 : 1}</td>
+
+                <td>${personnesList}</td>
+
+                <td>${r.date}</td>
+
+                <td>${r.sent ? "Envoyé" : "Non envoyé"}</td>
+
+                <td>${sendBtn}${deleteBtn}</td>
+
+              </tr>`);
+
+          });
+
+      } catch (error) {
+
+        showBanner('err', "Erreur de lecture des enregistrements.");
+
+      }
+
+    }
+
+
+    async function supprimerEnregistrement(id) {
+
+      if (!confirm("Êtes-vous sûr de vouloir supprimer cet enregistrement ?")) {
+
+        return;
+
+      }
+
+      
+
+      try {
+
+        await database.ref('records/' + id).remove();
+
+        showBanner('ok', "Enregistrement supprimé avec succès.");
+
+        refreshUser();
+
+      } catch (error) {
+
+        showBanner('err', "Erreur lors de la suppression de l'enregistrement.");
+
+      }
+
+    }
+
+
+    function genererLien(){
+
+      const base = location.href.split('?')[0];
+
+      const lien = `${base}?invite=${encodeURIComponent(currentUser.id)}`;
+
+      const p = document.getElementById('lienInvite');
+
+      p.innerHTML = `Lien pour vos invités : <a href="${lien}" target="_blank">${lien}</a>`;
+
+      showBanner('info', "Copiez/partagez ce lien avec vos invités.");
+
+    }
+
+
+    const canvas = document.getElementById('signatureCanvas');
+
+    const clearBtn = document.getElementById('clearBtn');
+
+    const registerBtn = document.getElementById('registerBtn');
+
+    const ctx = canvas.getContext('2d');
+
+    let isDrawing = false;
+
+    let lastX = 0;
+
+    let lastY = 0;
+
+
+    const { jsPDF } = window.jspdf;
+
+
+    function initCanvas() {
+
+      const rect = canvas.getBoundingClientRect();
+
+      canvas.width = rect.width;
+
+      canvas.height = rect.height;
+
+      
+
+      ctx.strokeStyle = '#000000';
+
+      ctx.lineWidth = 2;
+
+      ctx.lineCap = 'round';
+
+      ctx.lineJoin = 'round';
+
+      
+
+      if (!hasSignature) {
+
+        clearCanvas();
+
+      }
+
+    }
+
+
+    function clearCanvas() {
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      hasSignature = false;
+
+      registerBtn.disabled = true;
+
+    }
+
+
+    function getPos(e) {
+
+      const rect = canvas.getBoundingClientRect();
+
+      let x, y;
+
+      
+
+      if (e.type.includes('touch')) {
+
+        const touch = e.touches[0] || e.changedTouches[0];
+
+        x = touch.clientX - rect.left;
+
+        y = touch.clientY - rect.top;
+
+      } else {
+
+        x = e.clientX - rect.left;
+
+        y = e.clientY - rect.top;
+
+      }
+
+      
+
+      return { x, y };
+
+    }
+
+
+    function startDraw(e) {
+
+      isDrawing = true;
+
+      const pos = getPos(e);
+
+      [lastX, lastY] = [pos.x, pos.y];
+
+      
+
+      ctx.beginPath();
+
+      ctx.arc(lastX, lastY, ctx.lineWidth/2, 0, Math.PI*2);
+
+      ctx.fill();
+
+    }
+
+
+    function draw(e) {
+
+      if (!isDrawing) return;
+
+      e.preventDefault();
+
+      
+
+      const pos = getPos(e);
+
+      const currentX = pos.x;
+
+      const currentY = pos.y;
+
+      
+
+      ctx.beginPath();
+
+      ctx.moveTo(lastX, lastY);
+
+      ctx.lineTo(currentX, currentY);
+
+      ctx.stroke();
+
+      
+
+      [lastX, lastY] = [currentX, currentY];
+
+    }
+
+
+    function stopDraw() {
+
+      if (!isDrawing) return;
+
+      isDrawing = false;
+
+      hasSignature = true;
+
+      registerBtn.disabled = false;
+
+    }
+
+
+    async function registerSignature() {
+
+      if(!document.getElementById('consentCheckbox').checked){
+
+        showBanner('warn', "Veuillez accepter les conditions de traitement des données.");
+
+        return;
+
+      }
+
+
+      if(!hasSignature){
+
+        showBanner('warn', "Veuillez d'abord signer le règlement.");
+
+        return;
+
+      }
+
+
+      const nom = (document.getElementById('nomPrincipal').value || '').trim();
+
+      const doc = (document.getElementById('docPrincipal').value || '').trim();
+
+      const typeDoc = (document.getElementById('typeDocPrincipal').value || '').trim();
+
+      const nb = parseInt(document.getElementById('nbPers').value || '0', 10);
+
+      const date = document.getElementById('dateArrivee').value;
+
+
+      if(!nom || !doc || !typeDoc || !date || !Number.isInteger(nb) || nb < 1){
+
+        showBanner('warn',"Tous les champs sont obligatoires.");
+
+        return;
+
+      }
+
+
+      const personnes = {};
+
+      for(let i=2; i<=nb; i++){
+
+        const nomVal = (document.getElementById(`pers${i}Nom`)?.value || '').trim();
+
+        const docVal = (document.getElementById(`pers${i}Doc`)?.value || '').trim();
+
+        const typeDocVal = (document.getElementById(`pers${i}TypeDoc`)?.value || '').trim();
+
+        
+
+        if(!nomVal || !docVal || !typeDocVal){
+
+          showBanner('warn',`Merci de renseigner tous les champs pour la personne ${i}.`);
+
+          return;
+
+        }
+
+        
+
+        personnes[`pers${i-1}`] = { nom: nomVal, doc: docVal, typeDoc: typeDocVal };
+
+      }
+
+
+      const appart = document.getElementById('invAppart').value;
+
+      const bat = document.getElementById('invBat').value;
+
+
+      signatureData = canvas.toDataURL('image/png');
+
+
+      const rec = { 
+
+        appart, 
+
+        bat, 
+
+        nom, 
+
+        doc, 
+
+        typeDoc,
+
+        personnes, 
+
+        date, 
+
+        sent:false 
+
+      };
+
+
+      try {
+
+        registerBtn.disabled = true;
+
+        registerBtn.textContent = '⏳ Enregistrement...';
+
+
+        const newRecordRef = database.ref('records').push();
+
+        await newRecordRef.set(rec);
+
+        
+
+        const id = newRecordRef.key;
+
+        rec.id = id;
+
+        
+
+        document.getElementById('successMessage').classList.remove('hidden');
+
+        document.getElementById('guestForm').style.display = 'none';
+
+
+        generatePDF(rec);
+
+        
+
+        registerBtn.textContent = 'Enregistrer';
+
+        registerBtn.disabled = false;
+
+        
+
+      } catch (error) {
+
+        showBanner('err',"Erreur lors de l'enregistrement. Réessayez.");
+
+        registerBtn.textContent = 'Enregistrer';
+
+        registerBtn.disabled = false;
+
+      }
+
+    }
+
+
+    function setupSignatureEvents() {
+
+      canvas.addEventListener('mousedown', startDraw);
+
+      canvas.addEventListener('mousemove', draw);
+
+      canvas.addEventListener('mouseup', stopDraw);
+
+      canvas.addEventListener('mouseout', stopDraw);
+
+      
+
+      canvas.addEventListener('touchstart', (e) => {
+
+        e.preventDefault();
+
+        startDraw(e);
+
+      });
+
+      
+
+      canvas.addEventListener('touchmove', (e) => {
+
+        e.preventDefault();
+
+        draw(e);
+
+      });
+
+      
+
+      canvas.addEventListener('touchend', (e) => {
+
+        e.preventDefault();
+
+        stopDraw();
+
+      });
+
+      
+
+      clearBtn.addEventListener('click', clearCanvas);
+
+      registerBtn.addEventListener('click', registerSignature);
+
+      window.addEventListener('resize', initCanvas);
+
+    }
+
+
+    async function enterInviteMode(userId){
+
+      try {
+
+        const snapshot = await database.ref('users/' + userId).once('value');
+
+        const user = snapshot.val();
+
+        
+
+        if(!user){
+
+          showBanner('err',"Lien invalide ou utilisateur introuvable.");
+
+          return;
+
+        }
+
+        
+
+        document.getElementById('loginCard').classList.add('hidden');
+
+        document.getElementById('invitePanel').classList.remove('hidden');
+
+        document.getElementById('invAppart').value = user.appart;
+
+        document.getElementById('invBat').value = user.bat;
+
+        genererChamps();
+
+        initCanvas();
+
+        setupSignatureEvents();
+
+        hideBanner();
+
+        
+
+      } catch (error) {
+
+        showBanner('err', "Erreur lors du chargement des données utilisateur.");
+
+      }
+
+    }
+
+
+    function genererChamps(){
+
+      const nb = Math.max(1, parseInt(document.getElementById('nbPers').value || '1', 10));
+
+      const cont = document.getElementById('personnes');
+
+      cont.innerHTML = '';
+
+      
+
+      for(let i=2; i<=nb; i++){
+
+        const group = document.createElement('div');
+
+        group.className = 'person-group';
+
+        
+
+        const title = document.createElement('h4');
+
+        title.textContent = `Personne ${i}`;
+
+        title.style.marginBottom = '10px';
+
+        title.style.fontWeight = 'bold';
+
+        group.appendChild(title);
+
+        
+
+        const nomLab = document.createElement('label');
+
+        nomLab.textContent = 'Nom & Prénom';
+
+        group.appendChild(nomLab);
+
+        
+
+        const nomInp = document.createElement('input');
+
+        nomInp.type = 'text';
+
+        nomInp.id = `pers${i}Nom`;
+
+        nomInp.required = true;
+
+        nomInp.className = 'guest-input';
+
+        nomInp.placeholder = `Nom complet personne ${i}`;
+
+        group.appendChild(nomInp);
+
+        
+
+        const docTypeLab = document.createElement('label');
+
+        docTypeLab.textContent = 'Type de document';
+
+        docTypeLab.style.marginTop = '10px';
+
+        group.appendChild(docTypeLab);
+
+        
+
+        const docTypeInp = document.createElement('select');
+
+        docTypeInp.id = `pers${i}TypeDoc`;
+
+        docTypeInp.required = true;
+
+        docTypeInp.className = 'guest-input';
+
+        docTypeInp.innerHTML = `
+
+          <option value="">Sélectionner</option>
+
+          <option value="Passeport">Passeport</option>
+
+          <option value="Carte d'identité">Carte d'identité</option>
+
+        `;
+
+        group.appendChild(docTypeInp);
+
+        
+
+        const docLab = document.createElement('label');
+
+        docLab.textContent = 'Numéro de document';
+
+        docLab.style.marginTop = '10px';
+
+        group.appendChild(docLab);
+
+        
+
+        const docInp = document.createElement('input');
+
+        docInp.type = 'text';
+
+        docInp.id = `pers${i}Doc`;
+
+        docInp.required = true;
+
+        docInp.className = 'guest-input';
+
+        docInp.placeholder = `Document personne ${i}`;
+
+        group.appendChild(docInp);
+
+        
+
+        cont.appendChild(group);
+
+      }
+
+    }
+
+
+    function buildMessage(rec){
+
+      const nb = rec.personnes ? Object.keys(rec.personnes).length + 1 : 1;
+
+      const nomPrincipal = rec.nom;
+
+      const docPrincipal = rec.doc;
+
+      const typeDocPrincipal = rec.typeDoc || 'Document';
+
+      const autres = rec.personnes ? Object.values(rec.personnes).map(p => `${p.nom} (${p.typeDoc}) - ${p.doc}`) : [];
+
+      
+
+      let message = `Salam :
+
+      
+
+Arrivée: ${rec.date}
+
+Appartement: ${rec.appart}
+
+Imm: ${rec.bat}
+
+Nombre de personnes: ${nb} personnes
+
+
+Réservation au nom de:
+
+Nom et Prénom: ${nomPrincipal}
+
+Type de document: ${typeDocPrincipal}
+
+Numéro: ${docPrincipal}
+
+`;
+
+
+      if (autres.length > 0) {
+
+        message += "\nAutres personnes:\n";
+
+        autres.forEach((personne, index) => {
+
+          message += `${index + 1}. ${personne}\n`;
+
+        });
+
+      }
+
+
+      message += `
+
+NB : Svp pas d'autres personnes autorisées seul Les personnes figurent dans la réservation.
+
+
+Merci
+
+------------------------------------------
+
+السلام عليكم:
+
+
+الوصول: ${rec.date}
+
+الشقة: ${rec.appart}
+
+رقم العمارة: ${rec.bat}
+
+عدد الأشخاص: ${nb} أشخاص
+
+
+الحجز باسم:
+
+الإسم و اللقب: ${nomPrincipal}
+
+نوع الوثيقة: ${typeDocPrincipal}
+
+الرقم: ${docPrincipal}
+
+`;
+
+
+      if (autres.length > 0) {
+
+        message += "\nأشخاص آخرون:\n";
+
+        autres.forEach((personne, index) => {
+
+          message += `${index + 1}. ${personne}\n`;
+
+        });
+
+      }
+
+
+      message += `
+
+ملاحظة: الرجاء عدم السماح لأي أشخاص آخرين، فقط الأشخاص المذكورين في الحجز.
+
+
+شكرًا.`;
+
+
+      return message;
+
+    }
+
+
+    function generatePDF(rec) {
+
+      const pdf = new jsPDF('p', 'mm', 'a4');
+
+      let yPos = 20;
+
+      
+
+      pdf.setFontSize(20);
+
+      pdf.setTextColor(44, 62, 80);
+
+      pdf.text('DOCUMENT SIGNÉ', 105, yPos, { align: 'center' });
+
+      yPos += 10;
+
+      
+
+      pdf.setFontSize(14);
+
+      pdf.setTextColor(100, 100, 100);
+
+      pdf.text('Règlement intérieur accepté', 105, yPos, { align: 'center' });
+
+      yPos += 15;
+
+      
+
+      pdf.setDrawColor(44, 62, 80);
+
+      pdf.setLineWidth(1);
+
+      pdf.line(20, yPos, 190, yPos);
+
+      yPos += 10;
+
+      
+
+      pdf.setFontSize(16);
+
+      pdf.setTextColor(44, 62, 80);
+
+      pdf.text('INFORMATIONS DE LA RÉSERVATION', 20, yPos);
+
+      yPos += 10;
+
+      
+
+      const totalPersons = rec.personnes ? Object.keys(rec.personnes).length + 1 : 1;
+
+      
+
+      pdf.setFontSize(12);
+
+      pdf.setTextColor(0, 0, 0);
+
+      
+
+      pdf.text(`Nom du signataire : ${rec.nom}`, 20, yPos);
+
+      yPos += 8;
+
+      
+
+      pdf.text(`Date d'enregistrement : ${new Date().toLocaleDateString('fr-FR')}`, 20, yPos);
+
+      yPos += 8;
+
+      
+
+      pdf.text(`Nombre de personnes : ${totalPersons}`, 20, yPos);
+
+      yPos += 8;
+
+      
+
+      pdf.text(`Appartement : ${rec.appart} - Immeuble : ${rec.bat}`, 20, yPos);
+
+      yPos += 8;
+
+      
+
+      pdf.text(`Date d'arrivée : ${rec.date}`, 20, yPos);
+
+      yPos += 15;
+
+      
+
+      pdf.setDrawColor(200, 200, 200);
+
+      pdf.setLineWidth(0.5);
+
+      pdf.line(20, yPos, 190, yPos);
+
+      yPos += 15;
+
+      
+
+      pdf.setFontSize(16);
+
+      pdf.setTextColor(44, 62, 80);
+
+      pdf.text('RÈGLEMENT INTÉRIEUR ACCEPTÉ', 105, yPos, { align: 'center' });
+
+      yPos += 15;
+
+      
+
+      pdf.setFontSize(10);
+
+      pdf.setTextColor(0, 0, 0);
+
+      
+
+      const rules = [
+
+        '1. Couples marocains',
+
+        'Seuls les couples de la nationalité marocaine mariés sont acceptés.',
+
+        '',
+
+        '2. Tranquillité et bruit',
+
+        'Silence total obligatoire après 23h00. Pas de musique forte, cris ou nuisances',
+
+        'sonores à toute heure, par respect pour les voisins.',
+
+        '',
+
+        '3. Tabagisme',
+
+        'Fumer est strictement interdit à l\'intérieur. Autorisé uniquement en extérieur',
+
+        '(terrasse ou jardin), avec obligation de nettoyer les mégots et cendres.',
+
+        '',
+
+        '4. Nombre de personnes',
+
+        'Maximum 5 personnes autorisées dans l\'appartement.',
+
+        '',
+
+        '5. Piscine',
+
+        'Douche obligatoire avant la baignade.',
+
+        'Pas de verre ni objets fragiles autour de la piscine.',
+
+        'Surveillance permanente des enfants par un adulte.',
+
+        'Horaires : fermeture à 20h00.',
+
+        'Pas de courses ni plongeons.',
+
+        '',
+
+        '6. Propreté et entretien',
+
+        'Maintenir les lieux propres en permanence.',
+
+        'Vider régulièrement les poubelles.',
+
+        'Respecter les sols et surfaces (pas de traces, pas de nourriture hors cuisine).',
+
+        '',
+
+        'En acceptant ce règlement, vous confirmez avoir lu et compris ces règles.',
+
+        '',
+
+        `J'accepte l'ensemble des règles ci-dessus.`,
+
+        '',
+
+        `Signé par : ${rec.nom}`,
+
+        `Le : ${new Date().toLocaleDateString('fr-FR')}`,
+
+        '',
+
+        'Signature :'
+
+      ];
+
+
+      rules.forEach(line => {
+
+        if (yPos > 250) {
+
+          pdf.addPage();
+
+          yPos = 20;
+
+        }
+
+        pdf.text(line, 20, yPos);
+
+        yPos += line === '' ? 5 : 7;
+
+      });
+
+      
+
+      yPos += 5;
+
+      
+
+      if (yPos > 160) {
+
+        pdf.addPage();
+
+        yPos = 20;
+
+      }
+
+      
+
+      const imgWidth = 80;
+
+      const imgHeight = 40;
+
+      pdf.addImage(signatureData, 'PNG', 20, yPos, imgWidth, imgHeight);
+
+      
+
+      const now = new Date();
+
+      pdf.setFontSize(9);
+
+      pdf.setTextColor(100, 100, 100);
+
+      pdf.text(`Document généré le ${now.toLocaleDateString('fr-FR')} à ${now.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'})}`, 20, 280);
+
+      
+
+      const pdfBlob = pdf.output('blob');
+
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+
+      
+
+      const newWindow = window.open('', '_blank');
+
+      newWindow.document.write(`
+
+        <!DOCTYPE html>
+
+        <html>
+
+        <head>
+
+          <title>Document signé - ${rec.nom}</title>
+
+          <style>
+
+            body { margin: 0; padding: 20px; background: #f5f5f5; }
+
+            .preview-container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
+
+            h1 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+
+            .document-info { background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0; }
+
+            .document-info p { margin: 8px 0; }
+
+            .actions { text-align: center; margin: 30px 0; }
+
+            .action-btn { background: #3498db; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 16px; margin: 0 10px; text-decoration: none; display: inline-block; }
+
+            .download-btn { background: #27ae60; }
+
+            .download-btn:hover { background: #219653; }
+
+            iframe { width: 100%; height: 600px; border: 1px solid #ddd; border-radius: 5px; margin-top: 20px; }
+
+          </style>
+
+        </head>
+
+        <body>
+
+          <div class="preview-container">
+
+            <h1>Document Signé</h1>
+
+            <p style="text-align: center; color: #666; margin-bottom: 20px;">Règlement intérieur accepté</p>
+
+            
+
+            <div class="document-info">
+
+              <p><strong>Nom du signataire :</strong> ${rec.nom}</p>
+
+              <p><strong>Date d'enregistrement :</strong> ${new Date().toLocaleDateString('fr-FR')}</p>
+
+              <p><strong>Nombre de personnes :</strong> ${totalPersons}</p>
+
+              <p><strong>Appartement :</strong> ${rec.appart} - Immeuble : ${rec.bat}</p>
+
+              <p><strong>Date d'arrivée :</strong> ${rec.date}</p>
+
+            </div>
+
+            
+
+            <div class="actions">
+
+              <a href="${pdfUrl}" download="document_signe_${rec.nom.replace(/\s+/g, '_')}.pdf" class="action-btn download-btn">📥 Télécharger le PDF</a>
+
+              <button onclick="window.print()" class="action-btn">🖨️ Imprimer</button>
+
+            </div>
+
+            <iframe src="${pdfUrl}"></iframe>
+
+          </div>
+
+        </body>
+
+        </html>
+
+      `);
+
+      newWindow.document.close();
+
+    }
+
+
+    async function envoyerWhatsApp(id){
+
+      try {
+
+        const snapshot = await database.ref('records/' + id).once('value');
+
+        const r = snapshot.val();
+
+        
+
+        if(!r){ 
+
+          showBanner('err',"Enregistrement introuvable."); 
+
+          return; 
+
+        }
+
+        
+
+        const msg = buildMessage(r);
+
+        const url = "https://wa.me/?text=" + encodeURIComponent(msg);
+
+        window.open(url, "_blank");
+
+        
+
+        await database.ref('records/' + id).update({ sent: true });
+
+        
+
+        if(currentUser.role === 'admin') refreshAdmin();
+
+        else refreshUser();
+
+      } catch (error) {
+
+        showBanner('err',"Erreur de lecture de l'enregistrement.");
+
+      }
+
+    }
+
+
+    document.getElementById('btnLogin').disabled = false;
+
+    
+
+    const params = new URLSearchParams(location.search);
+
+    if(params.has("invite")) {
+
+      enterInviteMode(params.get("invite"));
+
+    }
+
+  </script>
+
 
 </body>
+
 </html>
