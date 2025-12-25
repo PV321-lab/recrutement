@@ -1,27 +1,28 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Enregistrement des invités</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <!-- Firebase -->
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
   <style>
-    body{font-family:Arial;background:#f0f2f5;margin:20px}
-    h2{text-align:center}
-    .card{background:#fff;padding:16px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.15);margin-bottom:16px}
-    label{display:block;margin-top:10px;font-weight:bold}
-    input,button{width:100%;padding:10px;margin-top:6px;font-size:16px}
-    button{background:#007bff;color:#fff;border:none;border-radius:8px;cursor:pointer}
-    button:disabled{opacity:.6}
-    .banner{padding:10px;border-radius:8px;margin-bottom:10px;font-weight:bold}
-    .ok{background:#e6f4ea;color:#137333}
-    .err{background:#fce8e6;color:#a50e0e}
-    .hidden{display:none}
+    body { font-family: Arial; background:#f0f2f5; margin:20px }
+    .card { background:#fff; padding:16px; border-radius:10px; margin-bottom:16px; box-shadow:0 2px 8px rgba(0,0,0,.15) }
+    label { font-weight:bold; display:block; margin-top:10px }
+    input, button { width:100%; padding:10px; margin-top:6px; font-size:16px }
+    button { background:#007bff; color:white; border:none; border-radius:8px; cursor:pointer }
+    button:disabled { opacity:.6 }
+    .hidden { display:none }
+    .banner { padding:10px; border-radius:8px; margin-bottom:10px; font-weight:bold }
+    .ok { background:#e6f4ea; color:#137333 }
+    .err { background:#fce8e6; color:#a50e0e }
+    table { width:100%; border-collapse:collapse }
+    th, td { border:1px solid #ccc; padding:8px; text-align:center }
+    th { background:#007bff; color:white }
   </style>
 </head>
 <body>
@@ -30,25 +31,50 @@
 
 <div id="banner" class="banner hidden"></div>
 
+<!-- ================= CONNEXION ================= -->
 <div id="loginCard" class="card">
-  <label>Email</label>
-  <input type="email" id="loginUser" placeholder="email" />
+  <label>Identifiant (Appartement + Immeuble)</label>
+  <input id="loginUser" placeholder="Ex: 12A">
+
   <label>Mot de passe</label>
-  <input type="password" id="loginPass" placeholder="mot de passe" />
+  <input type="password" id="loginPass">
+
   <button onclick="login()">Connexion</button>
 </div>
 
+<!-- ================= ADMIN ================= -->
 <div id="adminPanel" class="card hidden">
-  <h3>Administrateur connecté</h3>
+  <h3>Admin</h3>
   <button onclick="logout()">Déconnexion</button>
+
+  <h4>Utilisateurs</h4>
+  <table id="tableUsers">
+    <thead><tr><th>ID</th><th>Appartement</th><th>Immeuble</th><th>Mot de passe</th></tr></thead>
+    <tbody></tbody>
+  </table>
 </div>
 
+<!-- ================= UTILISATEUR ================= -->
 <div id="userPanel" class="card hidden">
-  <h3>Utilisateur connecté</h3>
+  <h3>Mon espace</h3>
   <button onclick="logout()">Déconnexion</button>
+
+  <button onclick="genererLien()">Générer lien invité</button>
+  <p id="lienInvite"></p>
+
+  <h4>Mes enregistrements</h4>
+  <table id="tableUser">
+    <thead>
+      <tr><th>ID</th><th>Nom</th><th>Document</th><th>Date</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 </div>
 
 <script>
+/* =====================================================
+   CONFIGURATION FIREBASE (NOUVELLE – AVEC SÉCURITÉ)
+===================================================== */
 const firebaseConfig = {
   apiKey: "AIzaSyC6uSDTNCuw5sHNVaNgq0EzJqJZ9jgic7U",
   authDomain: "dddiii-2b58b.firebaseapp.com",
@@ -61,50 +87,115 @@ const firebaseConfig = {
 };
 
 firebase.initializeApp(firebaseConfig);
-
-const auth = firebase.auth();
 const database = firebase.database();
 
-function showBanner(type, text) {
+/* =====================================================
+   VARIABLES GLOBALES
+===================================================== */
+let currentUser = null;
+
+/* =====================================================
+   UTILITAIRES UI
+===================================================== */
+function showBanner(type, msg) {
   const b = document.getElementById("banner");
   b.className = "banner " + type;
-  b.textContent = text;
+  b.textContent = msg;
   b.classList.remove("hidden");
 }
 
-function login() {
-  const email = document.getElementById("loginUser").value.trim();
-  const password = document.getElementById("loginPass").value.trim();
+/* =====================================================
+   CONNEXION UTILISATEUR
+===================================================== */
+async function login() {
+  const id = loginUser.value.trim();
+  const pass = loginPass.value.trim();
 
-  if (!email || !password) {
-    showBanner("err", "Email et mot de passe obligatoires");
+  if (!id || !pass) {
+    showBanner("err", "Identifiant et mot de passe obligatoires");
     return;
   }
 
-  auth.signInWithEmailAndPassword(email, password)
-    .then(userCredential => {
-      showBanner("ok", "Connexion réussie");
+  try {
+    const snap = await database.ref("users/" + id).once("value");
+    const user = snap.val();
 
-      document.getElementById("loginCard").classList.add("hidden");
+    if (!user || user.pass !== pass) {
+      showBanner("err", "Identifiants incorrects");
+      return;
+    }
 
-      if (email === "g.marouane@outlook.fr") {
-        document.getElementById("adminPanel").classList.remove("hidden");
-      } else {
-        document.getElementById("userPanel").classList.remove("hidden");
-      }
-    })
-    .catch(error => {
-      showBanner("err", "Erreur : " + error.message);
+    currentUser = { id, ...user };
+    loginCard.classList.add("hidden");
+
+    if (id === "admin") {
+      adminPanel.classList.remove("hidden");
+      loadUsers();
+    } else {
+      userPanel.classList.remove("hidden");
+      loadUserRecords();
+    }
+
+    showBanner("ok", "Connexion réussie");
+
+  } catch (e) {
+    showBanner("err", "Erreur base de données");
+  }
+}
+
+/* =====================================================
+   DÉCONNEXION
+===================================================== */
+function logout() {
+  currentUser = null;
+  adminPanel.classList.add("hidden");
+  userPanel.classList.add("hidden");
+  loginCard.classList.remove("hidden");
+}
+
+/* =====================================================
+   ADMIN : LISTE DES UTILISATEURS
+===================================================== */
+async function loadUsers() {
+  const tbody = document.querySelector("#tableUsers tbody");
+  tbody.innerHTML = "";
+
+  const snap = await database.ref("users").once("value");
+  const users = snap.val() || {};
+
+  Object.values(users).forEach(u => {
+    tbody.insertAdjacentHTML("beforeend",
+      `<tr><td>${u.user}</td><td>${u.appart}</td><td>${u.bat}</td><td>${u.pass}</td></tr>`
+    );
+  });
+}
+
+/* =====================================================
+   UTILISATEUR : ENREGISTREMENTS
+===================================================== */
+async function loadUserRecords() {
+  const tbody = document.querySelector("#tableUser tbody");
+  tbody.innerHTML = "";
+
+  const snap = await database.ref("records").once("value");
+  const records = snap.val() || {};
+
+  Object.entries(records)
+    .filter(([_, r]) => r.appart === currentUser.appart && r.bat === currentUser.bat)
+    .forEach(([id, r]) => {
+      tbody.insertAdjacentHTML("beforeend",
+        `<tr><td>${id}</td><td>${r.nom}</td><td>${r.doc}</td><td>${r.date}</td></tr>`
+      );
     });
 }
 
-function logout() {
-  auth.signOut().then(() => {
-    document.getElementById("adminPanel").classList.add("hidden");
-    document.getElementById("userPanel").classList.add("hidden");
-    document.getElementById("loginCard").classList.remove("hidden");
-    showBanner("ok", "Déconnecté");
-  });
+/* =====================================================
+   GÉNÉRATION DU LIEN INVITÉ
+===================================================== */
+function genererLien() {
+  const base = location.href.split("?")[0];
+  const lien = base + "?invite=" + currentUser.id;
+  lienInvite.innerHTML = `<a href="${lien}" target="_blank">${lien}</a>`;
 }
 </script>
 
