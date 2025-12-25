@@ -1,308 +1,159 @@
 <?php
 session_start();
 
-$serveur = "localhost";
-$utilisateur = "root";
-$motdepasse = "";
-$basededonnees = "gestion_invites";
+$host = "localhost";
+$dbname = "gestion_invites";
+$username = "root";
+$password = "";
 
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['utilisateur']) && isset($_POST['motdepasse'])) {
-    try {
-        $connexion = new PDO("mysql:host=$serveur;dbname=$basededonnees", $utilisateur, $motdepasse);
-        $connexion->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        
-        $utilisateur_saisi = $_POST['utilisateur'];
-        $motdepasse_saisi = $_POST['motdepasse'];
-        
-        $requete = $connexion->prepare("SELECT * FROM appartements WHERE numero = :utilisateur AND password = :motdepasse");
-        $requete->bindParam(':utilisateur', $utilisateur_saisi);
-        $requete->bindParam(':motdepasse', $motdepasse_saisi);
-        $requete->execute();
-        
-        if ($requete->rowCount() > 0) {
-            $appartement = $requete->fetch(PDO::FETCH_ASSOC);
-            $_SESSION['appartement_id'] = $appartement['id'];
-            $_SESSION['appartement_numero'] = $appartement['numero'];
-            $_SESSION['batiment_id'] = $appartement['batiment_id'];
-            
-            $requete_enregistrements = $connexion->prepare("SELECT * FROM enregistrements WHERE appartement_id = :id ORDER BY date_creation DESC");
-            $requete_enregistrements->bindParam(':id', $appartement['id']);
-            $requete_enregistrements->execute();
-            $enregistrements = $requete_enregistrements->fetchAll(PDO::FETCH_ASSOC);
-            
-            echo '<!DOCTYPE html>
-            <html lang="fr">
-            <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Enregistrement des invités</title>
-                <style>
-                    body {
-                        font-family: Arial, sans-serif;
-                        background-color: #f4f4f4;
-                        margin: 0;
-                        padding: 20px;
-                    }
-                    .container {
-                        max-width: 1200px;
-                        margin: 0 auto;
-                        background-color: white;
-                        padding: 20px;
-                        border-radius: 8px;
-                        box-shadow: 0 0 10px rgba(0,0,0,0.1);
-                    }
-                    h1 {
-                        color: #333;
-                        text-align: center;
-                    }
-                    .info-appartement {
-                        background-color: #e8f5e9;
-                        padding: 15px;
-                        border-radius: 5px;
-                        margin-bottom: 20px;
-                        border-left: 4px solid #4CAF50;
-                    }
-                    .info-appartement p {
-                        margin: 5px 0;
-                        color: #2e7d32;
-                    }
-                    .btn-generer {
-                        background-color: #2196F3;
-                        color: white;
-                        border: none;
-                        padding: 12px 24px;
-                        border-radius: 4px;
-                        cursor: pointer;
-                        font-size: 16px;
-                        margin-bottom: 20px;
-                    }
-                    .btn-generer:hover {
-                        background-color: #0b7dda;
-                    }
-                    .lien-container {
-                        background-color: #fff3cd;
-                        padding: 15px;
-                        border-radius: 5px;
-                        margin-bottom: 20px;
-                        border-left: 4px solid #ffc107;
-                        display: none;
-                    }
-                    .lien-container input {
-                        width: 80%;
-                        padding: 10px;
-                        border: 1px solid #ddd;
-                        border-radius: 4px;
-                        margin-right: 10px;
-                    }
-                    .btn-copier {
-                        background-color: #ffc107;
-                        color: #333;
-                        border: none;
-                        padding: 10px 15px;
-                        border-radius: 4px;
-                        cursor: pointer;
-                    }
-                    .btn-copier:hover {
-                        background-color: #e0a800;
-                    }
-                    table {
-                        width: 100%;
-                        border-collapse: collapse;
-                        margin-top: 20px;
-                    }
-                    th, td {
-                        border: 1px solid #ddd;
-                        padding: 12px;
-                        text-align: left;
-                    }
-                    th {
-                        background-color: #4CAF50;
-                        color: white;
-                    }
-                    tr:nth-child(even) {
-                        background-color: #f2f2f2;
-                    }
-                    .btn-deconnexion {
-                        background-color: #f44336;
-                        color: white;
-                        border: none;
-                        padding: 10px 15px;
-                        border-radius: 4px;
-                        cursor: pointer;
-                        float: right;
-                    }
-                    .btn-deconnexion:hover {
-                        background-color: #da190b;
-                    }
-                    .aucun-enregistrement {
-                        text-align: center;
-                        color: #666;
-                        font-style: italic;
-                        padding: 20px;
-                    }
-                </style>
-            </head>
-            <body>
-                <div class="container">
-                    <h1>Enregistrement des invités</h1>
-                    
-                    <div class="info-appartement">
-                        <p><strong>Appartement:</strong> ' . $appartement['numero'] . '</p>
-                        <p><strong>Bâtiment:</strong> ' . $appartement['batiment_id'] . '</p>
-                        <button class="btn-deconnexion" onclick="window.location.href=\'?deconnexion=1\'">Déconnexion</button>
-                    </div>
-                    
-                    <button class="btn-generer" onclick="genererLien()">Générer le lien d\'invitation</button>
-                    
-                    <div class="lien-container" id="lienContainer">
-                        <input type="text" id="lienInvitation" readonly>
-                        <button class="btn-copier" onclick="copierLien()">Copier</button>
-                    </div>';
-            
-            if (count($enregistrements) > 0) {
-                echo '<table>
-                        <tr>
-                            <th>Nom Complet</th>
-                            <th>Email</th>
-                            <th>Téléphone</th>
-                            <th>Date d\'enregistrement</th>
-                        </tr>';
-                
-                foreach ($enregistrements as $enregistrement) {
-                    echo '<tr>
-                            <td>' . htmlspecialchars($enregistrement['nom_complet']) . '</td>
-                            <td>' . htmlspecialchars($enregistrement['email']) . '</td>
-                            <td>' . htmlspecialchars($enregistrement['telephone']) . '</td>
-                            <td>' . $enregistrement['date_creation'] . '</td>
-                          </tr>';
-                }
-                
-                echo '</table>';
-            } else {
-                echo '<div class="aucun-enregistrement">Aucun enregistrement trouvé pour cet appartement.</div>';
-            }
-            
-            echo '<script>
-                    function genererLien() {
-                        var token = Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2);
-                        var lien = window.location.origin + "/enregistrement.php?token=" + token + "&appartement=' . $appartement['id'] . '";
-                        
-                        document.getElementById("lienInvitation").value = lien;
-                        document.getElementById("lienContainer").style.display = "block";
-                    }
-                    
-                    function copierLien() {
-                        var input = document.getElementById("lienInvitation");
-                        input.select();
-                        input.setSelectionRange(0, 99999);
-                        document.execCommand("copy");
-                        alert("Lien copié dans le presse-papier!");
-                    }
-                  </script>
-                </div>
-            </body>
-            </html>';
-        } else {
-            echo '<div style="color: red; text-align: center; margin-top: 20px;">Identifiants incorrects. Veuillez réessayer.</div>';
-            afficherFormulaireConnexion();
-        }
-    } catch(PDOException $e) {
-        echo '<div style="color: red; text-align: center; margin-top: 20px;">Erreur d\'accès à la base de données. Vérifiez votre connexion internet.</div>';
-        afficherFormulaireConnexion();
-    }
-} else {
-    afficherFormulaireConnexion();
+try {
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch(PDOException $e) {
+    die("Erreur de connexion : " . $e->getMessage());
 }
 
-if (isset($_GET['deconnexion'])) {
-    session_destroy();
-    header("Location: " . $_SERVER['PHP_SELF']);
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['login'])) {
+    $user = $_POST['user'];
+    $pass = $_POST['password'];
+    
+    $stmt = $pdo->prepare("SELECT * FROM appartements WHERE numero = ? AND password = ?");
+    $stmt->execute([$user, $pass]);
+    $appartement = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if ($appartement) {
+        $_SESSION['appartement_id'] = $appartement['id'];
+        $_SESSION['appartement_numero'] = $appartement['numero'];
+        $_SESSION['batiment_id'] = $appartement['batiment_id'];
+        
+        $stmt = $pdo->prepare("SELECT * FROM enregistrements WHERE appartement_id = ? ORDER BY date_creation DESC");
+        $stmt->execute([$appartement['id']]);
+        $enregistrements = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        echo '<!DOCTYPE html>
+        <html lang="fr">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Enregistrement des invités</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                .container { max-width: 1200px; margin: 0 auto; }
+                .header { background: #f0f0f0; padding: 20px; margin-bottom: 20px; }
+                .btn { padding: 10px 20px; margin: 5px; cursor: pointer; }
+                .btn-generate { background: #4CAF50; color: white; border: none; }
+                .btn-logout { background: #f44336; color: white; border: none; }
+                .link-container { background: #e8f5e9; padding: 15px; margin: 20px 0; display: none; }
+                .link-container input { width: 70%; padding: 10px; margin-right: 10px; }
+                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+                th { background-color: #4CAF50; color: white; }
+                tr:nth-child(even) { background-color: #f2f2f2; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h2>Enregistrement des invités - Appartement '.$appartement['numero'].'</h2>
+                    <p>Bâtiment: '.$appartement['batiment_id'].'</p>
+                    <button class="btn btn-generate" onclick="generateLink()">Générer lien</button>
+                    <button class="btn btn-logout" onclick="logout()">Déconnexion</button>
+                </div>
+                
+                <div class="link-container" id="linkContainer">
+                    <input type="text" id="generatedLink" readonly>
+                    <button onclick="copyLink()">Copier</button>
+                </div>';
+        
+        if (count($enregistrements) > 0) {
+            echo '<table>
+                    <tr>
+                        <th>Nom</th>
+                        <th>Email</th>
+                        <th>Téléphone</th>
+                        <th>Date</th>
+                    </tr>';
+            foreach ($enregistrements as $row) {
+                echo '<tr>
+                        <td>'.$row['nom_complet'].'</td>
+                        <td>'.$row['email'].'</td>
+                        <td>'.$row['telephone'].'</td>
+                        <td>'.$row['date_creation'].'</td>
+                      </tr>';
+            }
+            echo '</table>';
+        } else {
+            echo '<p>Aucun enregistrement trouvé.</p>';
+        }
+        
+        echo '<script>
+                function generateLink() {
+                    var token = Math.random().toString(36).substring(2);
+                    var link = window.location.origin + "/enregistrement.php?token=" + token + "&apt=" + '.$appartement['id'].';
+                    document.getElementById("generatedLink").value = link;
+                    document.getElementById("linkContainer").style.display = "block";
+                }
+                function copyLink() {
+                    var copyText = document.getElementById("generatedLink");
+                    copyText.select();
+                    document.execCommand("copy");
+                    alert("Lien copié!");
+                }
+                function logout() {
+                    window.location.href = "?logout=1";
+                }
+              </script>
+            </div>
+        </body>
+        </html>';
+    } else {
+        echo '<div style="color:red; text-align:center;">Identifiants incorrects</div>';
+        showLoginForm();
+    }
     exit();
 }
 
-function afficherFormulaireConnexion() {
+if (isset($_GET['logout'])) {
+    session_destroy();
+    header("Location: ".$_SERVER['PHP_SELF']);
+    exit();
+}
+
+showLoginForm();
+
+function showLoginForm() {
     echo '<!DOCTYPE html>
     <html lang="fr">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Connexion - Enregistrement des invités</title>
+        <title>Connexion</title>
         <style>
-            body {
-                font-family: Arial, sans-serif;
-                background-color: #f4f4f4;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                height: 100vh;
-                margin: 0;
-            }
-            .conteneur-connexion {
-                background-color: white;
-                padding: 40px;
-                border-radius: 8px;
-                box-shadow: 0 0 10px rgba(0,0,0,0.1);
-                width: 300px;
-                text-align: center;
-            }
-            h2 {
-                color: #333;
-                margin-bottom: 30px;
-            }
-            .groupe-formulaire {
-                margin-bottom: 20px;
-                text-align: left;
-            }
-            label {
-                display: block;
-                margin-bottom: 5px;
-                color: #555;
-                font-weight: bold;
-            }
-            input[type="text"],
-            input[type="password"] {
-                width: 100%;
-                padding: 10px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                box-sizing: border-box;
-            }
-            button {
-                background-color: #4CAF50;
-                color: white;
-                border: none;
-                padding: 12px 20px;
-                border-radius: 4px;
-                cursor: pointer;
-                width: 100%;
-                font-size: 16px;
-            }
-            button:hover {
-                background-color: #45a049;
-            }
-            .erreur {
-                color: red;
-                margin-top: 10px;
-            }
+            body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+            .login-box { width: 300px; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+            h2 { text-align: center; }
+            .input-group { margin-bottom: 15px; }
+            label { display: block; margin-bottom: 5px; }
+            input { width: 100%; padding: 8px; box-sizing: border-box; }
+            button { width: 100%; padding: 10px; background: #4CAF50; color: white; border: none; cursor: pointer; }
+            .error { color: red; text-align: center; margin-top: 10px; }
         </style>
     </head>
     <body>
-        <div class="conteneur-connexion">
+        <div class="login-box">
             <h2>Enregistrement des invités</h2>
             <h3>Connexion</h3>
             <p>Veuillez entrer vos identifiants</p>
-            
             <form method="POST">
-                <div class="groupe-formulaire">
-                    <label for="utilisateur">Utilisateur</label>
-                    <input type="text" id="utilisateur" name="utilisateur" required>
+                <input type="hidden" name="login" value="1">
+                <div class="input-group">
+                    <label>Utilisateur</label>
+                    <input type="text" name="user" required>
                 </div>
-                
-                <div class="groupe-formulaire">
-                    <label for="motdepasse">Mot de passe</label>
-                    <input type="password" id="motdepasse" name="motdepasse" required>
+                <div class="input-group">
+                    <label>Mot de passe</label>
+                    <input type="password" name="password" required>
                 </div>
-                
                 <button type="submit">Connexion</button>
             </form>
         </div>
