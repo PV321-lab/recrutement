@@ -4,132 +4,109 @@
   <meta charset="UTF-8" />
   <title>Enregistrement des invités</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
   <style>
-    :root{--c1:#007bff;--bg:#f0f2f5;--ok:#0f9d58;--warn:#f4b400;--err:#d93025;--info:#4285f4}
-    body{font-family:Arial,sans-serif;margin:16px;background:var(--bg)}
-    h2{text-align:center;margin:8px 0 16px}
-    .card{background:#fff;padding:16px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.12);margin-bottom:16px}
-    label{font-weight:600;display:block;margin-top:10px}
-    input,select,button{font-size:16px}
-    input,select{width:100%;padding:10px;margin-top:6px;border:1px solid #ccc;border-radius:8px}
-    input[readonly]{background:#e9ecef}
-    button{margin-top:14px;padding:10px 14px;border:none;border-radius:10px;background:var(--c1);color:#fff;cursor:pointer}
-    button:disabled{opacity:.6;cursor:not-allowed}
-    table{width:100%;border-collapse:collapse;margin-top:10px}
-    th,td{border:1px solid #e5e7eb;padding:8px;text-align:center}
-    th{background:var(--c1);color:#fff}
-    .hidden{display:none!important}
-    .row{display:flex;gap:12px;flex-wrap:wrap}
-    .col{flex:1 1 220px;min-width:220px}
-    .banner{padding:10px 12px;border-radius:10px;margin-bottom:12px;font-weight:600}
-    .banner.info{background:#e8f0fe;color:#174ea6;border:1px solid #c6dafc}
-    .banner.ok{background:#e6f4ea;color:#137333;border:1px solid #cce8d3}
-    .banner.warn{background:#fef7e0;color:#a66300;border:1px solid #fde293}
-    .banner.err{background:#fce8e6;color:#a50e0e;border:1px solid #f7b9b4}
-    .toolbar{display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap}
-    .note{font-size:13px;opacity:.8}
-    .person-group{background:#f8f9fa;padding:15px;border-radius:8px;margin-bottom:15px;border:1px solid #e9ecef}
-    .person-group h4{margin:0 0 10px;color:#1E40AF}
-    .consent-container,.rules-container{margin:20px 0;padding:15px;background:#f8f9fa;border-radius:8px;border:1px solid #dee2e6}
-    .rules-container{max-height:250px;overflow-y:auto}
-    .signature-area{margin:40px 0;padding:20px;border:2px solid #ddd;border-radius:8px;text-align:center}
-    .signature-canvas{width:100%;height:200px;border:1px solid #ccc;border-radius:5px;background:#fff;cursor:crosshair;margin-bottom:20px}
-    .signature-controls{display:flex;gap:10px;justify-content:center;margin-top:15px}
-    .btn-delete{background:var(--err)!important;margin-left:5px}
+    body{font-family:Arial;background:#f0f2f5;margin:20px}
+    h2{text-align:center}
+    .card{background:#fff;padding:16px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.15);margin-bottom:16px}
+    label{display:block;margin-top:10px;font-weight:bold}
+    input,button{width:100%;padding:10px;margin-top:6px;font-size:16px}
+    button{background:#007bff;color:#fff;border:none;border-radius:8px;cursor:pointer}
+    button:disabled{opacity:.6}
+    .banner{padding:10px;border-radius:8px;margin-bottom:10px;font-weight:bold}
+    .ok{background:#e6f4ea;color:#137333}
+    .err{background:#fce8e6;color:#a50e0e}
+    .hidden{display:none}
   </style>
 </head>
 <body>
+
 <h2>Enregistrement des invités</h2>
-<div id="banner" class="banner info hidden"></div>
+
+<div id="banner" class="banner hidden"></div>
 
 <div id="loginCard" class="card">
-  <div class="toolbar"><strong>Connexion</strong><span class="note">Veuillez entrer vos identifiants</span></div>
-  <label>Utilisateur</label>
-  <input id="loginUser" />
+  <label>Email</label>
+  <input type="email" id="loginUser" placeholder="email" />
   <label>Mot de passe</label>
-  <input type="password" id="loginPass" />
+  <input type="password" id="loginPass" placeholder="mot de passe" />
   <button onclick="login()">Connexion</button>
-  <p id="loginMsg" class="banner err hidden"></p>
 </div>
 
-<div id="adminPanel" class="hidden">
-  <div class="toolbar card"><strong>Panneau administrateur</strong><button onclick="logout()">Déconnexion</button></div>
-  <div class="card">
-    <div class="toolbar"><strong>Gestion des utilisateurs</strong></div>
-    <div class="row">
-      <div class="col"><label>Appartement</label><input id="appartAdmin"></div>
-      <div class="col"><label>Immeuble</label><input id="batAdmin"></div>
-      <div class="col"><label>Mot de passe</label><input id="passAdmin"></div>
-    </div>
-    <button onclick="creerUtilisateur()">Créer utilisateur</button>
-    <p id="userWarn" class="banner warn hidden"></p>
-  </div>
-  <div class="card">
-    <div class="toolbar"><strong>Utilisateurs existants</strong></div>
-    <table id="tableUsers"><thead><tr><th>ID</th><th>Appartement</th><th>Immeuble</th><th>Mot de passe</th></tr></thead><tbody></tbody></table>
-  </div>
-  <div class="card">
-    <div class="toolbar"><strong>Enregistrements</strong></div>
-    <table id="tableAdmin"><thead><tr><th>ID</th><th>Appart</th><th>Immeuble</th><th>Nom</th><th>Doc</th><th>Type</th><th>Nb</th><th>Personnes</th><th>Date</th><th>Action</th><th>Statut</th></tr></thead><tbody></tbody></table>
-  </div>
+<div id="adminPanel" class="card hidden">
+  <h3>Administrateur connecté</h3>
+  <button onclick="logout()">Déconnexion</button>
 </div>
 
-<div id="userPanel" class="hidden">
-  <div class="toolbar card"><strong>Mon espace</strong><button onclick="logout()">Déconnexion</button></div>
-  <div class="card">
-    <div class="toolbar"><strong>Générer lien</strong></div>
-    <button onclick="genererLien()">Générer</button>
-    <p id="lienInvite"></p>
-  </div>
-  <div class="card">
-    <div class="toolbar"><strong>Mes enregistrements</strong></div>
-    <table id="tableUser"><thead><tr><th>ID</th><th>Nom</th><th>Doc</th><th>Type</th><th>Nb</th><th>Personnes</th><th>Date</th><th>Statut</th><th>Action</th></tr></thead><tbody></tbody></table>
-  </div>
+<div id="userPanel" class="card hidden">
+  <h3>Utilisateur connecté</h3>
+  <button onclick="logout()">Déconnexion</button>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
-const firebaseConfig={
-  apiKey:"AIzaSyC6uSDTNCuw5sHNVaNgq0EzJqJZ9jgic7U",
-  authDomain:"dddiii-2b58b.firebaseapp.com",
-  databaseURL:"https://dddiii-2b58b-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId:"dddiii-2b58b",
-  storageBucket:"dddiii-2b58b.firebasestorage.app",
-  messagingSenderId:"721468171485",
-  appId:"1:721468171485:web:420e2e0ab98b95fa2ae734",
-  measurementId:"G-QGFM2N76VK"
+const firebaseConfig = {
+  apiKey: "AIzaSyC6uSDTNCuw5sHNVaNgq0EzJqJZ9jgic7U",
+  authDomain: "dddiii-2b58b.firebaseapp.com",
+  databaseURL: "https://dddiii-2b58b-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "dddiii-2b58b",
+  storageBucket: "dddiii-2b58b.firebasestorage.app",
+  messagingSenderId: "721468171485",
+  appId: "1:721468171485:web:420e2e0ab98b95fa2ae734",
+  measurementId: "G-QGFM2N76VK"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+const auth = firebase.auth();
+const database = firebase.database();
+
+function showBanner(type, text) {
+  const b = document.getElementById("banner");
+  b.className = "banner " + type;
+  b.textContent = text;
+  b.classList.remove("hidden");
 }
-firebase.initializeApp(firebaseConfig)
-const database=firebase.database()
-let currentUser=null
-function showBanner(t,m){const b=document.getElementById('banner');b.className='banner '+t;b.textContent=m;b.classList.remove('hidden')}
-function login(){
-  const u=loginUser.value.trim(),p=loginPass.value.trim()
-  if(u==='admin'&&p==='admin'){currentUser={role:'admin'};loginCard.classList.add('hidden');adminPanel.classList.remove('hidden');refreshAdmin();return}
-  database.ref('users/'+u).once('value').then(s=>{
-    const d=s.val()
-    if(d&&d.pass===p){currentUser={role:'user',id:u,appart:d.appart,bat:d.bat};loginCard.classList.add('hidden');userPanel.classList.remove('hidden');refreshUser()}
-    else loginMsg.classList.remove('hidden')
-  })
+
+function login() {
+  const email = document.getElementById("loginUser").value.trim();
+  const password = document.getElementById("loginPass").value.trim();
+
+  if (!email || !password) {
+    showBanner("err", "Email et mot de passe obligatoires");
+    return;
+  }
+
+  auth.signInWithEmailAndPassword(email, password)
+    .then(userCredential => {
+      showBanner("ok", "Connexion réussie");
+
+      document.getElementById("loginCard").classList.add("hidden");
+
+      if (email === "g.marouane@outlook.fr") {
+        document.getElementById("adminPanel").classList.remove("hidden");
+      } else {
+        document.getElementById("userPanel").classList.remove("hidden");
+      }
+    })
+    .catch(error => {
+      showBanner("err", "Erreur : " + error.message);
+    });
 }
-function logout(){currentUser=null;adminPanel.classList.add('hidden');userPanel.classList.add('hidden');loginCard.classList.remove('hidden')}
-function creerUtilisateur(){
-  const a=appartAdmin.value,b=batAdmin.value,p=passAdmin.value,id=a+b
-  database.ref('users/'+id).set({user:id,appart:a,bat:b,pass:p}).then(refreshAdmin)
-}
-function refreshAdmin(){
-  tableUsers.querySelector('tbody').innerHTML=''
-  database.ref('users').once('value').then(s=>Object.values(s.val()||{}).forEach(u=>{
-    tableUsers.querySelector('tbody').insertAdjacentHTML('beforeend',`<tr><td>${u.user}</td><td>${u.appart}</td><td>${u.bat}</td><td>${u.pass}</td></tr>`)
-  }))
-}
-function refreshUser(){}
-function genererLien(){
-  const l=location.href.split('?')[0]+'?invite='+currentUser.id
-  lienInvite.innerHTML=`<a href="${l}" target="_blank">${l}</a>`
+
+function logout() {
+  auth.signOut().then(() => {
+    document.getElementById("adminPanel").classList.add("hidden");
+    document.getElementById("userPanel").classList.add("hidden");
+    document.getElementById("loginCard").classList.remove("hidden");
+    showBanner("ok", "Déconnecté");
+  });
 }
 </script>
+
 </body>
 </html>
