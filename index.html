@@ -50,7 +50,7 @@
 <body>
 <h2>Enregistrement des invités</h2>
 <div id="banner" class="banner info hidden"></div>
-<div id="loginCard" class="card hidden">
+<div id="loginCard" class="card">
   <div class="toolbar">
     <div><strong>Connexion</strong></div>
     <div class="note">Veuillez entrer vos identifiants</div>
@@ -998,15 +998,10 @@ Merci
   
   document.getElementById('btnLogin').disabled = false;
   
-  document.addEventListener('DOMContentLoaded', function() {
-    const params = new URLSearchParams(window.location.search);
-    
-    if (params.has("invite")) {
-      enterInviteMode(params.get("invite"));
-    } else {
-      document.getElementById('loginCard').classList.remove('hidden');
-    }
-  });
+  const params = new URLSearchParams(location.search);
+  if(params.has("invite")) {
+    enterInviteMode(params.get("invite"));
+  }
 </script>
 </body>
 </html>
