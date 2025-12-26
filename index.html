@@ -1,35 +1,37 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 <title>Enregistrement des invités</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-
-<!-- jsPDF -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <style>
-/* ====== STYLE INCHANGÉ ====== */
-body{font-family:Arial;background:#f0f2f5;margin:0;padding:20px}
-.hidden{display:none}
-.banner{padding:10px;border-radius:6px;margin-bottom:10px}
-.banner.ok{background:#e6f4ea;color:#137333}
-.banner.err{background:#fce8e6;color:#a50e0e}
-.banner.warn{background:#fef7e0;color:#a66300}
-.banner.info{background:#e8f0fe;color:#174ea6}
-.card{background:#fff;padding:16px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.15);margin-bottom:16px}
-button{padding:10px;border:none;border-radius:6px;background:#007bff;color:white;cursor:pointer}
-button:disabled{opacity:.6}
-input,select{width:100%;padding:8px;margin-top:6px}
-table{width:100%;border-collapse:collapse}
-th,td{border:1px solid #ddd;padding:6px;text-align:center}
-th{background:#007bff;color:white}
-.btn-delete{background:#d93025}
+:root{--c1:#007bff;--bg:#f0f2f5;--ok:#0f9d58;--warn:#f4b400;--err:#d93025;--info:#4285f4;}
+body{font-family:Arial,sans-serif;margin:16px;background:var(--bg);}
+h2{text-align:center;margin:8px 0 16px;}
+.card{background:#fff;padding:16px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.12);margin-bottom:16px;}
+label{font-weight:600;display:block;margin-top:10px;}
+input,select,button{font-size:16px;}
+input,select{width:100%;padding:10px;margin-top:6px;border:1px solid #ccc;border-radius:8px;}
+input[readonly]{background:#e9ecef;}
+button{margin-top:14px;padding:10px 14px;border:none;border-radius:10px;background:var(--c1);color:#fff;cursor:pointer;}
+button:disabled{opacity:.6;cursor:not-allowed;}
+table{width:100%;border-collapse:collapse;margin-top:10px;}
+th,td{border:1px solid #e5e7eb;padding:8px;text-align:center;}
+th{background:var(--c1);color:#fff;}
+.hidden{display:none !important;}
+.banner{padding:10px 12px;border-radius:10px;margin-bottom:12px;font-weight:600;}
+.banner.info{background:#e8f0fe;color:#174ea6;}
+.banner.ok{background:#e6f4ea;color:#137333;}
+.banner.warn{background:#fef7e0;color:#a66300;}
+.banner.err{background:#fce8e6;color:#a50e0e;}
+.btn-delete{background:var(--err)!important;}
+.signature-canvas{width:100%;height:200px;border:1px solid #ccc;border-radius:5px;}
 </style>
 </head>
 
@@ -38,150 +40,122 @@ th{background:#007bff;color:white}
 <h2>Enregistrement des invités</h2>
 <div id="banner" class="banner hidden"></div>
 
-<!-- LOGIN -->
 <div id="loginCard" class="card">
-  <h3>Connexion</h3>
-  <input id="loginUser" placeholder="Utilisateur">
-  <input id="loginPass" type="password" placeholder="Mot de passe">
-  <button onclick="login()">Connexion</button>
-  <div id="loginMsg" class="banner err hidden"></div>
+<label>Utilisateur</label>
+<input id="loginUser">
+<label>Mot de passe</label>
+<input id="loginPass" type="password">
+<button onclick="login()">Connexion</button>
+<div id="loginMsg" class="banner err hidden"></div>
 </div>
 
-<!-- ADMIN -->
 <div id="adminPanel" class="hidden">
-  <div class="card">
-    <h3>Admin</h3>
-    <button onclick="logout()">Déconnexion</button>
-  </div>
+<div class="card">
+<button onclick="logout()">Déconnexion</button>
+</div>
 </div>
 
-<!-- USER -->
 <div id="userPanel" class="hidden">
-  <div class="card">
-    <h3>Utilisateur</h3>
-    <button onclick="logout()">Déconnexion</button>
-    <button onclick="genererLien()">Générer lien invité</button>
-    <p id="lienInvite"></p>
-  </div>
+<div class="card">
+<button onclick="logout()">Déconnexion</button>
+<button onclick="genererLien()">Générer lien</button>
+<p id="lienInvite"></p>
+</div>
 </div>
 
-<!-- INVITE -->
 <div id="invitePanel" class="hidden">
-  <div class="card">
-    <h3>Formulaire invité</h3>
-    <input id="invAppart" readonly>
-    <input id="invBat" readonly>
-    <input id="nomPrincipal" placeholder="Nom complet">
-    <button onclick="enregistrerInvite()">Enregistrer</button>
-  </div>
+<div class="card">
+<input id="invAppart" readonly>
+<input id="invBat" readonly>
+<input id="nomPrincipal" placeholder="Nom complet">
+<button onclick="registerInvite()">Enregistrer</button>
+</div>
 </div>
 
 <script>
-/* =========================================================
-   🔥 FIREBASE INITIALISATION (CORRIGÉ)
-========================================================= */
-
 const firebaseConfig = {
-  apiKey: "AIzaSyC6uSDTNCuw5sHNVaNgq0EzJqJZ9jgic7U",
-  authDomain: "dddiii-2b58b.firebaseapp.com",
-  databaseURL: "https://dddiii-2b58b-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "dddiii-2b58b",
-  storageBucket: "dddiii-2b58b.firebasestorage.app",
-  messagingSenderId: "721468171485",
-  appId: "1:721468171485:web:420e2e0ab98b95fa2ae734",
-  measurementId: "G-QGFM2N76VK"
+apiKey: "AIzaSyC6uSDTNCuw5sHNVaNgq0EzJqJZ9jgic7U",
+authDomain: "dddiii-2b58b.firebaseapp.com",
+databaseURL: "https://dddiii-2b58b-default-rtdb.asia-southeast1.firebasedatabase.app",
+projectId: "dddiii-2b58b",
+storageBucket: "dddiii-2b58b.firebasestorage.app",
+messagingSenderId: "721468171485",
+appId: "1:721468171485:web:420e2e0ab98b95fa2ae734",
+measurementId: "G-QGFM2N76VK"
 };
 
 firebase.initializeApp(firebaseConfig);
-
 const database = firebase.database();
 const auth = firebase.auth();
 
-/* ✅ AUTHENTIFICATION ANONYME OBLIGATOIRE */
-auth.signInAnonymously()
-.then(() => console.log("✅ Firebase Auth OK"))
-.catch(err => {
-  console.error(err);
-  alert("Erreur auth Firebase");
-});
+auth.signInAnonymously();
 
-/* =========================================================
-   LOGIQUE APPLICATION (INCHANGÉE)
-========================================================= */
+let currentUser=null;
 
-let currentUser = null;
-
-function showBanner(type,msg){
-  const b=document.getElementById("banner");
-  b.className="banner "+type;
-  b.textContent=msg;
-  b.classList.remove("hidden");
+function showBanner(t,m){
+const b=document.getElementById("banner");
+b.className="banner "+t;
+b.textContent=m;
+b.classList.remove("hidden");
 }
 
 function login(){
-  const u=loginUser.value.trim();
-  const p=loginPass.value.trim();
-
-  if(u==="admin" && p==="admin"){
-    currentUser={role:"admin"};
-    loginCard.classList.add("hidden");
-    adminPanel.classList.remove("hidden");
-    showBanner("ok","Admin connecté");
-    return;
-  }
-
-  database.ref("users/"+u).once("value")
-  .then(s=>{
-    const user=s.val();
-    if(user && user.pass===p){
-      currentUser={role:"user",id:u,appart:user.appart,bat:user.bat};
-      loginCard.classList.add("hidden");
-      userPanel.classList.remove("hidden");
-      showBanner("ok","Utilisateur connecté");
-    }else{
-      showBanner("err","Identifiants incorrects");
-    }
-  })
-  .catch(()=>showBanner("err","Accès base refusé"));
+const u=loginUser.value.trim();
+const p=loginPass.value.trim();
+if(u==="admin"&&p==="admin"){
+currentUser={role:"admin"};
+loginCard.classList.add("hidden");
+adminPanel.classList.remove("hidden");
+return;
+}
+database.ref("users/"+u).once("value").then(s=>{
+const d=s.val();
+if(d&&d.pass===p){
+currentUser={role:"user",id:u,appart:d.appart,bat:d.bat};
+loginCard.classList.add("hidden");
+userPanel.classList.remove("hidden");
+}else{
+showBanner("err","Identifiants incorrects");
+}
+});
 }
 
 function logout(){
-  currentUser=null;
-  adminPanel.classList.add("hidden");
-  userPanel.classList.add("hidden");
-  invitePanel.classList.add("hidden");
-  loginCard.classList.remove("hidden");
+currentUser=null;
+adminPanel.classList.add("hidden");
+userPanel.classList.add("hidden");
+invitePanel.classList.add("hidden");
+loginCard.classList.remove("hidden");
 }
 
 function genererLien(){
-  const lien=location.href.split("?")[0]+"?invite="+currentUser.id;
-  lienInvite.innerHTML=`<a href="${lien}" target="_blank">${lien}</a>`;
+const lien=location.href.split("?")[0]+"?invite="+currentUser.id;
+lienInvite.innerHTML=`<a href="${lien}" target="_blank">${lien}</a>`;
 }
 
-function enregistrerInvite(){
-  const rec={
-    appart:invAppart.value,
-    bat:invBat.value,
-    nom:nomPrincipal.value,
-    date:new Date().toISOString().slice(0,10)
-  };
-  database.ref("records").push(rec)
-  .then(()=>showBanner("ok","Invité enregistré"))
-  .catch(()=>showBanner("err","Erreur enregistrement"));
+function registerInvite(){
+const rec={
+appart:invAppart.value,
+bat:invBat.value,
+nom:nomPrincipal.value,
+date:new Date().toISOString().slice(0,10)
+};
+database.ref("records").push(rec).then(()=>{
+showBanner("ok","Enregistré");
+});
 }
 
-/* MODE INVITÉ */
 const params=new URLSearchParams(location.search);
 if(params.has("invite")){
-  const id=params.get("invite");
-  database.ref("users/"+id).once("value").then(s=>{
-    const u=s.val();
-    if(!u){showBanner("err","Lien invalide");return;}
-    loginCard.classList.add("hidden");
-    invitePanel.classList.remove("hidden");
-    invAppart.value=u.appart;
-    invBat.value=u.bat;
-  });
+const id=params.get("invite");
+database.ref("users/"+id).once("value").then(s=>{
+const u=s.val();
+if(!u){showBanner("err","Lien invalide");return;}
+loginCard.classList.add("hidden");
+invitePanel.classList.remove("hidden");
+invAppart.value=u.appart;
+invBat.value=u.bat;
+});
 }
 </script>
 
