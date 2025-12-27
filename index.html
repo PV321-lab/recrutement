@@ -309,6 +309,17 @@
 
             <div id="personnes"></div>
 
+            <div class="consent-container">
+              <h4>Consentement à la collecte de données</h4>
+              <div class="consent-text">
+                <p>En acceptant, vous consentez à la collecte de vos informations personnelles. Conformément à la législation marocaine, ces données seront conservées temporairement et supprimées une fois leur utilisation terminée.</p>
+              </div>
+              <label style="display: flex; align-items: center; margin-top: 10px;">
+                <input type="checkbox" id="consentCheckbox" required style="margin-right: 10px; width: auto;">
+                <span>J'accepte les conditions de traitement des données</span>
+              </label>
+            </div>
+
             <div class="rules-container">
               <h4>Règlement intérieur à respecter :</h4>
               <ul>
@@ -634,6 +645,7 @@
   const canvas = document.getElementById('signatureCanvas');
   const clearBtn = document.getElementById('clearBtn');
   const registerBtn = document.getElementById('registerBtn');
+  const consentCheckbox = document.getElementById('consentCheckbox');
   const acceptCheckbox = document.getElementById('acceptCheckbox');
   const ctx = canvas.getContext('2d');
   let isDrawing = false;
@@ -711,8 +723,9 @@
   }
 
   function updateRegisterButton() {
-    const isAccepted = acceptCheckbox.checked;
-    registerBtn.disabled = !(hasSignature && isAccepted);
+    const isConsentAccepted = consentCheckbox.checked;
+    const isRulesAccepted = acceptCheckbox.checked;
+    registerBtn.disabled = !(hasSignature && isConsentAccepted && isRulesAccepted);
   }
 
   async function registerSignature() {
@@ -725,6 +738,11 @@
 
     if(!nom || !doc || !typeDoc || !nationalite || !date || !Number.isInteger(nb) || nb < 1){
       showBanner('warn',"Tous les champs sont obligatoires.");
+      return;
+    }
+
+    if(!consentCheckbox.checked){
+      showBanner('warn',"Veuillez accepter les conditions de traitement des données.");
       return;
     }
 
@@ -832,6 +850,7 @@
     
     clearBtn.addEventListener('click', clearCanvas);
     registerBtn.addEventListener('click', registerSignature);
+    consentCheckbox.addEventListener('change', updateRegisterButton);
     acceptCheckbox.addEventListener('change', updateRegisterButton);
     window.addEventListener('resize', initCanvas);
   }
