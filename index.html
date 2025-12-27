@@ -1,4 +1,4 @@
-Voici le code modifié selon vos demandes :
+Voici le code corrigé avec les modifications demandées :
 
 ```html
 <html lang="fr">
@@ -188,7 +188,7 @@ Voici le code modifié selon vos demandes :
         </div>
         <table id="tableUsers">
           <thead>
-            <tr><th>ID</th><th>Appartement</th><th>Immeuble</th><th>Mot de passe</th></tr>
+            <tr><th>N°</th><th>Appartement</th><th>Immeuble</th><th>Mot de passe</th></tr>
           </thead>
           <tbody></tbody>
         </table>
@@ -201,7 +201,7 @@ Voici le code modifié selon vos demandes :
         <table id="tableAdmin">
           <thead>
             <tr>
-              <th>ID</th><th>Appart.</th><th>Immeuble</th><th>Nom</th><th>Document</th><th>Type Doc</th>
+              <th>N°</th><th>Appart.</th><th>Immeuble</th><th>Nom</th><th>Document</th><th>Type Doc</th>
               <th>Nb Pers.</th><th>Personnes</th><th>Date</th><th>Document</th><th>Action</th><th>Statut</th>
             </tr>
           </thead>
@@ -231,7 +231,7 @@ Voici le code modifié selon vos demandes :
         <table id="tableUser">
           <thead>
             <tr>
-              <th>ID</th><th>Nom</th><th>Document</th><th>Type Doc</th><th>Nb Pers.</th><th>Personnes</th><th>Date</th><th>Document</th><th>Statut</th><th>Action</th>
+              <th>N°</th><th>Nom</th><th>Document</th><th>Type Doc</th><th>Nb Pers.</th><th>Personnes</th><th>Date</th><th>Document</th><th>Statut</th><th>Action</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -328,7 +328,7 @@ Voici le code modifié selon vos demandes :
         </div>
 
         <div id="successMessage" class="banner ok hidden">
-          Enregistrement réussi ! Votre document signé s'ouvre dans un nouvel onglet.
+          Enregistrement réussi ! Un onglet s'ouvre avec votre document PDF.
           <br><br>
           <strong>Note importante :</strong> En cas de demande des agents de sécurité, présentez ce document signé.
           Seules les personnes enregistrées dans cette réservation sont autorisées à entrer.
@@ -339,9 +339,9 @@ Voici le code modifié selon vos demandes :
 
   <div id="documentColumn" class="document-column hidden">
     <div class="card">
-      <h3>Document Généré</h3>
+      <h3>Document Signé</h3>
       <div id="documentPreview" class="document-preview">
-        <p>Le document apparaîtra ici après l'enregistrement.</p>
+        <p>Sélectionnez un enregistrement pour voir le document.</p>
       </div>
     </div>
   </div>
@@ -504,9 +504,10 @@ Voici le code modifié selon vos demandes :
       const usersSnapshot = await database.ref('users').once('value');
       const users = usersSnapshot.val() || {};
       
+      let counter = 1;
       Object.values(users).forEach(u => {
         tbodyU.insertAdjacentHTML('beforeend',
-          `<tr><td>${u.user}</td><td>${u.appart}</td><td>${u.bat}</td><td>${u.pass}</td></tr>`);
+          `<tr><td>${counter++}</td><td>${u.appart}</td><td>${u.bat}</td><td>${u.pass}</td></tr>`);
       });
     } catch (error) {
       showBanner('err', "Erreur lors du chargement des utilisateurs.");
@@ -519,6 +520,7 @@ Voici le code modifié selon vos demandes :
       const recordsSnapshot = await database.ref('records').once('value');
       const records = recordsSnapshot.val() || {};
       
+      let counter = 1;
       Object.entries(records).slice(-200).forEach(([id, r]) => {
         const personnesList = r.personnes ? Object.values(r.personnes).map(p => `${p.nom} (${p.typeDoc}) - ${p.doc}`).join(', ') : '';
         const sendBtn = `<button onclick="envoyerWhatsApp('${id}')">Envoyer</button>`;
@@ -526,7 +528,7 @@ Voici le code modifié selon vos demandes :
         
         tbody.insertAdjacentHTML('beforeend',
           `<tr>
-            <td>${id}</td>
+            <td>${counter++}</td>
             <td>${r.appart}</td>
             <td>${r.bat}</td>
             <td>${r.nom}</td>
@@ -553,6 +555,7 @@ Voici le code modifié selon vos demandes :
       const recordsSnapshot = await database.ref('records').once('value');
       const records = recordsSnapshot.val() || {};
       
+      let counter = 1;
       Object.entries(records)
         .filter(([id, r]) => r.appart === currentUser.appart && r.bat === currentUser.bat)
         .slice(-200)
@@ -564,7 +567,7 @@ Voici le code modifié selon vos demandes :
           
           tbody.insertAdjacentHTML('beforeend',
             `<tr>
-              <td>${id}</td>
+              <td>${counter++}</td>
               <td>${r.nom}</td>
               <td>${r.doc}</td>
               <td>${r.typeDoc || 'Non spécifié'}</td>
@@ -591,7 +594,7 @@ Voici le code modifié selon vos demandes :
       await database.ref('documents/' + id).remove();
       showBanner('ok', "Enregistrement et document supprimés avec succès.");
       refreshUser();
-      document.getElementById('documentPreview').innerHTML = '<p>Document supprimé.</p>';
+      document.getElementById('documentPreview').innerHTML = '<p>Sélectionnez un enregistrement pour voir le document.</p>';
     } catch (error) {
       showBanner('err', "Erreur lors de la suppression de l'enregistrement.");
     }
@@ -764,7 +767,7 @@ Voici le code modifié selon vos demandes :
       document.getElementById('successMessage').classList.remove('hidden');
       document.getElementById('guestForm').style.display = 'none';
 
-      afficherDocument(id);
+      generateAndOpenPDF(rec);
       
       registerBtn.textContent = 'Enregistrer';
       registerBtn.disabled = false;
@@ -954,7 +957,7 @@ Merci
     ).join('') : '';
     
     return `
-<div class="doc-title">RÈGLEMENT INTÉRIEUR</div>
+<div class="doc-title">RÈGLEMENT INTÉRIEUR DES INFORMATIONS DE L'APPARTEMENT</div>
 
 <div class="doc-info">
   <p><strong>Date de réservation :</strong> ${now.toLocaleDateString('fr-FR')}</p>
@@ -981,7 +984,6 @@ Merci
 </div>
 
 <div class="doc-signature">
-  <p>Je soussigné(e) <strong>${rec.nom}</strong> certifie avoir lu et accepté l'ensemble du règlement intérieur.</p>
   <p>Fait à _________, le ${now.toLocaleDateString('fr-FR')}</p>
   <div class="doc-signature-box">
     <img src="${rec.signature || ''}" alt="Signature" style="max-width: 100%; max-height: 100%;" />
@@ -991,32 +993,164 @@ Merci
 `;
   }
 
+  function generateAndOpenPDF(rec) {
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    let yPos = 20;
+    
+    pdf.setFontSize(20);
+    pdf.setTextColor(44, 62, 80);
+    pdf.text('RÈGLEMENT INTÉRIEUR DES INFORMATIONS DE L\'APPARTEMENT', 105, yPos, { align: 'center' });
+    yPos += 15;
+    
+    pdf.setDrawColor(44, 62, 80);
+    pdf.setLineWidth(1);
+    pdf.line(20, yPos, 190, yPos);
+    yPos += 15;
+    
+    pdf.setFontSize(14);
+    pdf.setTextColor(44, 62, 80);
+    pdf.text('INFORMATIONS DE LA RÉSERVATION', 20, yPos);
+    yPos += 10;
+    
+    const totalPersons = rec.personnes ? Object.keys(rec.personnes).length + 1 : 1;
+    const now = new Date();
+    
+    pdf.setFontSize(12);
+    pdf.setTextColor(0, 0, 0);
+    
+    pdf.text(`Date de réservation : ${now.toLocaleDateString('fr-FR')}`, 20, yPos);
+    yPos += 8;
+    
+    pdf.text(`Appartement : ${rec.appart} - Immeuble : ${rec.bat}`, 20, yPos);
+    yPos += 8;
+    
+    pdf.text(`Nom du réservateur : ${rec.nom}`, 20, yPos);
+    yPos += 8;
+    
+    pdf.text(`Nombre de personnes : ${totalPersons}`, 20, yPos);
+    yPos += 8;
+    
+    pdf.text(`Date d'arrivée : ${rec.date}`, 20, yPos);
+    yPos += 15;
+    
+    pdf.setDrawColor(200, 200, 200);
+    pdf.setLineWidth(0.5);
+    pdf.line(20, yPos, 190, yPos);
+    yPos += 15;
+    
+    pdf.setFontSize(14);
+    pdf.setTextColor(44, 62, 80);
+    pdf.text('INFORMATIONS DES PERSONNES', 20, yPos);
+    yPos += 10;
+    
+    pdf.setFontSize(12);
+    pdf.text(`1. ${rec.nom} - ${rec.typeDoc}: ${rec.doc}`, 20, yPos);
+    yPos += 8;
+    
+    if (rec.personnes) {
+      let counter = 2;
+      Object.values(rec.personnes).forEach(p => {
+        if (yPos > 250) {
+          pdf.addPage();
+          yPos = 20;
+        }
+        pdf.text(`${counter++}. ${p.nom} - ${p.typeDoc}: ${p.doc}`, 20, yPos);
+        yPos += 8;
+      });
+    }
+    
+    yPos += 10;
+    
+    if (yPos > 200) {
+      pdf.addPage();
+      yPos = 20;
+    }
+    
+    pdf.setFontSize(14);
+    pdf.setTextColor(44, 62, 80);
+    pdf.text('RÈGLEMENT INTÉRIEUR', 20, yPos);
+    yPos += 15;
+    
+    pdf.setFontSize(12);
+    const rules = [
+      '1. Couples marocains',
+      'Seuls les couples de la nationalité marocaine mariés sont acceptés.',
+      '',
+      '2. Tranquillité et bruit',
+      'Silence total obligatoire après 23h00. Pas de musique forte, cris ou nuisances',
+      'sonores à toute heure, par respect pour les voisins.',
+      '',
+      '3. Tabagisme',
+      'Fumer est strictement interdit à l\'intérieur. Autorisé uniquement en extérieur',
+      '(terrasse ou jardin), avec obligation de nettoyer les mégots et cendres.',
+      '',
+      '4. Nombre de personnes',
+      'Maximum 5 personnes autorisées dans l\'appartement.',
+      '',
+      '5. Piscine',
+      'Douche obligatoire avant la baignade.',
+      'Pas de verre ni objets fragiles autour de la piscine.',
+      'Surveillance permanente des enfants par un adulte.',
+      'Horaires : fermeture à 20h00.',
+      'Pas de courses ni plongeons.',
+      '',
+      '6. Propreté et entretien',
+      'Maintenir les lieux propres en permanence.',
+      'Vider régulièrement les poubelles.',
+      'Respecter les sols et surfaces (pas de traces, pas de nourriture hors cuisine).'
+    ];
+
+    rules.forEach(line => {
+      if (yPos > 250) {
+        pdf.addPage();
+        yPos = 20;
+      }
+      pdf.text(line, 20, yPos);
+      yPos += line === '' ? 5 : 7;
+    });
+    
+    yPos += 15;
+    
+    if (yPos > 180) {
+      pdf.addPage();
+      yPos = 20;
+    }
+    
+    pdf.text(`Fait à _________, le ${now.toLocaleDateString('fr-FR')}`, 20, yPos);
+    yPos += 15;
+    
+    pdf.text('Signature :', 20, yPos);
+    yPos += 10;
+    
+    const imgWidth = 60;
+    const imgHeight = 30;
+    pdf.addImage(signatureData, 'PNG', 20, yPos, imgWidth, imgHeight);
+    
+    const pdfBlob = pdf.output('blob');
+    const pdfUrl = URL.createObjectURL(pdfBlob);
+    
+    window.open(pdfUrl, '_blank');
+  }
+
   async function afficherDocument(id) {
     try {
-      const docSnapshot = await database.ref('documents/' + id).once('value');
-      const documentData = docSnapshot.val();
+      const recordSnapshot = await database.ref('records/' + id).once('value');
+      const record = recordSnapshot.val();
       
-      if (documentData && documentData.html) {
-        document.getElementById('documentPreview').innerHTML = documentData.html;
-        currentDocumentData = documentData;
+      if (record) {
+        const html = generateDocumentHTML(record);
+        document.getElementById('documentPreview').innerHTML = html;
+        currentDocumentData = {
+          html: html,
+          recordId: id,
+          appart: record.appart,
+          bat: record.bat,
+          nom: record.nom,
+          date: record.date,
+          signature: record.signature
+        };
       } else {
-        const recordSnapshot = await database.ref('records/' + id).once('value');
-        const record = recordSnapshot.val();
-        
-        if (record) {
-          const html = generateDocumentHTML(record);
-          document.getElementById('documentPreview').innerHTML = html;
-          currentDocumentData = {
-            html: html,
-            recordId: id,
-            appart: record.appart,
-            bat: record.bat,
-            nom: record.nom,
-            date: record.date
-          };
-        } else {
-          document.getElementById('documentPreview').innerHTML = '<p>Document non trouvé.</p>';
-        }
+        document.getElementById('documentPreview').innerHTML = '<p>Document non trouvé.</p>';
       }
     } catch (error) {
       document.getElementById('documentPreview').innerHTML = '<p>Erreur de chargement du document.</p>';
