@@ -1,12 +1,9 @@
-Voici le code corrigé avec les modifications demandées :
-
 ```html
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
   <title>Enregistrement des invités</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- Intégration de Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
   <style>
@@ -129,6 +126,20 @@ Voici le code corrigé avec les modifications demandées :
       flex: 1;
       min-width: 300px;
     }
+    .doc-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .nationality-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .nationality-row .col {
+      flex: 1;
+    }
   </style>
 </head>
 <body>
@@ -201,7 +212,7 @@ Voici le code corrigé avec les modifications demandées :
         <table id="tableAdmin">
           <thead>
             <tr>
-              <th>N°</th><th>Appart.</th><th>Immeuble</th><th>Nom</th><th>Document</th><th>Type Doc</th>
+              <th>N°</th><th>Appart.</th><th>Immeuble</th><th>Nom</th><th>Document</th><th>Type Doc</th><th>Nationalité</th>
               <th>Nb Pers.</th><th>Personnes</th><th>Date</th><th>Document</th><th>Action</th><th>Statut</th>
             </tr>
           </thead>
@@ -231,7 +242,7 @@ Voici le code corrigé avec les modifications demandées :
         <table id="tableUser">
           <thead>
             <tr>
-              <th>N°</th><th>Nom</th><th>Document</th><th>Type Doc</th><th>Nb Pers.</th><th>Personnes</th><th>Date</th><th>Document</th><th>Statut</th><th>Action</th>
+              <th>N°</th><th>Nom</th><th>Document</th><th>Type Doc</th><th>Nationalité</th><th>Nb Pers.</th><th>Personnes</th><th>Date</th><th>Document</th><th>Statut</th><th>Action</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -279,6 +290,27 @@ Voici le code corrigé avec les modifications demandées :
               <div class="col">
                 <label>Numéro de document *</label>
                 <input type="text" id="docPrincipal" required placeholder="N° de document" class="guest-input" />
+              </div>
+            </div>
+
+            <div class="nationality-row">
+              <div class="col">
+                <label>Nationalité *</label>
+                <select id="nationalitePrincipal" required class="guest-input">
+                  <option value="">Sélectionner</option>
+                  <option value="Marocaine">Marocaine</option>
+                  <option value="Française">Française</option>
+                  <option value="Espagnole">Espagnole</option>
+                  <option value="Portugaise">Portugaise</option>
+                  <option value="Allemande">Allemande</option>
+                  <option value="Italienne">Italienne</option>
+                  <option value="Belge">Belge</option>
+                  <option value="Néerlandaise">Néerlandaise</option>
+                  <option value="Britannique">Britannique</option>
+                  <option value="Américaine">Américaine</option>
+                  <option value="Canadienne">Canadienne</option>
+                  <option value="Autre">Autre</option>
+                </select>
               </div>
             </div>
 
@@ -342,6 +374,10 @@ Voici le code corrigé avec les modifications demandées :
       <h3>Document Signé</h3>
       <div id="documentPreview" class="document-preview">
         <p>Sélectionnez un enregistrement pour voir le document.</p>
+      </div>
+      <div id="docActions" class="doc-actions hidden">
+        <button id="downloadDocBtn" onclick="downloadCurrentDocument()">Télécharger PDF</button>
+        <button id="viewDocBtn" onclick="viewCurrentDocument()">Ouvrir dans un nouvel onglet</button>
       </div>
     </div>
   </div>
@@ -534,6 +570,7 @@ Voici le code corrigé avec les modifications demandées :
             <td>${r.nom}</td>
             <td>${r.doc}</td>
             <td>${r.typeDoc || 'Non spécifié'}</td>
+            <td>${r.nationalite || 'Non spécifié'}</td>
             <td>${r.personnes ? Object.keys(r.personnes).length + 1 : 1}</td>
             <td>${personnesList}</td>
             <td>${r.date}</td>
@@ -571,6 +608,7 @@ Voici le code corrigé avec les modifications demandées :
               <td>${r.nom}</td>
               <td>${r.doc}</td>
               <td>${r.typeDoc || 'Non spécifié'}</td>
+              <td>${r.nationalite || 'Non spécifié'}</td>
               <td>${r.personnes ? Object.keys(r.personnes).length + 1 : 1}</td>
               <td>${personnesList}</td>
               <td>${r.date}</td>
@@ -595,6 +633,7 @@ Voici le code corrigé avec les modifications demandées :
       showBanner('ok', "Enregistrement et document supprimés avec succès.");
       refreshUser();
       document.getElementById('documentPreview').innerHTML = '<p>Sélectionnez un enregistrement pour voir le document.</p>';
+      document.getElementById('docActions').classList.add('hidden');
     } catch (error) {
       showBanner('err', "Erreur lors de la suppression de l'enregistrement.");
     }
@@ -702,10 +741,11 @@ Voici le code corrigé avec les modifications demandées :
     const nom = (document.getElementById('nomPrincipal').value || '').trim();
     const doc = (document.getElementById('docPrincipal').value || '').trim();
     const typeDoc = (document.getElementById('typeDocPrincipal').value || '').trim();
+    const nationalite = (document.getElementById('nationalitePrincipal').value || '').trim();
     const nb = parseInt(document.getElementById('nbPers').value || '0', 10);
     const date = document.getElementById('dateArrivee').value;
 
-    if(!nom || !doc || !typeDoc || !date || !Number.isInteger(nb) || nb < 1){
+    if(!nom || !doc || !typeDoc || !nationalite || !date || !Number.isInteger(nb) || nb < 1){
       showBanner('warn',"Tous les champs sont obligatoires.");
       return;
     }
@@ -715,13 +755,14 @@ Voici le code corrigé avec les modifications demandées :
       const nomVal = (document.getElementById(`pers${i}Nom`)?.value || '').trim();
       const docVal = (document.getElementById(`pers${i}Doc`)?.value || '').trim();
       const typeDocVal = (document.getElementById(`pers${i}TypeDoc`)?.value || '').trim();
+      const nationaliteVal = (document.getElementById(`pers${i}Nationalite`)?.value || '').trim();
       
-      if(!nomVal || !docVal || !typeDocVal){
+      if(!nomVal || !docVal || !typeDocVal || !nationaliteVal){
         showBanner('warn',`Merci de renseigner tous les champs pour la personne ${i}.`);
         return;
       }
       
-      personnes[`pers${i-1}`] = { nom: nomVal, doc: docVal, typeDoc: typeDocVal };
+      personnes[`pers${i-1}`] = { nom: nomVal, doc: docVal, typeDoc: typeDocVal, nationalite: nationaliteVal };
     }
 
     const appart = document.getElementById('invAppart').value;
@@ -735,6 +776,7 @@ Voici le code corrigé avec les modifications demandées :
       nom, 
       doc, 
       typeDoc,
+      nationalite,
       personnes, 
       date, 
       sent:false,
@@ -885,6 +927,32 @@ Voici le code corrigé avec les modifications demandées :
       docInp.placeholder = `Document personne ${i}`;
       group.appendChild(docInp);
       
+      const nationaliteLab = document.createElement('label');
+      nationaliteLab.textContent = 'Nationalité';
+      nationaliteLab.style.marginTop = '10px';
+      group.appendChild(nationaliteLab);
+      
+      const nationaliteInp = document.createElement('select');
+      nationaliteInp.id = `pers${i}Nationalite`;
+      nationaliteInp.required = true;
+      nationaliteInp.className = 'guest-input';
+      nationaliteInp.innerHTML = `
+        <option value="">Sélectionner</option>
+        <option value="Marocaine">Marocaine</option>
+        <option value="Française">Française</option>
+        <option value="Espagnole">Espagnole</option>
+        <option value="Portugaise">Portugaise</option>
+        <option value="Allemande">Allemande</option>
+        <option value="Italienne">Italienne</option>
+        <option value="Belge">Belge</option>
+        <option value="Néerlandaise">Néerlandaise</option>
+        <option value="Britannique">Britannique</option>
+        <option value="Américaine">Américaine</option>
+        <option value="Canadienne">Canadienne</option>
+        <option value="Autre">Autre</option>
+      `;
+      group.appendChild(nationaliteInp);
+      
       cont.appendChild(group);
     }
   }
@@ -894,7 +962,8 @@ Voici le code corrigé avec les modifications demandées :
     const nomPrincipal = rec.nom;
     const docPrincipal = rec.doc;
     const typeDocPrincipal = rec.typeDoc || 'Document';
-    const autres = rec.personnes ? Object.values(rec.personnes).map(p => `${p.nom} (${p.typeDoc}) - ${p.doc}`) : [];
+    const nationalitePrincipal = rec.nationalite || 'Non spécifié';
+    const autres = rec.personnes ? Object.values(rec.personnes).map(p => `${p.nom} (${p.typeDoc}) - ${p.doc} - ${p.nationalite}`) : [];
     
     let message = `Salam :
     
@@ -907,6 +976,7 @@ Réservation au nom de:
 Nom et Prénom: ${nomPrincipal}
 Type de document: ${typeDocPrincipal}
 Numéro: ${docPrincipal}
+Nationalité: ${nationalitePrincipal}
 `;
 
     if (autres.length > 0) {
@@ -932,6 +1002,7 @@ Merci
 الإسم و اللقب: ${nomPrincipal}
 نوع الوثيقة: ${typeDocPrincipal}
 الرقم: ${docPrincipal}
+الجنسية: ${nationalitePrincipal}
 `;
 
     if (autres.length > 0) {
@@ -953,7 +1024,7 @@ Merci
     const totalPersons = rec.personnes ? Object.keys(rec.personnes).length + 1 : 1;
     const now = new Date();
     const personnesList = rec.personnes ? Object.values(rec.personnes).map((p, i) => 
-      `<p>${i+2}. ${p.nom} - ${p.typeDoc}: ${p.doc}</p>`
+      `<p>${i+2}. ${p.nom} - ${p.typeDoc}: ${p.doc} - Nationalité: ${p.nationalite}</p>`
     ).join('') : '';
     
     return `
@@ -969,7 +1040,7 @@ Merci
 
 <div class="doc-section">
   <div class="doc-section-title">Informations des personnes :</div>
-  <p><strong>1. ${rec.nom} - ${rec.typeDoc}: ${rec.doc}</strong></p>
+  <p><strong>1. ${rec.nom} - ${rec.typeDoc}: ${rec.doc} - Nationalité: ${rec.nationalite}</strong></p>
   ${personnesList}
 </div>
 
@@ -984,7 +1055,7 @@ Merci
 </div>
 
 <div class="doc-signature">
-  <p>Fait à _________, le ${now.toLocaleDateString('fr-FR')}</p>
+  <p>Date de signature : ${now.toLocaleDateString('fr-FR')}</p>
   <div class="doc-signature-box">
     <img src="${rec.signature || ''}" alt="Signature" style="max-width: 100%; max-height: 100%;" />
     <div class="doc-signature-text">Signature</div>
@@ -1044,7 +1115,7 @@ Merci
     yPos += 10;
     
     pdf.setFontSize(12);
-    pdf.text(`1. ${rec.nom} - ${rec.typeDoc}: ${rec.doc}`, 20, yPos);
+    pdf.text(`1. ${rec.nom} - ${rec.typeDoc}: ${rec.doc} - Nationalité: ${rec.nationalite}`, 20, yPos);
     yPos += 8;
     
     if (rec.personnes) {
@@ -1054,7 +1125,7 @@ Merci
           pdf.addPage();
           yPos = 20;
         }
-        pdf.text(`${counter++}. ${p.nom} - ${p.typeDoc}: ${p.doc}`, 20, yPos);
+        pdf.text(`${counter++}. ${p.nom} - ${p.typeDoc}: ${p.doc} - Nationalité: ${p.nationalite}`, 20, yPos);
         yPos += 8;
       });
     }
@@ -1116,8 +1187,8 @@ Merci
       yPos = 20;
     }
     
-    pdf.text(`Fait à _________, le ${now.toLocaleDateString('fr-FR')}`, 20, yPos);
-    yPos += 15;
+    pdf.text(`Date de signature : ${now.toLocaleDateString('fr-FR')}`, 20, yPos);
+    yPos += 10;
     
     pdf.text('Signature :', 20, yPos);
     yPos += 10;
@@ -1140,21 +1211,160 @@ Merci
       if (record) {
         const html = generateDocumentHTML(record);
         document.getElementById('documentPreview').innerHTML = html;
-        currentDocumentData = {
-          html: html,
-          recordId: id,
-          appart: record.appart,
-          bat: record.bat,
-          nom: record.nom,
-          date: record.date,
-          signature: record.signature
-        };
+        currentDocumentData = record;
+        currentDocumentData.id = id;
+        document.getElementById('docActions').classList.remove('hidden');
       } else {
         document.getElementById('documentPreview').innerHTML = '<p>Document non trouvé.</p>';
+        document.getElementById('docActions').classList.add('hidden');
       }
     } catch (error) {
       document.getElementById('documentPreview').innerHTML = '<p>Erreur de chargement du document.</p>';
+      document.getElementById('docActions').classList.add('hidden');
     }
+  }
+
+  function downloadCurrentDocument() {
+    if (!currentDocumentData) return;
+    
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    let yPos = 20;
+    
+    pdf.setFontSize(20);
+    pdf.setTextColor(44, 62, 80);
+    pdf.text('RÈGLEMENT INTÉRIEUR DES INFORMATIONS DE L\'APPARTEMENT', 105, yPos, { align: 'center' });
+    yPos += 15;
+    
+    pdf.setDrawColor(44, 62, 80);
+    pdf.setLineWidth(1);
+    pdf.line(20, yPos, 190, yPos);
+    yPos += 15;
+    
+    pdf.setFontSize(14);
+    pdf.setTextColor(44, 62, 80);
+    pdf.text('INFORMATIONS DE LA RÉSERVATION', 20, yPos);
+    yPos += 10;
+    
+    const totalPersons = currentDocumentData.personnes ? Object.keys(currentDocumentData.personnes).length + 1 : 1;
+    const now = new Date();
+    
+    pdf.setFontSize(12);
+    pdf.setTextColor(0, 0, 0);
+    
+    pdf.text(`Date de réservation : ${now.toLocaleDateString('fr-FR')}`, 20, yPos);
+    yPos += 8;
+    
+    pdf.text(`Appartement : ${currentDocumentData.appart} - Immeuble : ${currentDocumentData.bat}`, 20, yPos);
+    yPos += 8;
+    
+    pdf.text(`Nom du réservateur : ${currentDocumentData.nom}`, 20, yPos);
+    yPos += 8;
+    
+    pdf.text(`Nombre de personnes : ${totalPersons}`, 20, yPos);
+    yPos += 8;
+    
+    pdf.text(`Date d'arrivée : ${currentDocumentData.date}`, 20, yPos);
+    yPos += 15;
+    
+    pdf.setDrawColor(200, 200, 200);
+    pdf.setLineWidth(0.5);
+    pdf.line(20, yPos, 190, yPos);
+    yPos += 15;
+    
+    pdf.setFontSize(14);
+    pdf.setTextColor(44, 62, 80);
+    pdf.text('INFORMATIONS DES PERSONNES', 20, yPos);
+    yPos += 10;
+    
+    pdf.setFontSize(12);
+    pdf.text(`1. ${currentDocumentData.nom} - ${currentDocumentData.typeDoc}: ${currentDocumentData.doc} - Nationalité: ${currentDocumentData.nationalite}`, 20, yPos);
+    yPos += 8;
+    
+    if (currentDocumentData.personnes) {
+      let counter = 2;
+      Object.values(currentDocumentData.personnes).forEach(p => {
+        if (yPos > 250) {
+          pdf.addPage();
+          yPos = 20;
+        }
+        pdf.text(`${counter++}. ${p.nom} - ${p.typeDoc}: ${p.doc} - Nationalité: ${p.nationalite}`, 20, yPos);
+        yPos += 8;
+      });
+    }
+    
+    yPos += 10;
+    
+    if (yPos > 200) {
+      pdf.addPage();
+      yPos = 20;
+    }
+    
+    pdf.setFontSize(14);
+    pdf.setTextColor(44, 62, 80);
+    pdf.text('RÈGLEMENT INTÉRIEUR', 20, yPos);
+    yPos += 15;
+    
+    pdf.setFontSize(12);
+    const rules = [
+      '1. Couples marocains',
+      'Seuls les couples de la nationalité marocaine mariés sont acceptés.',
+      '',
+      '2. Tranquillité et bruit',
+      'Silence total obligatoire après 23h00. Pas de musique forte, cris ou nuisances',
+      'sonores à toute heure, par respect pour les voisins.',
+      '',
+      '3. Tabagisme',
+      'Fumer est strictement interdit à l\'intérieur. Autorisé uniquement en extérieur',
+      '(terrasse ou jardin), avec obligation de nettoyer les mégots et cendres.',
+      '',
+      '4. Nombre de personnes',
+      'Maximum 5 personnes autorisées dans l\'appartement.',
+      '',
+      '5. Piscine',
+      'Douche obligatoire avant la baignade.',
+      'Pas de verre ni objets fragiles autour de la piscine.',
+      'Surveillance permanente des enfants par un adulte.',
+      'Horaires : fermeture à 20h00.',
+      'Pas de courses ni plongeons.',
+      '',
+      '6. Propreté et entretien',
+      'Maintenir les lieux propres en permanence.',
+      'Vider régulièrement les poubelles.',
+      'Respecter les sols et surfaces (pas de traces, pas de nourriture hors cuisine).'
+    ];
+
+    rules.forEach(line => {
+      if (yPos > 250) {
+        pdf.addPage();
+        yPos = 20;
+      }
+      pdf.text(line, 20, yPos);
+      yPos += line === '' ? 5 : 7;
+    });
+    
+    yPos += 15;
+    
+    if (yPos > 180) {
+      pdf.addPage();
+      yPos = 20;
+    }
+    
+    pdf.text(`Date de signature : ${now.toLocaleDateString('fr-FR')}`, 20, yPos);
+    yPos += 10;
+    
+    pdf.text('Signature :', 20, yPos);
+    yPos += 10;
+    
+    const imgWidth = 60;
+    const imgHeight = 30;
+    pdf.addImage(currentDocumentData.signature, 'PNG', 20, yPos, imgWidth, imgHeight);
+    
+    pdf.save(`document_signe_${currentDocumentData.nom.replace(/\s+/g, '_')}.pdf`);
+  }
+
+  function viewCurrentDocument() {
+    if (!currentDocumentData) return;
+    generateAndOpenPDF(currentDocumentData);
   }
 
   async function envoyerWhatsApp(id){
@@ -1187,7 +1397,6 @@ Merci
     enterInviteMode(params.get("invite"));
   }
 </script>
-
 </body>
 </html>
 ```
