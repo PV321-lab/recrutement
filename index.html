@@ -162,6 +162,10 @@
       border: 1px solid #dee2e6;
       margin-top: 15px;
     }
+    .signature-bold {
+      font-weight: bold;
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
@@ -368,7 +372,7 @@
               <div class="signature-controls">
                 <button type="button" id="clearBtn" class="btn" style="background: #e74c3c;">Effacer la signature</button>
               </div>
-              <p style="margin-top: 15px; font-size: 14px; color: #666;">
+              <p style="margin-top: 15px; font-size: 14px; color: #666; font-weight: bold;">
                 En signant, vous acceptez le règlement intérieur et consentez au traitement de vos données personnelles conformément aux lois marocaines sur la protection des données.
               </p>
             </div>
@@ -426,6 +430,7 @@
   let hasSignature = false;
   let currentDocumentData = null;
   let userSettings = { maxRecords: 10 };
+  const WHATSAPP_NUMBER = "00212679352449";
 
   function showBanner(type, text){
     const b = document.getElementById('banner');
@@ -773,7 +778,7 @@
     canvas.height = rect.height;
     
     ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 3;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     
@@ -783,7 +788,6 @@
   function clearCanvas() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     hasSignature = false;
-    updateRegisterButton();
   }
 
   function getPos(e) {
@@ -832,12 +836,6 @@
     if (!isDrawing) return;
     isDrawing = false;
     hasSignature = true;
-    updateRegisterButton();
-  }
-
-  function updateRegisterButton() {
-    const isAccepted = acceptCheckbox.checked;
-    registerBtn.disabled = !(hasSignature && isAccepted);
   }
 
   async function registerSignature() {
@@ -919,6 +917,12 @@
         timestamp: Date.now()
       });
       
+      const msg = buildMessage(rec);
+      const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
+      window.open(whatsappUrl, "_blank");
+      
+      await database.ref('records/' + id).update({ sent: true });
+      
       document.getElementById('successMessage').classList.remove('hidden');
       document.getElementById('guestForm').style.display = 'none';
 
@@ -957,7 +961,6 @@
     
     clearBtn.addEventListener('click', clearCanvas);
     registerBtn.addEventListener('click', registerSignature);
-    acceptCheckbox.addEventListener('change', updateRegisterButton);
     window.addEventListener('resize', initCanvas);
   }
 
@@ -1157,14 +1160,14 @@ Merci
 
 <div class="doc-section">
   <div class="doc-section-title">Consentement aux données :</div>
-  <p>Je consente au traitement de mes données personnelles conformément aux lois marocaines sur la protection des données pour cette application d'enregistrement des invités.</p>
+  <p><strong>Je consente au traitement de mes données personnelles conformément aux lois marocaines sur la protection des données pour cette application d'enregistrement des invités.</strong></p>
 </div>
 
 <div class="doc-signature">
   <p>Date de signature : ${now.toLocaleDateString('fr-FR')}</p>
   <div class="doc-signature-box">
     <img src="${rec.signature || ''}" alt="Signature" style="max-width: 100%; max-height: 100%;" />
-    <div class="doc-signature-text">Signé et accepté</div>
+    <div class="doc-signature-text"><strong>Signé et accepté</strong></div>
   </div>
 </div>
 `;
@@ -1303,6 +1306,7 @@ Merci
     yPos += 10;
     
     pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'bold');
     pdf.text('Je consente au traitement de mes données personnelles conformément', 20, yPos);
     yPos += 7;
     pdf.text('aux lois marocaines sur la protection des données pour cette application', 20, yPos);
@@ -1310,9 +1314,11 @@ Merci
     pdf.text('d\'enregistrement des invités.', 20, yPos);
     yPos += 15;
     
+    pdf.setFont('helvetica', 'normal');
     pdf.text(`Date de signature : ${now.toLocaleDateString('fr-FR')}`, 20, yPos);
     yPos += 10;
     
+    pdf.setFont('helvetica', 'bold');
     pdf.text('Signé et accepté :', 20, yPos);
     yPos += 10;
     
@@ -1488,6 +1494,7 @@ Merci
     yPos += 10;
     
     pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'bold');
     pdf.text('Je consente au traitement de mes données personnelles conformément', 20, yPos);
     yPos += 7;
     pdf.text('aux lois marocaines sur la protection des données pour cette application', 20, yPos);
@@ -1495,9 +1502,11 @@ Merci
     pdf.text('d\'enregistrement des invités.', 20, yPos);
     yPos += 15;
     
+    pdf.setFont('helvetica', 'normal');
     pdf.text(`Date de signature : ${now.toLocaleDateString('fr-FR')}`, 20, yPos);
     yPos += 10;
     
+    pdf.setFont('helvetica', 'bold');
     pdf.text('Signé et accepté :', 20, yPos);
     yPos += 10;
     
@@ -1530,7 +1539,7 @@ Merci
       }
       
       const msg = buildMessage(r);
-      const url = "https://wa.me/?text=" + encodeURIComponent(msg);
+      const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
       window.open(url, "_blank");
       
       await database.ref('records/' + id).update({ sent: true });
