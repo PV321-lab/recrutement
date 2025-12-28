@@ -6,7 +6,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-  <script src="https://smtpjs.com/v3/smtp.js"></script>
   <style>
     :root{
       --c1:#007bff; --bg:#f0f2f5; --ok:#0f9d58; --warn:#f4b400; --err:#d93025; --info:#4285f4;
@@ -180,6 +179,14 @@
     .error-border {
       border-color: #d93025 !important;
     }
+    .smtp-info {
+      background: #e8f4f8;
+      padding: 12px;
+      border-radius: 6px;
+      margin-top: 10px;
+      font-size: 13px;
+      border-left: 4px solid #007bff;
+    }
   </style>
 </head>
 <body>
@@ -305,14 +312,21 @@
             </div>
           </div>
           <div id="emailFields" class="hidden">
+            <div class="smtp-info">
+              <strong>Configuration SMTP (Gmail) :</strong><br>
+              Serveur SMTP: smtp.gmail.com<br>
+              Port: 587 (TLS) ou 465 (SSL)<br>
+              Authentification requise: Oui<br>
+              <strong>IMPORTANT:</strong> Activez l'accès aux applications moins sécurisées dans votre compte Gmail ou utilisez un mot de passe d'application.
+            </div>
             <div class="row">
               <div class="col">
                 <label>Votre adresse Gmail</label>
                 <input type="email" id="userEmail" placeholder="votre@gmail.com" />
               </div>
               <div class="col">
-                <label>Mot de passe Gmail</label>
-                <input type="password" id="emailPassword" placeholder="Mot de passe Gmail" />
+                <label>Mot de passe Gmail / Mot de passe d'application</label>
+                <input type="password" id="emailPassword" placeholder="Mot de passe" />
               </div>
             </div>
             <div class="row">
@@ -412,7 +426,7 @@
             <div class="rules-container">
               <h4>Règlement intérieur à respecter :</h4>
               <ul>
-                <li><strong>1. Couples marocains :</strong> Ce logement est réservé aux familles et aux couples mariés, les groupes d'amis Marocains mixtes ne sont pas acceptés.</li>
+                <li><strong>1. Couples marocains :</strong> Ce logement est destiné pour les couples marocains mariés de nationalité marocaine seulement.</li>
                 <li><strong>2. Tranquillité et bruit :</strong> Silence total obligatoire après 23h00. Pas de musique forte, cris ou nuisances sonores à toute heure.</li>
                 <li><strong>3. Tabagisme :</strong> Fumer est strictement interdit à l'intérieur. Autorisé uniquement en extérieur (terrasse ou jardin), avec obligation de nettoyer les mégots et cendres.</li>
                 <li><strong>4. Nombre de personnes :</strong> Maximum 5 personnes autorisées dans l'appartement.</li>
@@ -692,34 +706,28 @@
 
   async function sendEmail(to, subject, body, from, password) {
     return new Promise((resolve) => {
-      try {
-        if(typeof Email === 'undefined'){
-          resolve({ success: false, error: "Le service d'email n'est pas disponible. Vérifiez votre connexion." });
-          return;
+      const formData = new FormData();
+      formData.append('to', to);
+      formData.append('subject', subject);
+      formData.append('body', body);
+      formData.append('from', from);
+      formData.append('password', password);
+      
+      fetch('https://script.google.com/macros/s/AKfycbxYYOwGYa68wEwuq3EO2nqG1FfUc9G6Z2UUtThzPmI7yUZKGYeF7cvb9TQfDcJ4h9UM/exec', {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        if(data.success) {
+          resolve({ success: true, message: "Email envoyé avec succès" });
+        } else {
+          resolve({ success: false, error: data.error || "Erreur inconnue" });
         }
-        
-        Email.send({
-          Host: "smtp.gmail.com",
-          Username: from,
-          Password: password,
-          To: to,
-          From: from,
-          Subject: subject,
-          Body: body
-        }).then(
-          message => {
-            if(message === "OK") {
-              resolve({ success: true, message: "Email envoyé avec succès" });
-            } else {
-              resolve({ success: false, error: message });
-            }
-          }
-        ).catch(error => {
-          resolve({ success: false, error: error.toString() });
-        });
-      } catch (error) {
-        resolve({ success: false, error: error.toString() });
-      }
+      })
+      .catch(error => {
+        resolve({ success: false, error: "Erreur réseau: " + error.toString() });
+      });
     });
   }
 
@@ -1454,7 +1462,7 @@ Merci
     const now = new Date();
     
     return `
-<div class="doc-title">PREMIUM VILLAGE - INFORMATIONS DE LA RÉSERVATION</div>
+<div class="doc-title">PREMIUM VILLAGE - RÈGLEMENT INTÉRIEUR ET INFORMATIONS DE RÉSERVATION</div>
 
 <div class="doc-info">
   <p><strong>Date de réservation :</strong> ${now.toLocaleDateString('fr-FR')}</p>
@@ -1467,7 +1475,25 @@ Merci
 </div>
 
 <div class="doc-section">
-  <div class="doc-section-title">Signature :</div>
+  <div class="doc-section-title">Règlement intérieur accepté :</div>
+  <ul>
+    <li><strong>1. Couples marocains :</strong> Ce logement est destiné pour les couples marocains mariés de nationalité marocaine seulement.</li>
+    <li><strong>2. Tranquillité et bruit :</strong> Silence total obligatoire après 23h00. Pas de musique forte, cris ou nuisances sonores à toute heure.</li>
+    <li><strong>3. Tabagisme :</strong> Fumer est strictement interdit à l'intérieur. Autorisé uniquement en extérieur (terrasse ou jardin), avec obligation de nettoyer les mégots et cendres.</li>
+    <li><strong>4. Nombre de personnes :</strong> Maximum 5 personnes autorisées dans l'appartement.</li>
+    <li><strong>5. Piscine :</strong> Douche obligatoire avant la baignade. Pas de verre ni objets fragiles autour de la piscine. Surveillance permanente des enfants par un adulte. Horaires : fermeture à 20h00. Pas de courses ni plongeons.</li>
+    <li><strong>6. Propreté et entretien :</strong> Maintenir les lieux propres en permanence. Vider régulièrement les poubelles. Respecter les sols et surfaces (pas de traces, pas de nourriture hors cuisine).</li>
+  </ul>
+</div>
+
+<div class="doc-section">
+  <div class="doc-section-title">Consentement aux données :</div>
+  <p>Je consente au traitement de mes données personnelles conformément à la loi marocaine n° 09-08 relative à la protection des personnes physiques à l'égard du traitement des données à caractère personnel, ainsi qu'aux dispositions de la loi 31-08 édictant des mesures de protection des consommateurs.</p>
+</div>
+
+<div class="doc-signature">
+  <p><strong>${rec.nom}</strong></p>
+  <p>Date : ${now.toLocaleDateString('fr-FR')}</p>
   <div class="doc-signature-box">
     <img src="${rec.signature || ''}" alt="Signature" style="max-width: 100%; max-height: 100%; border: 2px solid #000;" />
   </div>
@@ -1485,7 +1511,7 @@ Merci
     yPos += 10;
     
     pdf.setFontSize(16);
-    pdf.text('INFORMATIONS DE LA RÉSERVATION', 105, yPos, { align: 'center' });
+    pdf.text('RÈGLEMENT INTÉRIEUR ET INFORMATIONS DE RÉSERVATION', 105, yPos, { align: 'center' });
     yPos += 15;
     
     pdf.setDrawColor(44, 62, 80);
@@ -1518,12 +1544,82 @@ Merci
     yPos += 8;
     
     pdf.text(`Date d'arrivée : ${rec.date}`, 20, yPos);
-    yPos += 20;
+    yPos += 15;
     
     pdf.setFontSize(14);
     pdf.setTextColor(44, 62, 80);
-    pdf.text('Signature :', 20, yPos);
+    pdf.text('RÈGLEMENT INTÉRIEUR ACCEPTÉ :', 20, yPos);
     yPos += 10;
+    
+    pdf.setFontSize(12);
+    const rules = [
+      '1. Couples marocains',
+      'Ce logement est destiné pour les couples marocains mariés de nationalité',
+      'marocaine seulement.',
+      '',
+      '2. Tranquillité et bruit',
+      'Silence total obligatoire après 23h00. Pas de musique forte, cris ou',
+      'nuisances sonores à toute heure.',
+      '',
+      '3. Tabagisme',
+      'Fumer est strictement interdit à l\'intérieur. Autorisé uniquement en',
+      'extérieur (terrasse ou jardin), avec obligation de nettoyer les mégots',
+      'et cendres.',
+      '',
+      '4. Nombre de personnes',
+      'Maximum 5 personnes autorisées dans l\'appartement.',
+      '',
+      '5. Piscine',
+      'Douche obligatoire avant la baignade.',
+      'Pas de verre ni objets fragiles autour de la piscine.',
+      'Surveillance permanente des enfants par un adulte.',
+      'Horaires : fermeture à 20h00.',
+      'Pas de courses ni plongeons.',
+      '',
+      '6. Propreté et entretien',
+      'Maintenir les lieux propres en permanence.',
+      'Vider régulièrement les poubelles.',
+      'Respecter les sols et surfaces (pas de traces, pas de nourriture hors cuisine).'
+    ];
+
+    rules.forEach(line => {
+      if (yPos > 250) {
+        pdf.addPage();
+        yPos = 20;
+      }
+      pdf.text(line, 20, yPos);
+      yPos += line === '' ? 5 : 7;
+    });
+    
+    yPos += 10;
+    
+    if (yPos > 200) {
+      pdf.addPage();
+      yPos = 20;
+    }
+    
+    pdf.setFontSize(14);
+    pdf.setTextColor(44, 62, 80);
+    pdf.text('CONSENTEMENT AUX DONNÉES :', 20, yPos);
+    yPos += 10;
+    
+    pdf.setFontSize(12);
+    pdf.text('Je consente au traitement de mes données personnelles conformément à la', 20, yPos);
+    yPos += 7;
+    pdf.text('loi marocaine n° 09-08 relative à la protection des personnes physiques', 20, yPos);
+    yPos += 7;
+    pdf.text('à l\'égard du traitement des données à caractère personnel, ainsi qu\'aux', 20, yPos);
+    yPos += 7;
+    pdf.text('dispositions de la loi 31-08 édictant des mesures de protection des', 20, yPos);
+    yPos += 7;
+    pdf.text('consommateurs.', 20, yPos);
+    yPos += 15;
+    
+    pdf.text(`${rec.nom}`, 20, yPos);
+    yPos += 8;
+    
+    pdf.text(`Date : ${now.toLocaleDateString('fr-FR')}`, 20, yPos);
+    yPos += 15;
     
     try {
       const imgWidth = 80;
@@ -1577,7 +1673,7 @@ Merci
     yPos += 10;
     
     pdf.setFontSize(16);
-    pdf.text('INFORMATIONS DE LA RÉSERVATION', 105, yPos, { align: 'center' });
+    pdf.text('RÈGLEMENT INTÉRIEUR ET INFORMATIONS DE RÉSERVATION', 105, yPos, { align: 'center' });
     yPos += 15;
     
     pdf.setDrawColor(44, 62, 80);
@@ -1610,12 +1706,82 @@ Merci
     yPos += 8;
     
     pdf.text(`Date d'arrivée : ${currentDocumentData.date}`, 20, yPos);
-    yPos += 20;
+    yPos += 15;
     
     pdf.setFontSize(14);
     pdf.setTextColor(44, 62, 80);
-    pdf.text('Signature :', 20, yPos);
+    pdf.text('RÈGLEMENT INTÉRIEUR ACCEPTÉ :', 20, yPos);
     yPos += 10;
+    
+    pdf.setFontSize(12);
+    const rules = [
+      '1. Couples marocains',
+      'Ce logement est destiné pour les couples marocains mariés de nationalité',
+      'marocaine seulement.',
+      '',
+      '2. Tranquillité et bruit',
+      'Silence total obligatoire après 23h00. Pas de musique forte, cris ou',
+      'nuisances sonores à toute heure.',
+      '',
+      '3. Tabagisme',
+      'Fumer est strictement interdit à l\'intérieur. Autorisé uniquement en',
+      'extérieur (terrasse ou jardin), avec obligation de nettoyer les mégots',
+      'et cendres.',
+      '',
+      '4. Nombre de personnes',
+      'Maximum 5 personnes autorisées dans l\'appartement.',
+      '',
+      '5. Piscine',
+      'Douche obligatoire avant la baignade.',
+      'Pas de verre ni objets fragiles autour de la piscine.',
+      'Surveillance permanente des enfants par un adulte.',
+      'Horaires : fermeture à 20h00.',
+      'Pas de courses ni plongeons.',
+      '',
+      '6. Propreté et entretien',
+      'Maintenir les lieux propres en permanence.',
+      'Vider régulièrement les poubelles.',
+      'Respecter les sols et surfaces (pas de traces, pas de nourriture hors cuisine).'
+    ];
+
+    rules.forEach(line => {
+      if (yPos > 250) {
+        pdf.addPage();
+        yPos = 20;
+      }
+      pdf.text(line, 20, yPos);
+      yPos += line === '' ? 5 : 7;
+    });
+    
+    yPos += 10;
+    
+    if (yPos > 200) {
+      pdf.addPage();
+      yPos = 20;
+    }
+    
+    pdf.setFontSize(14);
+    pdf.setTextColor(44, 62, 80);
+    pdf.text('CONSENTEMENT AUX DONNÉES :', 20, yPos);
+    yPos += 10;
+    
+    pdf.setFontSize(12);
+    pdf.text('Je consente au traitement de mes données personnelles conformément à la', 20, yPos);
+    yPos += 7;
+    pdf.text('loi marocaine n° 09-08 relative à la protection des personnes physiques', 20, yPos);
+    yPos += 7;
+    pdf.text('à l\'égard du traitement des données à caractère personnel, ainsi qu\'aux', 20, yPos);
+    yPos += 7;
+    pdf.text('dispositions de la loi 31-08 édictant des mesures de protection des', 20, yPos);
+    yPos += 7;
+    pdf.text('consommateurs.', 20, yPos);
+    yPos += 15;
+    
+    pdf.text(`${currentDocumentData.nom}`, 20, yPos);
+    yPos += 8;
+    
+    pdf.text(`Date : ${now.toLocaleDateString('fr-FR')}`, 20, yPos);
+    yPos += 15;
     
     try {
       const imgWidth = 80;
