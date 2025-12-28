@@ -360,13 +360,6 @@
               </ul>
             </div>
 
-            <div class="consent-container">
-              <h4>Consentement à la collecte de données</h4>
-              <div class="consent-text">
-                <p>En acceptant, vous consentez à la collecte de vos informations personnelles. Conformément à la législation marocaine, ces données seront conservées temporairement et supprimées une fois leur utilisation terminée.</p>
-              </div>
-            </div>
-
             <div class="signature-area">
               <div class="signature-title">Signature</div>
               <canvas id="signatureCanvas" class="signature-canvas">
@@ -375,15 +368,18 @@
               <div class="signature-controls">
                 <button type="button" id="clearBtn" class="btn" style="background: #e74c3c;">Effacer la signature</button>
               </div>
+              <p style="margin-top: 15px; font-size: 14px; color: #666;">
+                En signant, vous acceptez le règlement intérieur et consentez au traitement de vos données personnelles conformément aux lois marocaines sur la protection des données.
+              </p>
             </div>
 
             <div class="accept-signature-container">
               <label style="display: flex; align-items: center; justify-content: center; margin-bottom: 15px;">
                 <input type="checkbox" id="acceptCheckbox" required style="margin-right: 10px; width: auto;">
-                <span style="font-size: 16px; font-weight: bold;">Je signe et j'accepte le règlement intérieur et le consentement aux données</span>
+                <span style="font-size: 16px; font-weight: bold;">Je confirme avoir lu et j'accepte le règlement intérieur et le traitement de mes données</span>
               </label>
               <div style="text-align: center;">
-                <button type="button" id="registerBtn" class="btn" style="background: #27ae60; padding: 12px 30px; font-size: 18px;" disabled>Enregistrer et générer le document</button>
+                <button type="button" id="registerBtn" class="btn" style="background: #27ae60; padding: 12px 30px; font-size: 18px;">Enregistrer et valider</button>
               </div>
             </div>
           </form>
@@ -928,12 +924,12 @@
 
       generateAndOpenPDF(rec);
       
-      registerBtn.textContent = 'Enregistrer et générer le document';
+      registerBtn.textContent = 'Enregistrer et valider';
       registerBtn.disabled = false;
       
     } catch (error) {
       showBanner('err',"Erreur lors de l'enregistrement. Réessayez.");
-      registerBtn.textContent = 'Enregistrer et générer le document';
+      registerBtn.textContent = 'Enregistrer et valider';
       registerBtn.disabled = false;
     }
   }
@@ -1161,7 +1157,7 @@ Merci
 
 <div class="doc-section">
   <div class="doc-section-title">Consentement aux données :</div>
-  <p>Je consente à la collecte de mes informations personnelles. Conformément à la législation marocaine, ces données seront conservées temporairement et supprimées une fois leur utilisation terminée.</p>
+  <p>Je consente au traitement de mes données personnelles conformément aux lois marocaines sur la protection des données pour cette application d'enregistrement des invités.</p>
 </div>
 
 <div class="doc-signature">
@@ -1307,11 +1303,11 @@ Merci
     yPos += 10;
     
     pdf.setFontSize(12);
-    pdf.text('Je consente à la collecte de mes informations personnelles. Conformément', 20, yPos);
+    pdf.text('Je consente au traitement de mes données personnelles conformément', 20, yPos);
     yPos += 7;
-    pdf.text('à la législation marocaine, ces données seront conservées temporairement', 20, yPos);
+    pdf.text('aux lois marocaines sur la protection des données pour cette application', 20, yPos);
     yPos += 7;
-    pdf.text('et supprimées une fois leur utilisation terminée.', 20, yPos);
+    pdf.text('d\'enregistrement des invités.', 20, yPos);
     yPos += 15;
     
     pdf.text(`Date de signature : ${now.toLocaleDateString('fr-FR')}`, 20, yPos);
@@ -1492,11 +1488,11 @@ Merci
     yPos += 10;
     
     pdf.setFontSize(12);
-    pdf.text('Je consente à la collecte de mes informations personnelles. Conformément', 20, yPos);
+    pdf.text('Je consente au traitement de mes données personnelles conformément', 20, yPos);
     yPos += 7;
-    pdf.text('à la législation marocaine, ces données seront conservées temporairement', 20, yPos);
+    pdf.text('aux lois marocaines sur la protection des données pour cette application', 20, yPos);
     yPos += 7;
-    pdf.text('et supprimées une fois leur utilisation terminée.', 20, yPos);
+    pdf.text('d\'enregistrement des invités.', 20, yPos);
     yPos += 15;
     
     pdf.text(`Date de signature : ${now.toLocaleDateString('fr-FR')}`, 20, yPos);
