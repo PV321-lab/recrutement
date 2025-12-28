@@ -105,15 +105,6 @@
       width: 300px; 
       position: relative;
     }
-    .doc-signature-text { 
-      position: absolute; 
-      bottom: 5px; 
-      left: 0; 
-      right: 0; 
-      text-align: center; 
-      font-size: 12px; 
-      color: #666;
-    }
     .two-column-layout {
       display: flex;
       gap: 20px;
@@ -175,10 +166,19 @@
       color: #2c3e50;
     }
     .signature-preview {
-      border: 1px solid #000;
+      border: 2px solid #000;
       background: white;
       margin: 10px auto;
       max-width: 300px;
+    }
+    .error-message {
+      color: #d93025;
+      font-size: 14px;
+      margin-top: 5px;
+      display: none;
+    }
+    .error-border {
+      border-color: #d93025 !important;
     }
   </style>
 </head>
@@ -372,12 +372,15 @@
 
             <label>Date d'arrivée *</label>
             <input type="date" id="dateArrivee" required class="guest-input" />
+            <div class="error-message" id="dateArriveeError">Veuillez sélectionner une date d'arrivée</div>
 
             <label>Nombre des invités *</label>
             <input type="number" id="nbPers" min="1" value="1" onchange="genererChamps()" required class="guest-input" />
+            <div class="error-message" id="nbPersError">Veuillez entrer le nombre d'invités (minimum 1)</div>
 
             <label>Nom et Prénom de la personne principale *</label>
             <input type="text" id="nomPrincipal" required placeholder="Nom complet" class="guest-input" />
+            <div class="error-message" id="nomPrincipalError">Veuillez entrer le nom et prénom</div>
 
             <div class="row doc-type-row">
               <div class="col">
@@ -387,10 +390,12 @@
                   <option value="Passeport">Passeport</option>
                   <option value="Carte d'identité">Carte d'identité</option>
                 </select>
+                <div class="error-message" id="typeDocPrincipalError">Veuillez sélectionner un type de document</div>
               </div>
               <div class="col">
                 <label>Numéro de document *</label>
                 <input type="text" id="docPrincipal" required placeholder="N° de document" class="guest-input" />
+                <div class="error-message" id="docPrincipalError">Veuillez entrer le numéro de document</div>
               </div>
             </div>
 
@@ -398,6 +403,7 @@
               <div class="col">
                 <label>Nationalité *</label>
                 <input type="text" id="nationalitePrincipal" required placeholder="Nationalité" class="guest-input" />
+                <div class="error-message" id="nationalitePrincipalError">Veuillez entrer la nationalité</div>
               </div>
             </div>
 
@@ -416,10 +422,11 @@
             </div>
 
             <div class="signature-area">
-              <div class="signature-title">Signature</div>
+              <div class="signature-title">Signature *</div>
               <canvas id="signatureCanvas" class="signature-canvas">
                 Votre navigateur ne supporte pas la signature.
               </canvas>
+              <div class="error-message" id="signatureError">Veuillez signer le document</div>
               <div class="signature-controls">
                 <button type="button" id="clearBtn" class="btn" style="background: #e74c3c;">Effacer la signature</button>
               </div>
@@ -434,6 +441,7 @@
                 <input type="checkbox" id="acceptCheckbox" required style="margin-right: 10px; width: auto;">
                 <span style="font-size: 16px; font-weight: bold;">Je confirme avoir lu et j'accepte le règlement intérieur ainsi que le traitement de mes données personnelles conformément aux lois marocaines sur la protection des données (loi 09-08) et aux dispositions légales en vigueur.</span>
               </label>
+              <div class="error-message" id="acceptCheckboxError" style="text-align: center;">Veuillez accepter les conditions</div>
               <div style="text-align: center;">
                 <button type="button" id="registerBtn" class="btn" style="background: #27ae60; padding: 12px 30px; font-size: 18px;">Enregistrer et valider</button>
               </div>
@@ -682,6 +690,39 @@
     }
   }
 
+  async function sendEmail(to, subject, body, from, password) {
+    return new Promise((resolve) => {
+      try {
+        if(typeof Email === 'undefined'){
+          resolve({ success: false, error: "Le service d'email n'est pas disponible. Vérifiez votre connexion." });
+          return;
+        }
+        
+        Email.send({
+          Host: "smtp.gmail.com",
+          Username: from,
+          Password: password,
+          To: to,
+          From: from,
+          Subject: subject,
+          Body: body
+        }).then(
+          message => {
+            if(message === "OK") {
+              resolve({ success: true, message: "Email envoyé avec succès" });
+            } else {
+              resolve({ success: false, error: message });
+            }
+          }
+        ).catch(error => {
+          resolve({ success: false, error: error.toString() });
+        });
+      } catch (error) {
+        resolve({ success: false, error: error.toString() });
+      }
+    });
+  }
+
   async function updateUserSettings(){
     const maxRecords = parseInt(document.getElementById('maxRecords').value) || 10;
     const newPassword = document.getElementById('newPassword').value.trim();
@@ -919,6 +960,8 @@
     hasSignature = false;
     updateRegisterButton();
     document.getElementById('signaturePreview').classList.add('hidden');
+    hideError('signatureError');
+    canvas.classList.remove('error-border');
   }
 
   function getPos(e) {
@@ -969,6 +1012,8 @@
     hasSignature = true;
     updateRegisterButton();
     updateSignaturePreview();
+    hideError('signatureError');
+    canvas.classList.remove('error-border');
   }
 
   function updateSignaturePreview() {
@@ -978,37 +1023,122 @@
     preview.classList.remove('hidden');
   }
 
+  function showError(elementId, message) {
+    const errorElement = document.getElementById(elementId);
+    errorElement.textContent = message;
+    errorElement.style.display = 'block';
+    const inputElement = document.getElementById(elementId.replace('Error', ''));
+    if(inputElement) {
+      inputElement.classList.add('error-border');
+    }
+  }
+
+  function hideError(elementId) {
+    const errorElement = document.getElementById(elementId);
+    errorElement.style.display = 'none';
+    const inputElement = document.getElementById(elementId.replace('Error', ''));
+    if(inputElement) {
+      inputElement.classList.remove('error-border');
+    }
+  }
+
+  function validateForm() {
+    let isValid = true;
+    
+    const nom = document.getElementById('nomPrincipal').value.trim();
+    if(!nom) {
+      showError('nomPrincipalError', 'Veuillez entrer le nom et prénom');
+      isValid = false;
+    } else {
+      hideError('nomPrincipalError');
+    }
+    
+    const date = document.getElementById('dateArrivee').value;
+    if(!date) {
+      showError('dateArriveeError', 'Veuillez sélectionner une date d\'arrivée');
+      isValid = false;
+    } else {
+      hideError('dateArriveeError');
+    }
+    
+    const nb = parseInt(document.getElementById('nbPers').value || '0', 10);
+    if(!Number.isInteger(nb) || nb < 1) {
+      showError('nbPersError', 'Veuillez entrer un nombre valide (minimum 1)');
+      isValid = false;
+    } else {
+      hideError('nbPersError');
+    }
+    
+    const typeDoc = document.getElementById('typeDocPrincipal').value.trim();
+    if(!typeDoc) {
+      showError('typeDocPrincipalError', 'Veuillez sélectionner un type de document');
+      isValid = false;
+    } else {
+      hideError('typeDocPrincipalError');
+    }
+    
+    const doc = document.getElementById('docPrincipal').value.trim();
+    if(!doc) {
+      showError('docPrincipalError', 'Veuillez entrer le numéro de document');
+      isValid = false;
+    } else {
+      hideError('docPrincipalError');
+    }
+    
+    const nationalite = document.getElementById('nationalitePrincipal').value.trim();
+    if(!nationalite) {
+      showError('nationalitePrincipalError', 'Veuillez entrer la nationalité');
+      isValid = false;
+    } else {
+      hideError('nationalitePrincipalError');
+    }
+    
+    const nbPers = parseInt(document.getElementById('nbPers').value || '1', 10);
+    for(let i=2; i<=nbPers; i++){
+      const nomVal = (document.getElementById(`pers${i}Nom`)?.value || '').trim();
+      const docVal = (document.getElementById(`pers${i}Doc`)?.value || '').trim();
+      const typeDocVal = (document.getElementById(`pers${i}TypeDoc`)?.value || '').trim();
+      const nationaliteVal = (document.getElementById(`pers${i}Nationalite`)?.value || '').trim();
+      
+      if(!nomVal){
+        showBanner('err', `Veuillez renseigner le nom pour la personne ${i}`);
+        isValid = false;
+      }
+      if(!docVal){
+        showBanner('err', `Veuillez renseigner le document pour la personne ${i}`);
+        isValid = false;
+      }
+      if(!typeDocVal){
+        showBanner('err', `Veuillez sélectionner le type de document pour la personne ${i}`);
+        isValid = false;
+      }
+      if(!nationaliteVal){
+        showBanner('err', `Veuillez renseigner la nationalité pour la personne ${i}`);
+        isValid = false;
+      }
+    }
+    
+    if(!hasSignature) {
+      showError('signatureError', 'Veuillez signer le document');
+      canvas.classList.add('error-border');
+      isValid = false;
+    } else {
+      hideError('signatureError');
+    }
+    
+    if(!acceptCheckbox.checked) {
+      showError('acceptCheckboxError', 'Veuillez accepter les conditions');
+      isValid = false;
+    } else {
+      hideError('acceptCheckboxError');
+    }
+    
+    return isValid;
+  }
+
   function updateRegisterButton() {
     const isAccepted = acceptCheckbox.checked;
     registerBtn.disabled = !(hasSignature && isAccepted);
-  }
-
-  async function sendEmail(to, subject, body, from, password) {
-    return new Promise((resolve) => {
-      try {
-        Email.send({
-          Host: "smtp.gmail.com",
-          Username: from,
-          Password: password,
-          To: to,
-          From: from,
-          Subject: subject,
-          Body: body
-        }).then(
-          message => {
-            if(message === "OK") {
-              resolve({ success: true, message: "Email envoyé avec succès" });
-            } else {
-              resolve({ success: false, error: message });
-            }
-          }
-        ).catch(error => {
-          resolve({ success: false, error: error.toString() });
-        });
-      } catch (error) {
-        resolve({ success: false, error: error.toString() });
-      }
-    });
   }
 
   async function sendAutomaticEmail(record) {
@@ -1031,6 +1161,8 @@ Date d'arrivée: ${record.date}
 Appartement: ${record.appart}
 Immeuble: ${record.bat}
 Nombre de personnes: ${totalPersons}
+Type de document: ${record.typeDoc}
+Numéro de document: ${record.doc}
 
 Cette réservation a été enregistrée via l'application Premium Village.
     `;
@@ -1051,39 +1183,23 @@ Cette réservation a été enregistrée via l'application Premium Village.
   }
 
   async function registerSignature() {
-    const nom = (document.getElementById('nomPrincipal').value || '').trim();
-    const doc = (document.getElementById('docPrincipal').value || '').trim();
-    const typeDoc = (document.getElementById('typeDocPrincipal').value || '').trim();
-    const nationalite = (document.getElementById('nationalitePrincipal').value || '').trim();
+    if(!validateForm()) {
+      return;
+    }
+
+    const nom = document.getElementById('nomPrincipal').value.trim();
+    const doc = document.getElementById('docPrincipal').value.trim();
+    const typeDoc = document.getElementById('typeDocPrincipal').value.trim();
+    const nationalite = document.getElementById('nationalitePrincipal').value.trim();
     const nb = parseInt(document.getElementById('nbPers').value || '0', 10);
     const date = document.getElementById('dateArrivee').value;
 
-    if(!nom || !doc || !typeDoc || !nationalite || !date || !Number.isInteger(nb) || nb < 1){
-      showBanner('warn',"Tous les champs sont obligatoires.");
-      return;
-    }
-
-    if(!hasSignature){
-      showBanner('warn',"Veuillez d'abord signer le règlement.");
-      return;
-    }
-
-    if(!acceptCheckbox.checked){
-      showBanner('warn',"Veuillez accepter et signer le règlement intérieur.");
-      return;
-    }
-
     const personnes = {};
     for(let i=2; i<=nb; i++){
-      const nomVal = (document.getElementById(`pers${i}Nom`)?.value || '').trim();
-      const docVal = (document.getElementById(`pers${i}Doc`)?.value || '').trim();
-      const typeDocVal = (document.getElementById(`pers${i}TypeDoc`)?.value || '').trim();
-      const nationaliteVal = (document.getElementById(`pers${i}Nationalite`)?.value || '').trim();
-      
-      if(!nomVal || !docVal || !typeDocVal || !nationaliteVal){
-        showBanner('warn',`Merci de renseigner tous les champs pour la personne ${i}.`);
-        return;
-      }
+      const nomVal = document.getElementById(`pers${i}Nom`).value.trim();
+      const docVal = document.getElementById(`pers${i}Doc`).value.trim();
+      const typeDocVal = document.getElementById(`pers${i}TypeDoc`).value.trim();
+      const nationaliteVal = document.getElementById(`pers${i}Nationalite`).value.trim();
       
       personnes[`pers${i-1}`] = { nom: nomVal, doc: docVal, typeDoc: typeDocVal, nationalite: nationaliteVal };
     }
@@ -1213,7 +1329,7 @@ Cette réservation a été enregistrée via l'application Premium Village.
       group.appendChild(title);
       
       const nomLab = document.createElement('label');
-      nomLab.textContent = 'Nom & Prénom';
+      nomLab.textContent = 'Nom & Prénom *';
       group.appendChild(nomLab);
       
       const nomInp = document.createElement('input');
@@ -1225,7 +1341,7 @@ Cette réservation a été enregistrée via l'application Premium Village.
       group.appendChild(nomInp);
       
       const docTypeLab = document.createElement('label');
-      docTypeLab.textContent = 'Type de document';
+      docTypeLab.textContent = 'Type de document *';
       docTypeLab.style.marginTop = '10px';
       group.appendChild(docTypeLab);
       
@@ -1241,7 +1357,7 @@ Cette réservation a été enregistrée via l'application Premium Village.
       group.appendChild(docTypeInp);
       
       const docLab = document.createElement('label');
-      docLab.textContent = 'Numéro de document';
+      docLab.textContent = 'Numéro de document *';
       docLab.style.marginTop = '10px';
       group.appendChild(docLab);
       
@@ -1254,7 +1370,7 @@ Cette réservation a été enregistrée via l'application Premium Village.
       group.appendChild(docInp);
       
       const nationaliteLab = document.createElement('label');
-      nationaliteLab.textContent = 'Nationalité';
+      nationaliteLab.textContent = 'Nationalité *';
       nationaliteLab.style.marginTop = '10px';
       group.appendChild(nationaliteLab);
       
@@ -1336,47 +1452,24 @@ Merci
   function generateDocumentHTML(rec) {
     const totalPersons = rec.personnes ? Object.keys(rec.personnes).length + 1 : 1;
     const now = new Date();
-    const personnesList = rec.personnes ? Object.values(rec.personnes).map((p, i) => 
-      `<p>${i+2}. ${p.nom} - ${p.typeDoc}: ${p.doc} - Nationalité: ${p.nationalite}</p>`
-    ).join('') : '';
     
     return `
-<div class="doc-title">PREMIUM VILLAGE - RÈGLEMENT INTÉRIEUR DES INFORMATIONS DE L'APPARTEMENT</div>
+<div class="doc-title">PREMIUM VILLAGE - INFORMATIONS DE LA RÉSERVATION</div>
 
 <div class="doc-info">
   <p><strong>Date de réservation :</strong> ${now.toLocaleDateString('fr-FR')}</p>
   <p><strong>Appartement :</strong> ${rec.appart} - Immeuble : ${rec.bat}</p>
   <p><strong>Nom du réservateur :</strong> ${rec.nom}</p>
+  <p><strong>Type de document :</strong> ${rec.typeDoc}</p>
+  <p><strong>Numéro de document :</strong> ${rec.doc}</p>
   <p><strong>Nombre de personnes :</strong> ${totalPersons}</p>
   <p><strong>Date d'arrivée :</strong> ${rec.date}</p>
 </div>
 
 <div class="doc-section">
-  <div class="doc-section-title">Informations des personnes :</div>
-  <p><strong>1. ${rec.nom} - ${rec.typeDoc}: ${rec.doc} - Nationalité: ${rec.nationalite}</strong></p>
-  ${personnesList}
-</div>
-
-<div class="doc-section">
-  <div class="doc-section-title">Règlement intérieur :</div>
-  <p><strong>1. Couples marocains :</strong> Ce logement est réservé aux familles et aux couples mariés, les groupes d'amis Marocains mixtes ne sont pas acceptés.</p>
-  <p><strong>2. Tranquillité et bruit :</strong> Silence total obligatoire après 23h00. Pas de musique forte, cris ou nuisances sonores à toute heure.</p>
-  <p><strong>3. Tabagisme :</strong> Fumer est strictement interdit à l'intérieur. Autorisé uniquement en extérieur (terrasse ou jardin), avec obligation de nettoyer les mégots et cendres.</p>
-  <p><strong>4. Nombre de personnes :</strong> Maximum 5 personnes autorisées dans l'appartement.</p>
-  <p><strong>5. Piscine :</strong> Douche obligatoire avant la baignade. Pas de verre ni objets fragiles autour de la piscine. Surveillance permanente des enfants par un adulte. Horaires : fermeture à 20h00. Pas de courses ni plongeons.</p>
-  <p><strong>6. Propreté et entretien :</strong> Maintenir les lieux propres en permanence. Vider régulièrement les poubelles. Respecter les sols et surfaces (pas de traces, pas de nourriture hors cuisine).</p>
-</div>
-
-<div class="doc-section">
-  <div class="doc-section-title">Consentement aux données :</div>
-  <p>Je consente au traitement de mes données personnelles conformément à la loi marocaine n° 09-08 relative à la protection des personnes physiques à l'égard du traitement des données à caractère personnel, ainsi qu'aux dispositions de la loi 31-08 édictant des mesures de protection des consommateurs.</p>
-</div>
-
-<div class="doc-signature">
-  <p>Date de signature : ${now.toLocaleDateString('fr-FR')}</p>
+  <div class="doc-section-title">Signature :</div>
   <div class="doc-signature-box">
     <img src="${rec.signature || ''}" alt="Signature" style="max-width: 100%; max-height: 100%; border: 2px solid #000;" />
-    <div class="doc-signature-text">Signé et accepté</div>
   </div>
 </div>
 `;
@@ -1392,18 +1485,13 @@ Merci
     yPos += 10;
     
     pdf.setFontSize(16);
-    pdf.text('RÈGLEMENT INTÉRIEUR DES INFORMATIONS DE L\'APPARTEMENT', 105, yPos, { align: 'center' });
+    pdf.text('INFORMATIONS DE LA RÉSERVATION', 105, yPos, { align: 'center' });
     yPos += 15;
     
     pdf.setDrawColor(44, 62, 80);
     pdf.setLineWidth(1);
     pdf.line(20, yPos, 190, yPos);
     yPos += 15;
-    
-    pdf.setFontSize(14);
-    pdf.setTextColor(44, 62, 80);
-    pdf.text('INFORMATIONS DE LA RÉSERVATION', 20, yPos);
-    yPos += 10;
     
     const totalPersons = rec.personnes ? Object.keys(rec.personnes).length + 1 : 1;
     const now = new Date();
@@ -1420,117 +1508,21 @@ Merci
     pdf.text(`Nom du réservateur : ${rec.nom}`, 20, yPos);
     yPos += 8;
     
+    pdf.text(`Type de document : ${rec.typeDoc}`, 20, yPos);
+    yPos += 8;
+    
+    pdf.text(`Numéro de document : ${rec.doc}`, 20, yPos);
+    yPos += 8;
+    
     pdf.text(`Nombre de personnes : ${totalPersons}`, 20, yPos);
     yPos += 8;
     
     pdf.text(`Date d'arrivée : ${rec.date}`, 20, yPos);
-    yPos += 15;
-    
-    pdf.setDrawColor(200, 200, 200);
-    pdf.setLineWidth(0.5);
-    pdf.line(20, yPos, 190, yPos);
-    yPos += 15;
+    yPos += 20;
     
     pdf.setFontSize(14);
     pdf.setTextColor(44, 62, 80);
-    pdf.text('INFORMATIONS DES PERSONNES', 20, yPos);
-    yPos += 10;
-    
-    pdf.setFontSize(12);
-    pdf.text(`1. ${rec.nom} - ${rec.typeDoc}: ${rec.doc} - Nationalité: ${rec.nationalite}`, 20, yPos);
-    yPos += 8;
-    
-    if (rec.personnes) {
-      let counter = 2;
-      Object.values(rec.personnes).forEach(p => {
-        if (yPos > 250) {
-          pdf.addPage();
-          yPos = 20;
-        }
-        pdf.text(`${counter++}. ${p.nom} - ${p.typeDoc}: ${p.doc} - Nationalité: ${p.nationalite}`, 20, yPos);
-        yPos += 8;
-      });
-    }
-    
-    yPos += 10;
-    
-    if (yPos > 200) {
-      pdf.addPage();
-      yPos = 20;
-    }
-    
-    pdf.setFontSize(14);
-    pdf.setTextColor(44, 62, 80);
-    pdf.text('RÈGLEMENT INTÉRIEUR', 20, yPos);
-    yPos += 15;
-    
-    pdf.setFontSize(12);
-    const rules = [
-      '1. Couples marocains',
-      'Ce logement est réservé aux familles et aux couples mariés, les groupes',
-      'd\'amis Marocains mixtes ne sont pas acceptés.',
-      '',
-      '2. Tranquillité et bruit',
-      'Silence total obligatoire après 23h00. Pas de musique forte, cris ou nuisances',
-      'sonores à toute heure, par respect pour les voisins.',
-      '',
-      '3. Tabagisme',
-      'Fumer est strictement interdit à l\'intérieur. Autorisé uniquement en extérieur',
-      '(terrasse ou jardin), avec obligation de nettoyer les mégots et cendres.',
-      '',
-      '4. Nombre de personnes',
-      'Maximum 5 personnes autorisées dans l\'appartement.',
-      '',
-      '5. Piscine',
-      'Douche obligatoire avant la baignade.',
-      'Pas de verre ni objets fragiles autour de la piscine.',
-      'Surveillance permanente des enfants par un adulte.',
-      'Horaires : fermeture à 20h00.',
-      'Pas de courses ni plongeons.',
-      '',
-      '6. Propreté et entretien',
-      'Maintenir les lieux propres en permanence.',
-      'Vider régulièrement les poubelles.',
-      'Respecter les sols et surfaces (pas de traces, pas de nourriture hors cuisine).'
-    ];
-
-    rules.forEach(line => {
-      if (yPos > 250) {
-        pdf.addPage();
-        yPos = 20;
-      }
-      pdf.text(line, 20, yPos);
-      yPos += line === '' ? 5 : 7;
-    });
-    
-    yPos += 15;
-    
-    if (yPos > 180) {
-      pdf.addPage();
-      yPos = 20;
-    }
-    
-    pdf.setFontSize(14);
-    pdf.setTextColor(44, 62, 80);
-    pdf.text('CONSENTEMENT AUX DONNÉES', 20, yPos);
-    yPos += 10;
-    
-    pdf.setFontSize(12);
-    pdf.text('Je consente au traitement de mes données personnelles conformément à la', 20, yPos);
-    yPos += 7;
-    pdf.text('loi marocaine n° 09-08 relative à la protection des personnes physiques', 20, yPos);
-    yPos += 7;
-    pdf.text('à l\'égard du traitement des données à caractère personnel, ainsi qu\'aux', 20, yPos);
-    yPos += 7;
-    pdf.text('dispositions de la loi 31-08 édictant des mesures de protection des', 20, yPos);
-    yPos += 7;
-    pdf.text('consommateurs.', 20, yPos);
-    yPos += 15;
-    
-    pdf.text(`Date de signature : ${now.toLocaleDateString('fr-FR')}`, 20, yPos);
-    yPos += 10;
-    
-    pdf.text('Signé et accepté :', 20, yPos);
+    pdf.text('Signature :', 20, yPos);
     yPos += 10;
     
     try {
@@ -1585,18 +1577,13 @@ Merci
     yPos += 10;
     
     pdf.setFontSize(16);
-    pdf.text('RÈGLEMENT INTÉRIEUR DES INFORMATIONS DE L\'APPARTEMENT', 105, yPos, { align: 'center' });
+    pdf.text('INFORMATIONS DE LA RÉSERVATION', 105, yPos, { align: 'center' });
     yPos += 15;
     
     pdf.setDrawColor(44, 62, 80);
     pdf.setLineWidth(1);
     pdf.line(20, yPos, 190, yPos);
     yPos += 15;
-    
-    pdf.setFontSize(14);
-    pdf.setTextColor(44, 62, 80);
-    pdf.text('INFORMATIONS DE LA RÉSERVATION', 20, yPos);
-    yPos += 10;
     
     const totalPersons = currentDocumentData.personnes ? Object.keys(currentDocumentData.personnes).length + 1 : 1;
     const now = new Date();
@@ -1613,117 +1600,21 @@ Merci
     pdf.text(`Nom du réservateur : ${currentDocumentData.nom}`, 20, yPos);
     yPos += 8;
     
+    pdf.text(`Type de document : ${currentDocumentData.typeDoc}`, 20, yPos);
+    yPos += 8;
+    
+    pdf.text(`Numéro de document : ${currentDocumentData.doc}`, 20, yPos);
+    yPos += 8;
+    
     pdf.text(`Nombre de personnes : ${totalPersons}`, 20, yPos);
     yPos += 8;
     
     pdf.text(`Date d'arrivée : ${currentDocumentData.date}`, 20, yPos);
-    yPos += 15;
-    
-    pdf.setDrawColor(200, 200, 200);
-    pdf.setLineWidth(0.5);
-    pdf.line(20, yPos, 190, yPos);
-    yPos += 15;
+    yPos += 20;
     
     pdf.setFontSize(14);
     pdf.setTextColor(44, 62, 80);
-    pdf.text('INFORMATIONS DES PERSONNES', 20, yPos);
-    yPos += 10;
-    
-    pdf.setFontSize(12);
-    pdf.text(`1. ${currentDocumentData.nom} - ${currentDocumentData.typeDoc}: ${currentDocumentData.doc} - Nationalité: ${currentDocumentData.nationalite}`, 20, yPos);
-    yPos += 8;
-    
-    if (currentDocumentData.personnes) {
-      let counter = 2;
-      Object.values(currentDocumentData.personnes).forEach(p => {
-        if (yPos > 250) {
-          pdf.addPage();
-          yPos = 20;
-        }
-        pdf.text(`${counter++}. ${p.nom} - ${p.typeDoc}: ${p.doc} - Nationalité: ${p.nationalite}`, 20, yPos);
-        yPos += 8;
-      });
-    }
-    
-    yPos += 10;
-    
-    if (yPos > 200) {
-      pdf.addPage();
-      yPos = 20;
-    }
-    
-    pdf.setFontSize(14);
-    pdf.setTextColor(44, 62, 80);
-    pdf.text('RÈGLEMENT INTÉRIEUR', 20, yPos);
-    yPos += 15;
-    
-    pdf.setFontSize(12);
-    const rules = [
-      '1. Couples marocains',
-      'Ce logement est réservé aux familles et aux couples mariés, les groupes',
-      'd\'amis Marocains mixtes ne sont pas acceptés.',
-      '',
-      '2. Tranquillité et bruit',
-      'Silence total obligatoire après 23h00. Pas de musique forte, cris ou nuisances',
-      'sonores à toute heure, par respect pour les voisins.',
-      '',
-      '3. Tabagisme',
-      'Fumer est strictement interdit à l\'intérieur. Autorisé uniquement en extérieur',
-      '(terrasse ou jardin), avec obligation de nettoyer les mégots et cendres.',
-      '',
-      '4. Nombre de personnes',
-      'Maximum 5 personnes autorisées dans l\'appartement.',
-      '',
-      '5. Piscine',
-      'Douche obligatoire avant la baignade.',
-      'Pas de verre ni objets fragiles autour de la piscine.',
-      'Surveillance permanente des enfants par un adulte.',
-      'Horaires : fermeture à 20h00.',
-      'Pas de courses ni plongeons.',
-      '',
-      '6. Propreté et entretien',
-      'Maintenir les lieux propres en permanence.',
-      'Vider régulièrement les poubelles.',
-      'Respecter les sols et surfaces (pas de traces, pas de nourriture hors cuisine).'
-    ];
-
-    rules.forEach(line => {
-      if (yPos > 250) {
-        pdf.addPage();
-        yPos = 20;
-      }
-      pdf.text(line, 20, yPos);
-      yPos += line === '' ? 5 : 7;
-    });
-    
-    yPos += 15;
-    
-    if (yPos > 180) {
-      pdf.addPage();
-      yPos = 20;
-    }
-    
-    pdf.setFontSize(14);
-    pdf.setTextColor(44, 62, 80);
-    pdf.text('CONSENTEMENT AUX DONNÉES', 20, yPos);
-    yPos += 10;
-    
-    pdf.setFontSize(12);
-    pdf.text('Je consente au traitement de mes données personnelles conformément à la', 20, yPos);
-    yPos += 7;
-    pdf.text('loi marocaine n° 09-08 relative à la protection des personnes physiques', 20, yPos);
-    yPos += 7;
-    pdf.text('à l\'égard du traitement des données à caractère personnel, ainsi qu\'aux', 20, yPos);
-    yPos += 7;
-    pdf.text('dispositions de la loi 31-08 édictant des mesures de protection des', 20, yPos);
-    yPos += 7;
-    pdf.text('consommateurs.', 20, yPos);
-    yPos += 15;
-    
-    pdf.text(`Date de signature : ${now.toLocaleDateString('fr-FR')}`, 20, yPos);
-    yPos += 10;
-    
-    pdf.text('Signé et accepté :', 20, yPos);
+    pdf.text('Signature :', 20, yPos);
     yPos += 10;
     
     try {
