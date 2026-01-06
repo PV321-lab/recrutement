@@ -1,351 +1,1880 @@
-Analyse de l'erreur
 
-Je vois le problème ! Dans le formulaire, le mot de passe est Hhhhj mais dans la base de données, il semble y avoir une colonne "Mot de passe" vide ou mal formatée. L'erreur "Erreur lors de la création de l'utilisateur" suggère un problème avec le processus de création.
-
-Voici le script complet corrigé avec plusieurs améliorations :
-
-```php
-<?php
-session_start();
-
-// Connexion à la base de données
-$host = 'localhost';
-$dbname = 'gestion_immeuble';
-$username = 'root';
-$password = '';
-
-try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch (PDOException $e) {
-    die("Erreur de connexion : " . $e->getMessage());
-}
-
-// Initialisation des variables
-$error = '';
-$success = '';
-$immeuble = '';
-$mot_de_passe = '';
-$appartement = '';
-
-// Traitement de la création d'utilisateur
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['creer_utilisateur'])) {
-    $immeuble = trim($_POST['immeuble']);
-    $appartement = trim($_POST['appartement']);
-    $mot_de_passe = trim($_POST['mot_de_passe']);
-    
-    // Validation
-    if (empty($immeuble) || empty($appartement) || empty($mot_de_passe)) {
-        $error = "Tous les champs sont obligatoires.";
-    } else {
-        try {
-            // Vérifier si l'utilisateur existe déjà
-            $check_sql = "SELECT id FROM utilisateurs WHERE immeuble = :immeuble AND appartement = :appartement";
-            $check_stmt = $pdo->prepare($check_sql);
-            $check_stmt->execute([':immeuble' => $immeuble, ':appartement' => $appartement]);
-            
-            if ($check_stmt->rowCount() > 0) {
-                $error = "Cet utilisateur (immeuble/appartement) existe déjà.";
-            } else {
-                // Hasher le mot de passe
-                $mot_de_passe_hash = password_hash($mot_de_passe, PASSWORD_DEFAULT);
-                
-                // Créer l'utilisateur
-                $sql = "INSERT INTO utilisateurs (immeuble, appartement, mot_de_passe, actif) 
-                        VALUES (:immeuble, :appartement, :mot_de_passe, 1)";
-                $stmt = $pdo->prepare($sql);
-                $stmt->execute([
-                    ':immeuble' => $immeuble,
-                    ':appartement' => $appartement,
-                    ':mot_de_passe' => $mot_de_passe_hash
-                ]);
-                
-                $success = "Utilisateur créé avec succès!";
-                // Réinitialiser les champs
-                $immeuble = '';
-                $appartement = '';
-                $mot_de_passe = '';
-            }
-        } catch (PDOException $e) {
-            $error = "Erreur technique : " . $e->getMessage();
-        }
-    }
-}
-
-// Récupérer la liste des utilisateurs
-try {
-    $sql_utilisateurs = "SELECT id, immeuble, appartement, actif FROM utilisateurs ORDER BY immeuble, appartement";
-    $stmt_utilisateurs = $pdo->query($sql_utilisateurs);
-    $utilisateurs = $stmt_utilisateurs->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {
-    $utilisateurs = [];
-    $error = "Erreur lors du chargement des utilisateurs : " . $e->getMessage();
-}
-
-// Récupérer la liste des invités (si la table existe)
-try {
-    $sql_invites = "SELECT id, appartement, immeuble, nom, document FROM invites ORDER BY immeuble, appartement";
-    $stmt_invites = $pdo->query($sql_invites);
-    $invites = $stmt_invites->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {
-    $invites = [];
-    // Ne pas afficher d'erreur si la table n'existe pas encore
-}
-?>
-
-<!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestion d'Immeuble</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-        
-        h1, h2, h3 {
-            color: #333;
-        }
-        
-        .container {
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-        
-        .form-group {
-            margin-bottom: 15px;
-        }
-        
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        
-        input[type="text"],
-        input[type="password"] {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-        
-        button {
-            background-color: #4CAF50;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        
-        button:hover {
-            background-color: #45a049;
-        }
-        
-        .error {
-            color: #d32f2f;
-            background-color: #ffebee;
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 15px;
-            border-left: 4px solid #d32f2f;
-        }
-        
-        .success {
-            color: #388e3c;
-            background-color: #e8f5e9;
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 15px;
-            border-left: 4px solid #388e3c;
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        
-        th, td {
-            border: 1px solid #ddd;
-            padding: 10px;
-            text-align: left;
-        }
-        
-        th {
-            background-color: #f2f2f2;
-            font-weight: bold;
-        }
-        
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-        
-        .actif-oui {
-            color: green;
-            font-weight: bold;
-        }
-        
-        .actif-non {
-            color: red;
-            font-weight: bold;
-        }
-        
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>Premium Village - Enregistrement des invités</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <style>
+    :root{
+      --c1:#007bff; --bg:#f0f2f5; --ok:#0f9d58; --warn:#f4b400; --err:#d93025; --info:#4285f4;
+    }
+    body { font-family: Arial, sans-serif; margin: 16px; background: var(--bg); }
+    h2 { text-align: center; margin: 8px 0 16px; color: #2c3e50; }
+    .card { background:#fff; padding:16px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.12); margin-bottom:16px; }
+    label { font-weight:600; display:block; margin-top:10px; }
+    input, select, button { font-size:16px; }
+    input, select { width:100%; padding:10px; margin-top:6px; border:1px solid #ccc; border-radius:8px; }
+    input[readonly]{ background:#e9ecef; }
+    button { margin-top:14px; padding:10px 14px; border:none; border-radius:10px; background:var(--c1); color:#fff; cursor:pointer; }
+    button:disabled{ opacity:.6; cursor:not-allowed; }
+    table { width:100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border:1px solid #e5e7eb; padding:8px; text-align:center; }
+    th { background:var(--c1); color:#fff; }
+    .hidden{ display:none !important; }
+    .row { display:flex; gap:12px; flex-wrap:wrap; }
+    .col { flex:1 1 220px; min-width:220px; }
+    .banner{ padding:10px 12px; border-radius:10px; margin-bottom:12px; font-weight:600; }
+    .banner.info{ background:#e8f0fe; color:#174ea6; border:1px solid #c6dafc; }
+    .banner.ok{ background:#e6f4ea; color:#137333; border:1px solid #cce8d3; }
+    .banner.warn{ background:#fef7e0; color:#a66300; border:1px solid #fde293; }
+    .banner.err{ background:#fce8e6; color:#a50e0e; border:1px solid #f7b9b4; }
+    .toolbar{ display:flex; gap:10px; justify-content:space-between; align-items:center; flex-wrap:wrap; }
+    .note{ font-size:13px; opacity:.8; }
+    .recap{ background:#fafafa; border:1px dashed #ccc; padding:10px; border-radius:8px; min-width:240px; }
+    .person-group { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #e9ecef; }
+    .person-group h4 { margin: 0 0 10px 0; color: #1E40AF; }
+    .consent-container { margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6; }
+    .consent-text { max-height: 150px; overflow-y: auto; padding: 10px; background: white; border-radius: 5px; border: 1px solid #ced4da; margin: 10px 0; }
+    .btn-delete { background: var(--err) !important; margin-left: 5px; }
+    .signature-area { margin: 40px 0; padding: 20px; border: 2px solid #ddd; border-radius: 8px; text-align: center; }
+    .signature-title { font-size: 18px; margin-bottom: 20px; color: #2c3e50; }
+    .signature-canvas { width: 100%; height: 200px; border: 1px solid #ccc; border-radius: 5px; background: white; cursor: crosshair; margin-bottom: 20px; }
+    .doc-type-row { display: flex; gap: 10px; }
+    .doc-type-row .col { flex: 1; }
+    .rules-container { 
+      margin: 20px 0; 
+      padding: 15px; 
+      background: #f8f9fa; 
+      border-radius: 8px; 
+      border: 1px solid #dee2e6;
+      max-height: 250px;
+      overflow-y: auto;
+    }
+    .rules-container h4 { margin-top: 0; color: #2c3e50; }
+    .rules-container ul { padding-left: 20px; margin: 10px 0; }
+    .rules-container li { margin-bottom: 8px; }
+    .signature-controls { display: flex; gap: 10px; justify-content: center; margin-top: 15px; }
+    .document-column { 
+      border-left: 2px solid #007bff; 
+      padding-left: 20px; 
+      min-height: 100vh;
+      background: #f9f9f9;
+    }
+    .document-preview { 
+      background: white; 
+      padding: 20px; 
+      border-radius: 8px; 
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+      margin-top: 20px;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+    .doc-title { 
+      text-align: center; 
+      font-size: 24px; 
+      font-weight: bold; 
+      color: #2c3e50; 
+      margin-bottom: 30px; 
+      border-bottom: 2px solid #2c3e50; 
+      padding-bottom: 10px;
+    }
+    .doc-info { margin-bottom: 20px; }
+    .doc-info p { margin: 5px 0; }
+    .doc-section { margin-bottom: 30px; }
+    .doc-section-title { 
+      font-size: 18px; 
+      font-weight: bold; 
+      color: #2c3e50; 
+      margin-bottom: 10px; 
+      border-bottom: 1px solid #ddd; 
+      padding-bottom: 5px;
+    }
+    .doc-signature { 
+      text-align: center; 
+      margin-top: 40px; 
+      padding-top: 20px; 
+      border-top: 2px solid #2c3e50;
+    }
+    .doc-signature-box { 
+      border: 1px solid #000; 
+      height: 100px; 
+      margin: 20px auto; 
+      width: 300px; 
+      position: relative;
+    }
+    .two-column-layout {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .form-column {
+      flex: 2;
+      min-width: 300px;
+    }
+    .document-column {
+      flex: 1;
+      min-width: 300px;
+    }
+    .doc-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .nationality-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .nationality-row .col {
+      flex: 1;
+    }
+    .accept-signature-container {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border: 1px solid #dee2e6;
+    }
+    .premium-header {
+      background: linear-gradient(135deg, #2c3e50, #4a6491);
+      color: white;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .user-settings {
+      background: #fff;
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid #dee2e6;
+      margin-top: 15px;
+    }
+    .email-settings {
+      background: #fff;
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid #dee2e6;
+      margin-top: 15px;
+    }
+    .email-settings h4 {
+      margin-top: 0;
+      color: #2c3e50;
+    }
+    .signature-preview {
+      border: 2px solid #000;
+      background: white;
+      margin: 10px auto;
+      max-width: 300px;
+    }
+    .error-message {
+      color: #d93025;
+      font-size: 14px;
+      margin-top: 5px;
+      display: none;
+    }
+    .error-border {
+      border-color: #d93025 !important;
+    }
+    .smtp-info {
+      background: #e8f4f8;
+      padding: 12px;
+      border-radius: 6px;
+      margin-top: 10px;
+      font-size: 13px;
+      border-left: 4px solid #007bff;
+    }
+  </style>
 </head>
 <body>
-    <div class="header">
-        <h1>Gestion d'Immeuble</h1>
-        <?php if (isset($_SESSION['admin'])): ?>
-            <a href="logout.php">Déconnexion</a>
-        <?php endif; ?>
+
+<div class="premium-header">
+  <h1>Premium Village</h1>
+  <p>Gestion des enregistrements des invités</p>
+</div>
+
+<div class="two-column-layout">
+  <div class="form-column">
+    <div id="banner" class="banner info hidden"></div>
+
+    <div id="loginCard" class="card">
+      <div class="toolbar">
+        <div><strong>Connexion - Premium Village</strong></div>
+        <div class="note">Veuillez entrer vos identifiants</div>
+      </div>
+      <label>Utilisateur</label>
+      <input type="text" id="loginUser" autocomplete="username" placeholder="Identifiant" required />
+      <label>Mot de passe</label>
+      <input type="password" id="loginPass" autocomplete="current-password" placeholder="Mot de passe" required />
+      <button id="btnLogin" onclick="login()">Connexion</button>
+      <p id="loginMsg" class="banner err hidden"></p>
     </div>
 
-    <?php if (!empty($error)): ?>
-        <div class="error"><?php echo htmlspecialchars($error); ?></div>
-    <?php endif; ?>
+    <div id="adminPanel" class="hidden">
+      <div class="toolbar card">
+        <div><strong>Panneau administrateur - Premium Village</strong></div>
+        <div>
+          <button onclick="logout()">Déconnexion</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="toolbar">
+          <div><strong>Gestion des utilisateurs</strong></div>
+        </div>
+        <div class="row">
+          <div class="col">
+            <label>Appartement</label>
+            <input type="text" id="appartAdmin" placeholder="Ex: 12" />
+          </div>
+          <div class="col">
+            <label>Immeuble</label>
+            <input type="text" id="batAdmin" placeholder="Ex: A" />
+          </div>
+          <div class="col">
+            <label>Mot de passe</label>
+            <input type="text" id="passAdmin" placeholder="Choisir un mot de passe" />
+          </div>
+        </div>
+        <button onclick="creerUtilisateur()">Créer utilisateur</button>
+        <p id="userWarn" class="banner warn hidden"></p>
+      </div>
+
+      <div class="card">
+        <div class="toolbar">
+          <div><strong>Utilisateurs existants</strong></div>
+        </div>
+        <table id="tableUsers">
+          <thead>
+            <tr><th>N°</th><th>Appartement</th><th>Immeuble</th><th>Mot de passe</th><th>Action</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="toolbar">
+          <div><strong>Enregistrements des invités</strong></div>
+        </div>
+        <table id="tableAdmin">
+          <thead>
+            <tr>
+              <th>N°</th><th>Appart.</th><th>Immeuble</th><th>Nom</th><th>Document</th><th>Type Doc</th><th>Nationalité</th>
+              <th>Nb Pers.</th><th>Personnes</th><th>Date</th><th>Document</th><th>Action</th><th>Statut</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="userPanel" class="hidden">
+      <div class="toolbar card">
+        <div><strong>Mon espace - Premium Village</strong></div>
+        <div><button onclick="logout()">Déconnexion</button></div>
+      </div>
+
+      <div class="card">
+        <div class="toolbar">
+          <div><strong>Paramètres de mon compte</strong></div>
+        </div>
+        <div class="user-settings">
+          <div class="row">
+            <div class="col">
+              <label>Nombre maximum d'enregistrements</label>
+              <input type="number" id="maxRecords" min="1" value="10" />
+            </div>
+            <div class="col">
+              <label>Nouveau mot de passe</label>
+              <input type="password" id="newPassword" placeholder="Nouveau mot de passe" />
+            </div>
+          </div>
+          <button onclick="updateUserSettings()">Mettre à jour les paramètres</button>
+          <p id="settingsMsg" class="banner info hidden"></p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="toolbar">
+          <div><strong>Configuration Email Automatique</strong></div>
+        </div>
+        <div class="email-settings">
+          <div class="row">
+            <div class="col">
+              <label>Activer les notifications par email</label>
+              <select id="enableEmail" onchange="toggleEmailFields()">
+                <option value="non">Non</option>
+                <option value="oui">Oui</option>
+              </select>
+            </div>
+          </div>
+          <div id="emailFields" class="hidden">
+            <div class="smtp-info">
+              <strong>Configuration SMTP (Gmail) :</strong><br>
+              Serveur SMTP: smtp.gmail.com<br>
+              Port: 587 (TLS) ou 465 (SSL)<br>
+              Authentification requise: Oui<br>
+              <strong>IMPORTANT:</strong> Activez l'accès aux applications moins sécurisées dans votre compte Gmail ou utilisez un mot de passe d'application.
+            </div>
+            <div class="row">
+              <div class="col">
+                <label>Votre adresse Gmail</label>
+                <input type="email" id="userEmail" placeholder="votre@gmail.com" />
+              </div>
+              <div class="col">
+                <label>Mot de passe Gmail / Mot de passe d'application</label>
+                <input type="password" id="emailPassword" placeholder="Mot de passe" />
+              </div>
+            </div>
+            <div class="row">
+              <div class="col">
+                <label>Email du gardien (destinataire)</label>
+                <input type="email" id="guardEmail" placeholder="gardien@premiumvillage.com" />
+              </div>
+            </div>
+            <button onclick="saveEmailSettings()">Enregistrer les paramètres email</button>
+            <button onclick="testEmailSettings()" style="background: #f39c12; margin-left: 10px;">Tester l'envoi</button>
+          </div>
+          <p id="emailMsg" class="banner info hidden"></p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="toolbar">
+          <div><strong>Générer un lien d'invitation</strong></div>
+        </div>
+        <button onclick="genererLien()">Générer le lien</button>
+        <p id="lienInvite"></p>
+      </div>
+
+      <div class="card">
+        <div class="toolbar">
+          <div><strong>Mes enregistrements</strong></div>
+        </div>
+        <table id="tableUser">
+          <thead>
+            <tr>
+              <th>N°</th><th>Nom</th><th>Document</th><th>Type Doc</th><th>Nationalité</th><th>Nb Pers.</th><th>Personnes</th><th>Date</th><th>Document</th><th>Statut</th><th>Action</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="invitePanel" class="hidden">
+      <div class="guest-form-container">
+        <div class="toolbar" style="margin-bottom: 20px;">
+          <h3 style="margin: 0; flex-grow: 1;">Enregistrement Invité - Premium Village</h3>
+        </div>
+
+        <div class="card">
+          <form id="guestForm">
+            <div class="row">
+              <div class="col">
+                <label>Appartement</label>
+                <input type="text" id="invAppart" readonly />
+              </div>
+              <div class="col">
+                <label>Immeuble</label>
+                <input type="text" id="invBat" readonly />
+              </div>
+            </div>
+
+            <label>Date d'arrivée *</label>
+            <input type="date" id="dateArrivee" required class="guest-input" />
+            <div class="error-message" id="dateArriveeError">Veuillez sélectionner une date d'arrivée</div>
+
+            <label>Nombre des invités *</label>
+            <input type="number" id="nbPers" min="1" value="1" onchange="genererChamps()" required class="guest-input" />
+            <div class="error-message" id="nbPersError">Veuillez entrer le nombre d'invités (minimum 1)</div>
+
+            <label>Nom et Prénom de la personne principale *</label>
+            <input type="text" id="nomPrincipal" required placeholder="Nom complet" class="guest-input" />
+            <div class="error-message" id="nomPrincipalError">Veuillez entrer le nom et prénom</div>
+
+            <div class="row doc-type-row">
+              <div class="col">
+                <label>Type de document *</label>
+                <select id="typeDocPrincipal" required class="guest-input">
+                  <option value="">Sélectionner</option>
+                  <option value="Passeport">Passeport</option>
+                  <option value="Carte d'identité">Carte d'identité</option>
+                </select>
+                <div class="error-message" id="typeDocPrincipalError">Veuillez sélectionner un type de document</div>
+              </div>
+              <div class="col">
+                <label>Numéro de document *</label>
+                <input type="text" id="docPrincipal" required placeholder="N° de document" class="guest-input" />
+                <div class="error-message" id="docPrincipalError">Veuillez entrer le numéro de document</div>
+              </div>
+            </div>
+
+            <div class="nationality-row">
+              <div class="col">
+                <label>Nationalité *</label>
+                <input type="text" id="nationalitePrincipal" required placeholder="Nationalité" class="guest-input" />
+                <div class="error-message" id="nationalitePrincipalError">Veuillez entrer la nationalité</div>
+              </div>
+            </div>
+
+            <div id="personnes"></div>
+
+            <div class="rules-container">
+              <h4>Règlement intérieur à respecter :</h4>
+              <ul>
+                <li><strong>1. Si vous êtes des Couples marocains: :</strong> selon la loi marocaine Ce logement autoris  que les couples  mariés . </li>
+                <li><strong>2. Tranquillité et bruit :</strong> Silence total obligatoire après 23h00. Pas de musique forte, cris ou nuisances sonores à toute heure.</li>
+                <li><strong>3. Tabagisme :</strong> Fumer est strictement interdit à l'intérieur. Autorisé uniquement en extérieur (terrasse ou jardin), avec obligation de nettoyer les mégots et cendres.</li>
+                <li><strong>4. Nombre de personnes :</strong> Maximum 5 personnes autorisées dans l'appartement.</li>
+                <li><strong>5. Piscine :</strong> Douche obligatoire avant la baignade. Pas de verre ni objets fragiles autour de la piscine. Surveillance permanente des enfants par un adulte. Horaires : fermeture à 20h00. Pas de courses ni plongeons.</li>
+                <li><strong>6. Propreté et entretien :</strong> Maintenir les lieux propres en permanence. Vider régulièrement les poubelles. Respecter les sols et surfaces (pas de traces, pas de nourriture hors cuisine).</li>
+              </ul>
+            </div>
+
+            <div class="signature-area">
+              <div class="signature-title">Signature *</div>
+              <canvas id="signatureCanvas" class="signature-canvas">
+                Votre navigateur ne supporte pas la signature.
+              </canvas>
+              <div class="error-message" id="signatureError">Veuillez signer le document</div>
+              <div class="signature-controls">
+                <button type="button" id="clearBtn" class="btn" style="background: #e74c3c;">Effacer la signature</button>
+              </div>
+              <div id="signaturePreview" class="signature-preview hidden"></div>
+              <p style="margin-top: 15px; font-size: 14px; color: #666;">
+                En signant, vous acceptez le règlement intérieur et consentez au traitement de vos données personnelles conformément à la loi marocaine n° 09-08 relative à la protection des personnes physiques à l'égard du traitement des données à caractère personnel, ainsi qu'aux dispositions de la loi 31-08 édictant des mesures de protection des consommateurs.
+              </p>
+            </div>
+
+            <div class="accept-signature-container">
+              <label style="display: flex; align-items: center; justify-content: center; margin-bottom: 15px;">
+                <input type="checkbox" id="acceptCheckbox" required style="margin-right: 10px; width: auto;">
+                <span style="font-size: 16px; font-weight: bold;">Je confirme avoir lu et j'accepte le règlement intérieur ainsi que le traitement de mes données personnelles conformément aux lois marocaines sur la protection des données (loi 09-08) et aux dispositions légales en vigueur.</span>
+              </label>
+              <div class="error-message" id="acceptCheckboxError" style="text-align: center;">Veuillez accepter les conditions</div>
+              <div style="text-align: center;">
+                <button type="button" id="registerBtn" class="btn" style="background: #27ae60; padding: 12px 30px; font-size: 18px;">Enregistrer et valider</button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div id="successMessage" class="banner ok hidden">
+          Enregistrement réussi ! Un onglet s'ouvre avec votre document PDF.
+          <br><br>
+          <strong>Note importante :</strong> En cas de demande des agents de sécurité, présentez ce document signé.
+          Seules les personnes enregistrées dans cette réservation sont autorisées à entrer.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="documentColumn" class="document-column hidden">
+    <div class="card">
+      <h3>Document Signé - Premium Village</h3>
+      <div id="documentPreview" class="document-preview">
+        <p>Sélectionnez un enregistrement pour voir le document.</p>
+      </div>
+      <div id="docActions" class="doc-actions hidden">
+        <button id="downloadDocBtn" onclick="downloadCurrentDocument()">Télécharger PDF</button>
+        <button id="viewDocBtn" onclick="viewCurrentDocument()">Ouvrir dans un nouvel onglet</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+  
+  const firebaseConfig = {
+    apiKey: "AIzaSyDbJe_e0Uz5YavmQDwabym11FStEPjxo2E",
+    authDomain: "invitedb-6ce9f.firebaseapp.com",
+    databaseURL: "https://invitedb-6ce9f-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "invitedb-6ce9f",
+    storageBucket: "invitedb-6ce9f.firebasestorage.app",
+    messagingSenderId: "253833375693",
+    appId: "1:253833375693:web:a1d68bef41916c86be5e84",
+    measurementId: "G-BS2EBMM7T3"
+  };
+  
+  // Initialisation Firebase
+  try {
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+  } catch (e) {
+    console.error("Firebase Init Error:", e);
+  }
+  const database = firebase.database();
+  const AUTH_EMAIL = "maraminho10@gmail.com";
+  const AUTH_PASS = "M@ra10";
+
+
+  let currentUser = null;
+  const SESSION_TIMEOUT_MS = 10 * 60 * 1000;
+  let sessionTimer = null;
+  let signatureData = '';
+  let hasSignature = false;
+  let currentDocumentData = null;
+  let userSettings = { maxRecords: 10 };
+  let emailSettings = { enableEmail: 'non' };
+
+  function showBanner(type, text){
+    const b = document.getElementById('banner');
+    b.className = 'banner ' + type;
+    b.textContent = text;
+    b.classList.remove('hidden');
+  }
+  
+  function hideBanner(){ 
+    document.getElementById('banner').classList.add('hidden'); 
+  }
+
+  function showInlineMsg(elId, type, text){
+    const el = document.getElementById(elId);
+    el.textContent = text;
+    el.className = 'banner ' + type;
+    el.classList.remove('hidden');
+  }
+  
+  function hideInlineMsg(elId){
+    const el = document.getElementById(elId);
+    el.classList.add('hidden');
+  }
+
+  function startSessionTimer(){
+    stopSessionTimer();
+    sessionTimer = setTimeout(()=>{
+      logout(true);
+      showBanner('warn', "Session expirée (inactivité). Veuillez vous reconnecter.");
+    }, SESSION_TIMEOUT_MS);
+  }
+  
+  function stopSessionTimer(){
+    if(sessionTimer){ 
+      clearTimeout(sessionTimer); 
+      sessionTimer = null; 
+    }
+  }
+  
+  function resetSessionTimer(){
+    if(currentUser) startSessionTimer();
+  }
+  
+  ['click','keydown','touchstart'].forEach(evt=>{
+    document.addEventListener(evt, resetSessionTimer, {passive:true});
+  });
+
+  function logout(expired=false){
+    currentUser = null;
+    stopSessionTimer();
+    document.getElementById('adminPanel').classList.add('hidden');
+    document.getElementById('userPanel').classList.add('hidden');
+    document.getElementById('invitePanel').classList.add('hidden');
+    document.getElementById('loginCard').classList.remove('hidden');
+    document.getElementById('documentColumn').classList.add('hidden');
+    if(!expired) showBanner('info', "Vous êtes déconnecté.");
+  }
+
+  
+  async function login(){
+    hideInlineMsg('loginMsg');
+    const u = document.getElementById('loginUser').value.trim();
+    const p = document.getElementById('loginPass').value.trim();
+
+    if(!u || !p){
+      showInlineMsg('loginMsg','err',"Saisissez l'utilisateur et le mot de passe.");
+      return;
+    }
+
+    const btn = document.getElementById('btnLogin');
+    btn.disabled = true;
+    btn.textContent = "Connexion...";
+
+    try {
+      // 1. Priorité Admin/Admin
+      if(u === 'admin' && p === 'admin'){
+        // Authentification Firebase en arrière-plan pour l'admin
+        try {
+          await firebase.auth().signInWithEmailAndPassword(AUTH_EMAIL, AUTH_PASS);
+        } catch (e) {
+          console.error("Firebase Auth failed for admin:", e);
+        }
+        
+        currentUser = { role:'admin' };
+        document.getElementById('loginCard').classList.add('hidden');
+        document.getElementById('adminPanel').classList.remove('hidden');
+        document.getElementById('documentColumn').classList.remove('hidden');
+        showBanner('ok', "Connecté en tant qu'administrateur.");
+        startSessionTimer();
+        refreshAdmin();
+        return;
+      }
+
+      // 2. Authentification Firebase pour les autres utilisateurs
+      await firebase.auth().signInWithEmailAndPassword(AUTH_EMAIL, AUTH_PASS);
+
+      // 3. Recherche de l'utilisateur dans la base de données
+      const snapshot = await database.ref('users/' + u).once('value');
+      const user = snapshot.val();
+      
+      if(user && user.pass === p){
+        currentUser = { role:'user', id:u, appart:user.appart, bat:user.bat };
+        
+        const settingsSnapshot = await database.ref('settings/' + u).once('value');
+        if(settingsSnapshot.exists()){
+          userSettings = settingsSnapshot.val();
+          document.getElementById('maxRecords').value = userSettings.maxRecords || 10;
+        }
+        
+        const emailSnapshot = await database.ref('emailSettings/' + u).once('value');
+        if(emailSnapshot.exists()){
+          emailSettings = emailSnapshot.val();
+          document.getElementById('enableEmail').value = emailSettings.enableEmail || 'non';
+          toggleEmailFields();
+          if(emailSettings.enableEmail === 'oui'){
+            document.getElementById('userEmail').value = emailSettings.userEmail || '';
+            document.getElementById('emailPassword').value = emailSettings.emailPassword || '';
+            document.getElementById('guardEmail').value = emailSettings.guardEmail || '';
+          }
+        }
+        
+        document.getElementById('loginCard').classList.add('hidden');
+        document.getElementById('userPanel').classList.remove('hidden');
+        document.getElementById('documentColumn').classList.remove('hidden');
+        showBanner('ok', `Connecté. Appartement ${user.appart} / Immeuble ${user.bat}.`);
+        startSessionTimer();
+        refreshUser();
+      } else {
+        showInlineMsg('loginMsg','err',"Identifiants incorrects.");
+        await firebase.auth().signOut();
+      }
+    } catch (error) {
+      console.error("Login Error:", error);
+      showInlineMsg('loginMsg','err', "Erreur: " + (error.message || "Accès refusé"));
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Connexion";
+    }
+  }
+
+
+  function toggleEmailFields(){
+    const enableEmail = document.getElementById('enableEmail').value;
+    const emailFields = document.getElementById('emailFields');
+    if(enableEmail === 'oui'){
+      emailFields.classList.remove('hidden');
+    } else {
+      emailFields.classList.add('hidden');
+    }
+  }
+
+  async function saveEmailSettings(){
+    const enableEmail = document.getElementById('enableEmail').value;
     
-    <?php if (!empty($success)): ?>
-        <div class="success"><?php echo htmlspecialchars($success); ?></div>
-    <?php endif; ?>
+    if(enableEmail === 'oui'){
+      const userEmail = document.getElementById('userEmail').value.trim();
+      const emailPassword = document.getElementById('emailPassword').value.trim();
+      const guardEmail = document.getElementById('guardEmail').value.trim();
+      
+      if(!userEmail || !emailPassword || !guardEmail){
+        showInlineMsg('emailMsg','warn',"Tous les champs email sont obligatoires.");
+        return;
+      }
+      
+      if(!userEmail.toLowerCase().endsWith('@gmail.com')){
+        showInlineMsg('emailMsg','warn',"Veuillez utiliser une adresse Gmail.");
+        return;
+      }
+      
+      emailSettings = {
+        enableEmail: enableEmail,
+        userEmail: userEmail,
+        emailPassword: emailPassword,
+        guardEmail: guardEmail
+      };
+    } else {
+      emailSettings = {
+        enableEmail: 'non'
+      };
+    }
+    
+    try {
+      await database.ref('emailSettings/' + currentUser.id).set(emailSettings);
+      showInlineMsg('emailMsg','ok',"Paramètres email enregistrés avec succès.");
+    } catch (error) {
+      showInlineMsg('emailMsg','err',"Erreur lors de l'enregistrement des paramètres email.");
+    }
+  }
 
-    <div class="container">
-        <h2>Créer un nouvel utilisateur</h2>
-        <form method="POST" action="">
-            <div class="form-group">
-                <label for="immeuble">Immeuble:</label>
-                <input type="text" id="immeuble" name="immeuble" value="<?php echo htmlspecialchars($immeuble); ?>" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="appartement">Appartement:</label>
-                <input type="text" id="appartement" name="appartement" value="<?php echo htmlspecialchars($appartement); ?>" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="mot_de_passe">Mot de passe:</label>
-                <input type="password" id="mot_de_passe" name="mot_de_passe" value="<?php echo htmlspecialchars($mot_de_passe); ?>" required>
-                <small>Le mot de passe sera haché avant stockage</small>
-            </div>
-            
-            <button type="submit" name="creer_utilisateur">Créer l'utilisateur</button>
-        </form>
-    </div>
+  async function testEmailSettings(){
+    if(emailSettings.enableEmail !== 'oui'){
+      showInlineMsg('emailMsg','warn',"Veuillez d'abord activer les notifications par email.");
+      return;
+    }
+    
+    if(!emailSettings.userEmail || !emailSettings.emailPassword || !emailSettings.guardEmail){
+      showInlineMsg('emailMsg','warn',"Veuillez d'abord configurer les paramètres email.");
+      return;
+    }
+    
+    try {
+      const testSubject = "Test Email - Premium Village";
+      const testBody = "Ceci est un email de test depuis l'application Premium Village.\n\nSi vous recevez cet email, la configuration est correcte.";
+      
+      const result = await sendEmail(
+        emailSettings.guardEmail,
+        testSubject,
+        testBody,
+        emailSettings.userEmail,
+        emailSettings.emailPassword
+      );
+      
+      if(result.success){
+        showInlineMsg('emailMsg','ok',"Email de test envoyé avec succès !");
+      } else {
+        showInlineMsg('emailMsg','err',"Erreur d'envoi: " + result.error);
+      }
+    } catch (error) {
+      showInlineMsg('emailMsg','err',"Erreur lors de l'envoi du test.");
+    }
+  }
 
-    <div class="container">
-        <h2>Utilisateurs existants</h2>
-        <?php if (count($utilisateurs) > 0): ?>
-            <table>
-                <thead>
-                    <tr>
-                        <th>N°</th>
-                        <th>Appartement</th>
-                        <th>Immeuble</th>
-                        <th>Actif</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($utilisateurs as $index => $utilisateur): ?>
-                        <tr>
-                            <td><?php echo $index + 1; ?></td>
-                            <td><?php echo htmlspecialchars($utilisateur['appartement']); ?></td>
-                            <td><?php echo htmlspecialchars($utilisateur['immeuble']); ?></td>
-                            <td class="<?php echo $utilisateur['actif'] ? 'actif-oui' : 'actif-non'; ?>">
-                                <?php echo $utilisateur['actif'] ? 'Oui' : 'Non'; ?>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        <?php else: ?>
-            <p>Aucun utilisateur enregistré pour le moment.</p>
-        <?php endif; ?>
-    </div>
+  async function sendEmail(to, subject, body, from, password) {
+    return new Promise((resolve) => {
+      const formData = new FormData();
+      formData.append('to', to);
+      formData.append('subject', subject);
+      formData.append('body', body);
+      formData.append('from', from);
+      formData.append('password', password);
+      
+      fetch('https://script.google.com/macros/s/AKfycbxYYOwGYa68wEwuq3EO2nqG1FfUc9G6Z2UUtThzPmI7yUZKGYeF7cvb9TQfDcJ4h9UM/exec', {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        if(data.success) {
+          resolve({ success: true, message: "Email envoyé avec succès" });
+        } else {
+          resolve({ success: false, error: data.error || "Erreur inconnue" });
+        }
+      })
+      .catch(error => {
+        resolve({ success: false, error: "Erreur réseau: " + error.toString() });
+      });
+    });
+  }
 
-    <div class="container">
-        <h3>Enregistrements des invités</h3>
-        <?php if (count($invites) > 0): ?>
-            <table>
-                <thead>
-                    <tr>
-                        <th>N°</th>
-                        <th>Appart.</th>
-                        <th>Immeuble</th>
-                        <th>Nom</th>
-                        <th>Document</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($invites as $index => $invite): ?>
-                        <tr>
-                            <td><?php echo $index + 1; ?></td>
-                            <td><?php echo htmlspecialchars($invite['appartement']); ?></td>
-                            <td><?php echo htmlspecialchars($invite['immeuble']); ?></td>
-                            <td><?php echo htmlspecialchars($invite['nom']); ?></td>
-                            <td><?php echo htmlspecialchars($invite['document']); ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        <?php else: ?>
-            <p>Aucun invité enregistré pour le moment.</p>
-        <?php endif; ?>
-    </div>
+  async function updateUserSettings(){
+    const maxRecords = parseInt(document.getElementById('maxRecords').value) || 10;
+    const newPassword = document.getElementById('newPassword').value.trim();
+    
+    if(maxRecords < 1){
+      showInlineMsg('settingsMsg','warn',"Le nombre d'enregistrements doit être supérieur à 0.");
+      return;
+    }
+    
+    try {
+      userSettings.maxRecords = maxRecords;
+      await database.ref('settings/' + currentUser.id).set(userSettings);
+      
+      if(newPassword){
+        await database.ref('users/' + currentUser.id).update({ pass: newPassword });
+        document.getElementById('newPassword').value = '';
+        showInlineMsg('settingsMsg','ok',"Paramètres et mot de passe mis à jour avec succès.");
+      } else {
+        showInlineMsg('settingsMsg','ok',"Paramètres mis à jour avec succès.");
+      }
+      
+      refreshUser();
+    } catch (error) {
+      showInlineMsg('settingsMsg','err',"Erreur lors de la mise à jour des paramètres.");
+    }
+  }
+
+  async function creerUtilisateur(){
+    hideInlineMsg('userWarn');
+    const appart = (document.getElementById('appartAdmin').value || '').trim();
+    const bat = (document.getElementById('batAdmin').value || '').trim();
+    const pass = (document.getElementById('passAdmin').value || '').trim();
+    
+    if(!appart || !bat || !pass){
+      showInlineMsg('userWarn','warn',"Tous les champs utilisateur sont obligatoires.");
+      return;
+    }
+    
+    if(pass.length < 4){
+      showInlineMsg('userWarn','warn',"Le mot de passe doit contenir au moins 4 caractères.");
+      return;
+    }
+    
+    const userId = appart + bat;
+    
+    try {
+      const snapshot = await database.ref('users/' + userId).once('value');
+      
+      if(snapshot.exists()){
+        showInlineMsg('userWarn','warn',`L'utilisateur ${userId} existe déjà.`);
+      } else {
+        await database.ref('users/' + userId).set({
+          user: userId,
+          appart: appart,
+          bat: bat,
+          pass: pass
+        });
+        
+        await database.ref('settings/' + userId).set({
+          maxRecords: 10
+        });
+        
+        showBanner('ok', `Utilisateur ${userId} créé.`);
+        refreshAdmin();
+      }
+    } catch (error) {
+      showInlineMsg('userWarn','err',"Erreur lors de la création de l'utilisateur.");
+    }
+  }
+
+  async function refreshAdmin(){
+    const tbodyU = document.querySelector('#tableUsers tbody');
+    tbodyU.innerHTML = '';
+    
+    try {
+      const usersSnapshot = await database.ref('users').once('value');
+      const users = usersSnapshot.val() || {};
+      
+      let counter = 1;
+      for(const [userId, user] of Object.entries(users)){
+        const resetBtn = `<button onclick="adminResetPassword('${userId}')" style="background: #e74c3c; margin-left: 5px;">Réinitialiser</button>`;
+        tbodyU.insertAdjacentHTML('beforeend',
+          `<tr><td>${counter++}</td><td>${user.appart}</td><td>${user.bat}</td><td>${user.pass}</td><td>${resetBtn}</td></tr>`);
+      }
+    } catch (error) {
+      showBanner('err', "Erreur lors du chargement des utilisateurs.");
+    }
+
+    const tbody = document.querySelector('#tableAdmin tbody');
+    tbody.innerHTML = '';
+    
+    try {
+      const recordsSnapshot = await database.ref('records').once('value');
+      const records = recordsSnapshot.val() || {};
+      
+      let counter = 1;
+      Object.entries(records).slice(-200).forEach(([id, r]) => {
+        const personnesList = r.personnes ? Object.values(r.personnes).map(p => `${p.nom} (${p.typeDoc}) - ${p.doc}`).join(', ') : '';
+        const sendBtn = `<button onclick="envoyerWhatsApp('${id}')">Envoyer</button>`;
+        const viewBtn = `<button onclick="afficherDocument('${id}')">Voir doc</button>`;
+        
+        tbody.insertAdjacentHTML('beforeend',
+          `<tr>
+            <td>${counter++}</td>
+            <td>${r.appart}</td>
+            <td>${r.bat}</td>
+            <td>${r.nom}</td>
+            <td>${r.doc}</td>
+            <td>${r.typeDoc || 'Non spécifié'}</td>
+            <td>${r.nationalite || 'Non spécifié'}</td>
+            <td>${r.personnes ? Object.keys(r.personnes).length + 1 : 1}</td>
+            <td>${personnesList}</td>
+            <td>${r.date}</td>
+            <td>${viewBtn}</td>
+            <td>${sendBtn}</td>
+            <td>${r.sent ? "Envoyé" : "Non envoyé"}</td>
+          </tr>`);
+      });
+    } catch (error) {
+      showBanner('err', "Erreur lors du chargement des enregistrements.");
+    }
+  }
+
+  async function adminResetPassword(userId){
+    const newPass = prompt(`Veuillez entrer le nouveau mot de passe pour l'utilisateur ${userId}:`);
+    if(newPass && newPass.length >= 4){
+      try {
+        await database.ref('users/' + userId).update({ pass: newPass });
+        showBanner('ok', `Mot de passe de ${userId} mis à jour.`);
+        refreshAdmin();
+      } catch (error) {
+        showBanner('err', "Erreur lors de la mise à jour du mot de passe.");
+      }
+    } else if(newPass){
+      showBanner('warn', "Le mot de passe doit contenir au moins 4 caractères.");
+    }
+  }
+
+  async function refreshUser(){
+    const tbody = document.querySelector('#tableUser tbody');
+    tbody.innerHTML = '';
+    
+    try {
+      const recordsSnapshot = await database.ref('records').once('value');
+      const records = recordsSnapshot.val() || {};
+      
+      const userRecords = Object.entries(records)
+        .filter(([id, r]) => r.appart === currentUser.appart && r.bat === currentUser.bat);
+      
+      const maxRecords = userSettings.maxRecords || 10;
+      if(userRecords.length >= maxRecords){
+        showInlineMsg('settingsMsg','warn',`Vous avez atteint la limite de ${maxRecords} enregistrements.`);
+      }
+      
+      let counter = 1;
+      userRecords.slice(-maxRecords).forEach(([id, r]) => {
+        const personnesList = r.personnes ? Object.values(r.personnes).map(p => `${p.nom} (${p.typeDoc}) - ${p.doc}`).join(', ') : '';
+        const sendBtn = `<button onclick="envoyerWhatsApp('${id}')">Envoyer</button>`;
+        const viewBtn = `<button onclick="afficherDocument('${id}')">Voir doc</button>`;
+        const deleteBtn = `<button class="btn-delete" onclick="supprimerEnregistrement('${id}')">Supprimer</button>`;
+        
+        tbody.insertAdjacentHTML('beforeend',
+          `<tr>
+            <td>${counter++}</td>
+            <td>${r.nom}</td>
+            <td>${r.doc}</td>
+            <td>${r.typeDoc || 'Non spécifié'}</td>
+            <td>${r.nationalite || 'Non spécifié'}</td>
+            <td>${r.personnes ? Object.keys(r.personnes).length + 1 : 1}</td>
+            <td>${personnesList}</td>
+            <td>${r.date}</td>
+            <td>${viewBtn}</td>
+            <td>${r.sent ? "Envoyé" : "Non envoyé"}</td>
+            <td>${sendBtn}${deleteBtn}</td>
+          </tr>`);
+      });
+      
+      document.getElementById('maxRecords').value = maxRecords;
+    } catch (error) {
+      showBanner('err', "Erreur de lecture des enregistrements.");
+    }
+  }
+
+  async function supprimerEnregistrement(id) {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer cet enregistrement ?")) {
+      return;
+    }
+    
+    try {
+      await database.ref('records/' + id).remove();
+      await database.ref('documents/' + id).remove();
+      showBanner('ok', "Enregistrement et document supprimés avec succès.");
+      refreshUser();
+      document.getElementById('documentPreview').innerHTML = '<p>Sélectionnez un enregistrement pour voir le document.</p>';
+      document.getElementById('docActions').classList.add('hidden');
+    } catch (error) {
+      showBanner('err', "Erreur lors de la suppression de l'enregistrement.");
+    }
+  }
+
+  function genererLien(){
+    const base = location.href.split('?')[0];
+    const lien = `${base}?invite=${encodeURIComponent(currentUser.id)}`;
+    const p = document.getElementById('lienInvite');
+    p.innerHTML = `Lien pour vos invités : <a href="${lien}" target="_blank">${lien}</a>`;
+    showBanner('info', "Copiez/partagez ce lien avec vos invités.");
+  }
+
+  const canvas = document.getElementById('signatureCanvas');
+  const clearBtn = document.getElementById('clearBtn');
+  const registerBtn = document.getElementById('registerBtn');
+  const acceptCheckbox = document.getElementById('acceptCheckbox');
+  const ctx = canvas.getContext('2d');
+  let isDrawing = false;
+  let lastX = 0;
+  let lastY = 0;
+
+  const { jsPDF } = window.jspdf;
+
+  function initCanvas() {
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width;
+    canvas.height = rect.height;
+    
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    
+    clearCanvas();
+  }
+
+  function clearCanvas() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    hasSignature = false;
+    updateRegisterButton();
+    document.getElementById('signaturePreview').classList.add('hidden');
+    hideError('signatureError');
+    canvas.classList.remove('error-border');
+  }
+
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    let x, y;
+    
+    if (e.type.includes('touch')) {
+      const touch = e.touches[0] || e.changedTouches[0];
+      x = touch.clientX - rect.left;
+      y = touch.clientY - rect.top;
+    } else {
+      x = e.clientX - rect.left;
+      y = e.clientY - rect.top;
+    }
+    
+    return { x, y };
+  }
+
+  function startDraw(e) {
+    isDrawing = true;
+    const pos = getPos(e);
+    [lastX, lastY] = [pos.x, pos.y];
+    
+    ctx.beginPath();
+    ctx.arc(lastX, lastY, ctx.lineWidth/2, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  function draw(e) {
+    if (!isDrawing) return;
+    e.preventDefault();
+    
+    const pos = getPos(e);
+    const currentX = pos.x;
+    const currentY = pos.y;
+    
+    ctx.beginPath();
+    ctx.moveTo(lastX, lastY);
+    ctx.lineTo(currentX, currentY);
+    ctx.stroke();
+    
+    [lastX, lastY] = [currentX, currentY];
+  }
+
+  function stopDraw() {
+    if (!isDrawing) return;
+    isDrawing = false;
+    hasSignature = true;
+    updateRegisterButton();
+    updateSignaturePreview();
+    hideError('signatureError');
+    canvas.classList.remove('error-border');
+  }
+
+  function updateSignaturePreview() {
+    const preview = document.getElementById('signaturePreview');
+    const signatureImg = canvas.toDataURL('image/png');
+    preview.innerHTML = `<img src="${signatureImg}" alt="Signature" style="width:100%; height:auto; border: 2px solid #000;" />`;
+    preview.classList.remove('hidden');
+  }
+
+  function showError(elementId, message) {
+    const errorElement = document.getElementById(elementId);
+    errorElement.textContent = message;
+    errorElement.style.display = 'block';
+    const inputElement = document.getElementById(elementId.replace('Error', ''));
+    if(inputElement) {
+      inputElement.classList.add('error-border');
+    }
+  }
+
+  function hideError(elementId) {
+    const errorElement = document.getElementById(elementId);
+    errorElement.style.display = 'none';
+    const inputElement = document.getElementById(elementId.replace('Error', ''));
+    if(inputElement) {
+      inputElement.classList.remove('error-border');
+    }
+  }
+
+  function validateForm() {
+    let isValid = true;
+    
+    const nom = document.getElementById('nomPrincipal').value.trim();
+    if(!nom) {
+      showError('nomPrincipalError', 'Veuillez entrer le nom et prénom');
+      isValid = false;
+    } else {
+      hideError('nomPrincipalError');
+    }
+    
+    const date = document.getElementById('dateArrivee').value;
+    if(!date) {
+      showError('dateArriveeError', 'Veuillez sélectionner une date d\'arrivée');
+      isValid = false;
+    } else {
+      hideError('dateArriveeError');
+    }
+    
+    const nb = parseInt(document.getElementById('nbPers').value || '0', 10);
+    if(!Number.isInteger(nb) || nb < 1) {
+      showError('nbPersError', 'Veuillez entrer un nombre valide (minimum 1)');
+      isValid = false;
+    } else {
+      hideError('nbPersError');
+    }
+    
+    const typeDoc = document.getElementById('typeDocPrincipal').value.trim();
+    if(!typeDoc) {
+      showError('typeDocPrincipalError', 'Veuillez sélectionner un type de document');
+      isValid = false;
+    } else {
+      hideError('typeDocPrincipalError');
+    }
+    
+    const doc = document.getElementById('docPrincipal').value.trim();
+    if(!doc) {
+      showError('docPrincipalError', 'Veuillez entrer le numéro de document');
+      isValid = false;
+    } else {
+      hideError('docPrincipalError');
+    }
+    
+    const nationalite = document.getElementById('nationalitePrincipal').value.trim();
+    if(!nationalite) {
+      showError('nationalitePrincipalError', 'Veuillez entrer la nationalité');
+      isValid = false;
+    } else {
+      hideError('nationalitePrincipalError');
+    }
+    
+    const nbPers = parseInt(document.getElementById('nbPers').value || '1', 10);
+    for(let i=2; i<=nbPers; i++){
+      const nomVal = (document.getElementById(`pers${i}Nom`)?.value || '').trim();
+      const docVal = (document.getElementById(`pers${i}Doc`)?.value || '').trim();
+      const typeDocVal = (document.getElementById(`pers${i}TypeDoc`)?.value || '').trim();
+      const nationaliteVal = (document.getElementById(`pers${i}Nationalite`)?.value || '').trim();
+      
+      if(!nomVal){
+        showBanner('err', `Veuillez renseigner le nom pour la personne ${i}`);
+        isValid = false;
+      }
+      if(!docVal){
+        showBanner('err', `Veuillez renseigner le document pour la personne ${i}`);
+        isValid = false;
+      }
+      if(!typeDocVal){
+        showBanner('err', `Veuillez sélectionner le type de document pour la personne ${i}`);
+        isValid = false;
+      }
+      if(!nationaliteVal){
+        showBanner('err', `Veuillez renseigner la nationalité pour la personne ${i}`);
+        isValid = false;
+      }
+    }
+    
+    if(!hasSignature) {
+      showError('signatureError', 'Veuillez signer le document');
+      canvas.classList.add('error-border');
+      isValid = false;
+    } else {
+      hideError('signatureError');
+    }
+    
+    if(!acceptCheckbox.checked) {
+      showError('acceptCheckboxError', 'Veuillez accepter les conditions');
+      isValid = false;
+    } else {
+      hideError('acceptCheckboxError');
+    }
+    
+    return isValid;
+  }
+
+  function updateRegisterButton() {
+    const isAccepted = acceptCheckbox.checked;
+    registerBtn.disabled = !(hasSignature && isAccepted);
+  }
+
+  async function sendAutomaticEmail(record) {
+    if(emailSettings.enableEmail !== 'oui'){
+      return { success: true, message: "Emails désactivés" };
+    }
+    
+    if(!emailSettings.userEmail || !emailSettings.emailPassword || !emailSettings.guardEmail){
+      return { success: false, error: "Paramètres email non configurés" };
+    }
+    
+    const totalPersons = record.personnes ? Object.keys(record.personnes).length + 1 : 1;
+    
+    const emailSubject = `Nouvelle réservation - ${record.nom} - Appartement ${record.appart}`;
+    const emailBody = `
+Nouvelle réservation enregistrée
+
+Nom: ${record.nom}
+Date d'arrivée: ${record.date}
+Appartement: ${record.appart}
+Immeuble: ${record.bat}
+Nombre de personnes: ${totalPersons}
+Type de document: ${record.typeDoc}
+Numéro de document: ${record.doc}
+
+Cette réservation a été enregistrée via l'application Premium Village.
+    `;
+    
+    try {
+      const result = await sendEmail(
+        emailSettings.guardEmail,
+        emailSubject,
+        emailBody,
+        emailSettings.userEmail,
+        emailSettings.emailPassword
+      );
+      
+      return result;
+    } catch (error) {
+      return { success: false, error: error.toString() };
+    }
+  }
+
+  async function registerSignature() {
+    if(!validateForm()) {
+      return;
+    }
+
+    const nom = document.getElementById('nomPrincipal').value.trim();
+    const doc = document.getElementById('docPrincipal').value.trim();
+    const typeDoc = document.getElementById('typeDocPrincipal').value.trim();
+    const nationalite = document.getElementById('nationalitePrincipal').value.trim();
+    const nb = parseInt(document.getElementById('nbPers').value || '0', 10);
+    const date = document.getElementById('dateArrivee').value;
+
+    const personnes = {};
+    for(let i=2; i<=nb; i++){
+      const nomVal = document.getElementById(`pers${i}Nom`).value.trim();
+      const docVal = document.getElementById(`pers${i}Doc`).value.trim();
+      const typeDocVal = document.getElementById(`pers${i}TypeDoc`).value.trim();
+      const nationaliteVal = document.getElementById(`pers${i}Nationalite`).value.trim();
+      
+      personnes[`pers${i-1}`] = { nom: nomVal, doc: docVal, typeDoc: typeDocVal, nationalite: nationaliteVal };
+    }
+
+    const appart = document.getElementById('invAppart').value;
+    const bat = document.getElementById('invBat').value;
+
+    signatureData = canvas.toDataURL('image/png');
+
+    const rec = { 
+      appart, 
+      bat, 
+      nom, 
+      doc, 
+      typeDoc,
+      nationalite,
+      personnes, 
+      date, 
+      sent:false,
+      signature: signatureData,
+      timestamp: Date.now()
+    };
+
+    try {
+      registerBtn.disabled = true;
+      registerBtn.textContent = '⏳ Enregistrement...';
+
+      const newRecordRef = database.ref('records').push();
+      await newRecordRef.set(rec);
+      
+      const id = newRecordRef.key;
+      rec.id = id;
+      
+      const documentData = generateDocumentHTML(rec);
+      await database.ref('documents/' + id).set({
+        html: documentData,
+        recordId: id,
+        appart: appart,
+        bat: bat,
+        nom: nom,
+        date: rec.date,
+        signature: signatureData,
+        timestamp: Date.now()
+      });
+      
+      await sendAutomaticEmail(rec);
+      
+      document.getElementById('successMessage').classList.remove('hidden');
+      document.getElementById('guestForm').style.display = 'none';
+
+      generateAndOpenPDF(rec);
+      
+      registerBtn.textContent = 'Enregistrer et valider';
+      registerBtn.disabled = false;
+      
+    } catch (error) {
+      showBanner('err',"Erreur lors de l'enregistrement. Réessayez.");
+      registerBtn.textContent = 'Enregistrer et valider';
+      registerBtn.disabled = false;
+    }
+  }
+
+  function setupSignatureEvents() {
+    canvas.addEventListener('mousedown', startDraw);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDraw);
+    canvas.addEventListener('mouseout', stopDraw);
+    
+    canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      startDraw(e);
+    });
+    
+    canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      draw(e);
+    });
+    
+    canvas.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      stopDraw();
+    });
+    
+    clearBtn.addEventListener('click', clearCanvas);
+    registerBtn.addEventListener('click', registerSignature);
+    acceptCheckbox.addEventListener('change', updateRegisterButton);
+    window.addEventListener('resize', initCanvas);
+  }
+
+  async function enterInviteMode(userId){
+    try {
+      const snapshot = await database.ref('users/' + userId).once('value');
+      const user = snapshot.val();
+      
+      if(!user){
+        showBanner('err',"Lien invalide ou utilisateur introuvable.");
+        return;
+      }
+      
+      document.getElementById('loginCard').classList.add('hidden');
+      document.getElementById('invitePanel').classList.remove('hidden');
+      document.getElementById('invAppart').value = user.appart;
+      document.getElementById('invBat').value = user.bat;
+      genererChamps();
+      initCanvas();
+      setupSignatureEvents();
+      hideBanner();
+      
+    } catch (error) {
+      showBanner('err', "Erreur lors du chargement des données utilisateur.");
+    }
+  }
+
+  function genererChamps(){
+    const nb = Math.max(1, parseInt(document.getElementById('nbPers').value || '1', 10));
+    const cont = document.getElementById('personnes');
+    cont.innerHTML = '';
+    
+    for(let i=2; i<=nb; i++){
+      const group = document.createElement('div');
+      group.className = 'person-group';
+      
+      const title = document.createElement('h4');
+      title.textContent = `Personne ${i}`;
+      title.style.marginBottom = '10px';
+      title.style.fontWeight = 'bold';
+      group.appendChild(title);
+      
+      const nomLab = document.createElement('label');
+      nomLab.textContent = 'Nom & Prénom *';
+      group.appendChild(nomLab);
+      
+      const nomInp = document.createElement('input');
+      nomInp.type = 'text';
+      nomInp.id = `pers${i}Nom`;
+      nomInp.required = true;
+      nomInp.className = 'guest-input';
+      nomInp.placeholder = `Nom complet personne ${i}`;
+      group.appendChild(nomInp);
+      
+      const docTypeLab = document.createElement('label');
+      docTypeLab.textContent = 'Type de document *';
+      docTypeLab.style.marginTop = '10px';
+      group.appendChild(docTypeLab);
+      
+      const docTypeInp = document.createElement('select');
+      docTypeInp.id = `pers${i}TypeDoc`;
+      docTypeInp.required = true;
+      docTypeInp.className = 'guest-input';
+      docTypeInp.innerHTML = `
+        <option value="">Sélectionner</option>
+        <option value="Passeport">Passeport</option>
+        <option value="Carte d'identité">Carte d'identité</option>
+      `;
+      group.appendChild(docTypeInp);
+      
+      const docLab = document.createElement('label');
+      docLab.textContent = 'Numéro de document *';
+      docLab.style.marginTop = '10px';
+      group.appendChild(docLab);
+      
+      const docInp = document.createElement('input');
+      docInp.type = 'text';
+      docInp.id = `pers${i}Doc`;
+      docInp.required = true;
+      docInp.className = 'guest-input';
+      docInp.placeholder = `Document personne ${i}`;
+      group.appendChild(docInp);
+      
+      const nationaliteLab = document.createElement('label');
+      nationaliteLab.textContent = 'Nationalité *';
+      nationaliteLab.style.marginTop = '10px';
+      group.appendChild(nationaliteLab);
+      
+      const nationaliteInp = document.createElement('input');
+      nationaliteInp.type = 'text';
+      nationaliteInp.id = `pers${i}Nationalite`;
+      nationaliteInp.required = true;
+      nationaliteInp.className = 'guest-input';
+      nationaliteInp.placeholder = `Nationalité personne ${i}`;
+      group.appendChild(nationaliteInp);
+      
+      cont.appendChild(group);
+    }
+  }
+
+  function buildMessage(rec){
+    const nb = rec.personnes ? Object.keys(rec.personnes).length + 1 : 1;
+    const nomPrincipal = rec.nom;
+    const docPrincipal = rec.doc;
+    const typeDocPrincipal = rec.typeDoc || 'Document';
+    const nationalitePrincipal = rec.nationalite || 'Non spécifié';
+    const autres = rec.personnes ? Object.values(rec.personnes).map(p => `${p.nom} (${p.typeDoc}) - ${p.doc} - ${p.nationalite}`) : [];
+    
+    let message = `Salam :
+    
+Arrivée: ${rec.date}
+Appartement: ${rec.appart}
+Imm: ${rec.bat}
+Nombre de personnes: ${nb} personnes
+
+Réservation au nom de:
+Nom et Prénom: ${nomPrincipal}
+Type de document: ${typeDocPrincipal}
+Numéro: ${docPrincipal}
+Nationalité: ${nationalitePrincipal}
+`;
+
+    if (autres.length > 0) {
+      message += "\nAutres personnes:\n";
+      autres.forEach((personne, index) => {
+        message += `${index + 1}. ${personne}\n`;
+      });
+    }
+
+    message += `
+NB : Svp pas d'autres personnes autorisées seul Les personnes figurent dans la réservation.
+
+Merci
+------------------------------------------
+السلام عليكم:
+
+الوصول: ${rec.date}
+الشقة: ${rec.appart}
+رقم العمارة: ${rec.bat}
+عدد الأشخاص: ${nb} أشخاص
+
+الحجز باسم:
+الإسم و اللقب: ${nomPrincipal}
+نوع الوثيقة: ${typeDocPrincipal}
+الرقم: ${docPrincipal}
+الجنسية: ${nationalitePrincipal}
+`;
+
+    if (autres.length > 0) {
+      message += "\nأشخاص آخرون:\n";
+      autres.forEach((personne, index) => {
+        message += `${index + 1}. ${personne}\n`;
+      });
+    }
+
+    message += `
+ملاحظة: الرجاء عدم السماح لأي أشخاص آخرين، فقط الأشخاص المذكورين في الحجز.
+
+شكرًا.`;
+
+    return message;
+  }
+
+  function generateDocumentHTML(rec) {
+    const totalPersons = rec.personnes ? Object.keys(rec.personnes).length + 1 : 1;
+    const now = new Date();
+    
+    return `
+<div class="doc-title">PREMIUM VILLAGE - RÈGLEMENT INTÉRIEUR ET INFORMATIONS DE RÉSERVATION</div>
+
+<div class="doc-info">
+  <p><strong>Date de réservation :</strong> ${now.toLocaleDateString('fr-FR')}</p>
+  <p><strong>Appartement :</strong> ${rec.appart} - Immeuble : ${rec.bat}</p>
+  <p><strong>Nom du réservateur :</strong> ${rec.nom}</p>
+  <p><strong>Type de document :</strong> ${rec.typeDoc}</p>
+  <p><strong>Numéro de document :</strong> ${rec.doc}</p>
+  <p><strong>Nombre de personnes :</strong> ${totalPersons}</p>
+  <p><strong>Date d'arrivée :</strong> ${rec.date}</p>
+</div>
+
+<div class="doc-section">
+  <div class="doc-section-title">Règlement intérieur accepté :</div>
+  <ul>
+    <li><strong>1. Si vous êtes dit Couples marocains :</strong> selon la loi marocain Ce logement autorise que les les couples mariés t.</li>
+    <li><strong>2. Tranquillité et bruit :</strong> Silence total obligatoire après 23h00. Pas de musique forte, cris ou nuisances sonores à toute heure.</li>
+    <li><strong>3. Tabagisme :</strong> Fumer est strictement interdit à l'intérieur. Autorisé uniquement en extérieur (terrasse ou jardin), avec obligation de nettoyer les mégots et cendres.</li>
+    <li><strong>4. Nombre de personnes :</strong> Maximum 5 personnes autorisées dans l'appartement.</li>
+    <li><strong>5. Piscine :</strong> Douche obligatoire avant la baignade. Pas de verre ni objets fragiles autour de la piscine. Surveillance permanente des enfants par un adulte. Horaires : fermeture à 20h00. Pas de courses ni plongeons.</li>
+    <li><strong>6. Propreté et entretien :</strong> Maintenir les lieux propres en permanence. Vider régulièrement les poubelles. Respecter les sols et surfaces (pas de traces, pas de nourriture hors cuisine).</li>
+  </ul>
+</div>
+
+<div class="doc-section">
+  <div class="doc-section-title">Consentement aux données :</div>
+  <p>Je consente au traitement de mes données personnelles conformément à la loi marocaine n° 09-08 relative à la protection des personnes physiques à l'égard du traitement des données à caractère personnel, ainsi qu'aux dispositions de la loi 31-08 édictant des mesures de protection des consommateurs.</p>
+</div>
+
+<div class="doc-signature">
+  <p><strong>${rec.nom}</strong></p>
+  <p>Date : ${now.toLocaleDateString('fr-FR')}</p>
+  <div class="doc-signature-box">
+    <img src="${rec.signature || ''}" alt="Signature" style="max-width: 100%; max-height: 100%; border: 2px solid #000;" />
+  </div>
+</div>
+`;
+  }
+
+  function generateAndOpenPDF(rec) {
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    let yPos = 20;
+    
+    pdf.setFontSize(20);
+    pdf.setTextColor(44, 62, 80);
+    pdf.text('PREMIUM VILLAGE', 105, yPos, { align: 'center' });
+    yPos += 10;
+    
+    pdf.setFontSize(16);
+    pdf.text('RÈGLEMENT INTÉRIEUR ET INFORMATIONS DE RÉSERVATION', 105, yPos, { align: 'center' });
+    yPos += 15;
+    
+    pdf.setDrawColor(44, 62, 80);
+    pdf.setLineWidth(1);
+    pdf.line(20, yPos, 190, yPos);
+    yPos += 15;
+    
+    const totalPersons = rec.personnes ? Object.keys(rec.personnes).length + 1 : 1;
+    const now = new Date();
+    
+    pdf.setFontSize(12);
+    pdf.setTextColor(0, 0, 0);
+    
+    pdf.text(`Date de réservation : ${now.toLocaleDateString('fr-FR')}`, 20, yPos);
+    yPos += 8;
+    
+    pdf.text(`Appartement : ${rec.appart} - Immeuble : ${rec.bat}`, 20, yPos);
+    yPos += 8;
+    
+    pdf.text(`Nom du réservateur : ${rec.nom}`, 20, yPos);
+    yPos += 8;
+    
+    pdf.text(`Type de document : ${rec.typeDoc}`, 20, yPos);
+    yPos += 8;
+    
+    pdf.text(`Numéro de document : ${rec.doc}`, 20, yPos);
+    yPos += 8;
+    
+    pdf.text(`Nombre de personnes : ${totalPersons}`, 20, yPos);
+    yPos += 8;
+    
+    pdf.text(`Date d'arrivée : ${rec.date}`, 20, yPos);
+    yPos += 15;
+    
+    pdf.setFontSize(14);
+    pdf.setTextColor(44, 62, 80);
+    pdf.text('RÈGLEMENT INTÉRIEUR ACCEPTÉ :', 20, yPos);
+    yPos += 10;
+    
+    pdf.setFontSize(12);
+    const rules = [
+      '1. Si vous êtes des Couples marocains:',
+      'selon la loi marocaine ce logement autorise que    les couples mariés .',
+      'marocaine seulement.',
+      '',
+      '2. Tranquillité et bruit',
+      'Silence total obligatoire après 23h00. Pas de musique forte, cris ou',
+      'nuisances sonores à toute heure.',
+      '',
+      '3. Tabagisme',
+      'Fumer est strictement interdit à l\'intérieur. Autorisé uniquement en',
+      'extérieur (terrasse ou jardin), avec obligation de nettoyer les mégots',
+      'et cendres.',
+      '',
+      '4. Nombre de personnes',
+      'Maximum 5 personnes autorisées dans l\'appartement.',
+      '',
+      '5. Piscine',
+      'Douche obligatoire avant la baignade.',
+      'Pas de verre ni objets fragiles autour de la piscine.',
+      'Surveillance permanente des enfants par un adulte.',
+      'Horaires : fermeture à 20h00.',
+      'Pas de courses ni plongeons.',
+      '',
+      '6. Propreté et entretien',
+      'Maintenir les lieux propres en permanence.',
+      'Vider régulièrement les poubelles.',
+      'Respecter les sols et surfaces (pas de traces, pas de nourriture hors cuisine).'
+    ];
+
+    rules.forEach(line => {
+      if (yPos > 250) {
+        pdf.addPage();
+        yPos = 20;
+      }
+      pdf.text(line, 20, yPos);
+      yPos += line === '' ? 5 : 7;
+    });
+    
+    yPos += 10;
+    
+    if (yPos > 200) {
+      pdf.addPage();
+      yPos = 20;
+    }
+    
+    pdf.setFontSize(14);
+    pdf.setTextColor(44, 62, 80);
+    pdf.text('CONSENTEMENT AUX DONNÉES :', 20, yPos);
+    yPos += 10;
+    
+    pdf.setFontSize(12);
+    pdf.text('Je consente au traitement de mes données personnelles conformément à la', 20, yPos);
+    yPos += 7;
+    pdf.text('loi marocaine n° 09-08 relative à la protection des personnes physiques', 20, yPos);
+    yPos += 7;
+    pdf.text('à l\'égard du traitement des données à caractère personnel, ainsi qu\'aux', 20, yPos);
+    yPos += 7;
+    pdf.text('dispositions de la loi 31-08 édictant des mesures de protection des', 20, yPos);
+    yPos += 7;
+    pdf.text('consommateurs.', 20, yPos);
+    yPos += 15;
+    
+    pdf.text(`${rec.nom}`, 20, yPos);
+    yPos += 8;
+    
+    pdf.text(`Date : ${now.toLocaleDateString('fr-FR')}`, 20, yPos);
+    yPos += 15;
+    
+    try {
+      const imgWidth = 80;
+      const imgHeight = 40;
+      if (rec.signature && rec.signature.startsWith('data:image')) {
+        pdf.addImage(rec.signature, 'PNG', 20, yPos, imgWidth, imgHeight);
+        pdf.setDrawColor(0, 0, 0);
+        pdf.setLineWidth(2);
+        pdf.rect(20, yPos, imgWidth, imgHeight);
+      }
+    } catch (e) {
+      console.log('Erreur avec la signature:', e);
+    }
+    
+    const pdfBlob = pdf.output('blob');
+    const pdfUrl = URL.createObjectURL(pdfBlob);
+    
+    window.open(pdfUrl, '_blank');
+  }
+
+  async function afficherDocument(id) {
+    try {
+      const recordSnapshot = await database.ref('records/' + id).once('value');
+      const record = recordSnapshot.val();
+      
+      if (record) {
+        const html = generateDocumentHTML(record);
+        document.getElementById('documentPreview').innerHTML = html;
+        currentDocumentData = record;
+        currentDocumentData.id = id;
+        document.getElementById('docActions').classList.remove('hidden');
+      } else {
+        document.getElementById('documentPreview').innerHTML = '<p>Document non trouvé.</p>';
+        document.getElementById('docActions').classList.add('hidden');
+      }
+    } catch (error) {
+      document.getElementById('documentPreview').innerHTML = '<p>Erreur de chargement du document.</p>';
+      document.getElementById('docActions').classList.add('hidden');
+    }
+  }
+
+  function downloadCurrentDocument() {
+    if (!currentDocumentData) return;
+    
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    let yPos = 20;
+    
+    pdf.setFontSize(20);
+    pdf.setTextColor(44, 62, 80);
+    pdf.text('PREMIUM VILLAGE', 105, yPos, { align: 'center' });
+    yPos += 10;
+    
+    pdf.setFontSize(16);
+    pdf.text('RÈGLEMENT INTÉRIEUR ET INFORMATIONS DE RÉSERVATION', 105, yPos, { align: 'center' });
+    yPos += 15;
+    
+    pdf.setDrawColor(44, 62, 80);
+    pdf.setLineWidth(1);
+    pdf.line(20, yPos, 190, yPos);
+    yPos += 15;
+    
+    const totalPersons = currentDocumentData.personnes ? Object.keys(currentDocumentData.personnes).length + 1 : 1;
+    const now = new Date();
+    
+    pdf.setFontSize(12);
+    pdf.setTextColor(0, 0, 0);
+    
+    pdf.text(`Date de réservation : ${now.toLocaleDateString('fr-FR')}`, 20, yPos);
+    yPos += 8;
+    
+    pdf.text(`Appartement : ${currentDocumentData.appart} - Immeuble : ${currentDocumentData.bat}`, 20, yPos);
+    yPos += 8;
+    
+    pdf.text(`Nom du réservateur : ${currentDocumentData.nom}`, 20, yPos);
+    yPos += 8;
+    
+    pdf.text(`Type de document : ${currentDocumentData.typeDoc}`, 20, yPos);
+    yPos += 8;
+    
+    pdf.text(`Numéro de document : ${currentDocumentData.doc}`, 20, yPos);
+    yPos += 8;
+    
+    pdf.text(`Nombre de personnes : ${totalPersons}`, 20, yPos);
+    yPos += 8;
+    
+    pdf.text(`Date d'arrivée : ${currentDocumentData.date}`, 20, yPos);
+    yPos += 15;
+    
+    pdf.setFontSize(14);
+    pdf.setTextColor(44, 62, 80);
+    pdf.text('RÈGLEMENT INTÉRIEUR ACCEPTÉ :', 20, yPos);
+    yPos += 10;
+    
+    pdf.setFontSize(12);
+    const rules = [
+      '1. Si vous êtes Couples marocains:',
+      '.selon la loi marocain Ce logement autorise que les les couples mariés',
+      'marocaine seulement.',
+      '',
+      '2. Tranquillité et bruit',
+      'Silence total obligatoire après 23h00. Pas de musique forte, cris ou',
+      'nuisances sonores à toute heure.',
+      '',
+      '3. Tabagisme',
+      'Fumer est strictement interdit à l\'intérieur. Autorisé uniquement en',
+      'extérieur (terrasse ou jardin), avec obligation de nettoyer les mégots',
+      'et cendres.',
+      '',
+      '4. Nombre de personnes',
+      'Maximum 5 personnes autorisées dans l\'appartement.',
+      '',
+      '5. Piscine',
+      'Douche obligatoire avant la baignade.',
+      'Pas de verre ni objets fragiles autour de la piscine.',
+      'Surveillance permanente des enfants par un adulte.',
+      'Horaires : fermeture à 20h00.',
+      'Pas de courses ni plongeons.',
+      '',
+      '6. Propreté et entretien',
+      'Maintenir les lieux propres en permanence.',
+      'Vider régulièrement les poubelles.',
+      'Respecter les sols et surfaces (pas de traces, pas de nourriture hors cuisine).'
+    ];
+
+    rules.forEach(line => {
+      if (yPos > 250) {
+        pdf.addPage();
+        yPos = 20;
+      }
+      pdf.text(line, 20, yPos);
+      yPos += line === '' ? 5 : 7;
+    });
+    
+    yPos += 10;
+    
+    if (yPos > 200) {
+      pdf.addPage();
+      yPos = 20;
+    }
+    
+    pdf.setFontSize(14);
+    pdf.setTextColor(44, 62, 80);
+    pdf.text('CONSENTEMENT AUX DONNÉES :', 20, yPos);
+    yPos += 10;
+    
+    pdf.setFontSize(12);
+    pdf.text('Je consente au traitement de mes données personnelles conformément à la', 20, yPos);
+    yPos += 7;
+    pdf.text('loi marocaine n° 09-08 relative à la protection des personnes physiques', 20, yPos);
+    yPos += 7;
+    pdf.text('à l\'égard du traitement des données à caractère personnel, ainsi qu\'aux', 20, yPos);
+    yPos += 7;
+    pdf.text('dispositions de la loi 31-08 édictant des mesures de protection des', 20, yPos);
+    yPos += 7;
+    pdf.text('consommateurs.', 20, yPos);
+    yPos += 15;
+    
+    pdf.text(`${currentDocumentData.nom}`, 20, yPos);
+    yPos += 8;
+    
+    pdf.text(`Date : ${now.toLocaleDateString('fr-FR')}`, 20, yPos);
+    yPos += 15;
+    
+    try {
+      const imgWidth = 80;
+      const imgHeight = 40;
+      if (currentDocumentData.signature && currentDocumentData.signature.startsWith('data:image')) {
+        pdf.addImage(currentDocumentData.signature, 'PNG', 20, yPos, imgWidth, imgHeight);
+        pdf.setDrawColor(0, 0, 0);
+        pdf.setLineWidth(2);
+        pdf.rect(20, yPos, imgWidth, imgHeight);
+      }
+    } catch (e) {
+      console.log('Erreur avec la signature:', e);
+    }
+    
+    pdf.save(`premium_village_document_${currentDocumentData.nom.replace(/\s+/g, '_')}.pdf`);
+  }
+
+  function viewCurrentDocument() {
+    if (!currentDocumentData) return;
+    generateAndOpenPDF(currentDocumentData);
+  }
+
+  async function envoyerWhatsApp(id){
+    try {
+      const snapshot = await database.ref('records/' + id).once('value');
+      const r = snapshot.val();
+      
+      if(!r){ 
+        showBanner('err',"Enregistrement introuvable."); 
+        return; 
+      }
+      
+      const msg = buildMessage(r);
+      const url = "https://wa.me/?text=" + encodeURIComponent(msg);
+      window.open(url, "_blank");
+      
+      await database.ref('records/' + id).update({ sent: true });
+      
+      if(currentUser.role === 'admin') refreshAdmin();
+      else refreshUser();
+    } catch (error) {
+      showBanner('err',"Erreur de lecture de l'enregistrement.");
+    }
+  }
+
+  document.getElementById('btnLogin').disabled = false;
+  
+  const params = new URLSearchParams(location.search);
+  if(params.has("invite")) {
+    enterInviteMode(params.get("invite"));
+  }
+</script>
 </body>
 </html>
-```
-
-Commentaires sur les corrections apportées :
-
-1. Problème de sécurité : Le mot de passe Hhhhj était visible en clair. Maintenant, les mots de passe sont hashés avec password_hash().
-2. Validation améliorée :
-   · Vérification que tous les champs sont remplis
-   · Vérification que l'utilisateur n'existe pas déjà (même immeuble/appartement)
-3. Gestion des erreurs : Messages d'erreur plus explicites avec distinction entre :
-   · Erreurs de validation
-   · Erreurs techniques (base de données)
-4. Interface améliorée :
-   · Messages de succès/erreur stylisés
-   · Réinitialisation des champs après succès
-   · Affichage conditionnel des tables (message si vide)
-5. Structure de base de données recommandée :
-
-```sql
-CREATE TABLE utilisateurs (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    immeuble VARCHAR(50) NOT NULL,
-    appartement VARCHAR(50) NOT NULL,
-    mot_de_passe VARCHAR(255) NOT NULL,
-    actif TINYINT(1) DEFAULT 1,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY unique_immeuble_appartement (immeuble, appartement)
-);
-
-CREATE TABLE invites (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    immeuble VARCHAR(50) NOT NULL,
-    appartement VARCHAR(50) NOT NULL,
-    nom VARCHAR(100) NOT NULL,
-    document VARCHAR(100),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-Le script est maintenant sécurisé, robuste et prêt à l'emploi.
