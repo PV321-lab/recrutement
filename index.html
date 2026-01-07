@@ -1,4 +1,4 @@
-
+<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
@@ -289,71 +289,52 @@
               <input type="number" id="maxRecords" min="1" value="10" />
             </div>
             <div class="col">
-              <label>Nouveau mot de passe</label>
-              <input type="password" id="newPassword" placeholder="Nouveau mot de passe" />
+              <label>Nouveau mot de passe (optionnel)</label>
+              <input type="password" id="newPassword" placeholder="Laisser vide pour ne pas changer" />
             </div>
           </div>
-          <button onclick="updateUserSettings()">Mettre à jour les paramètres</button>
-          <p id="settingsMsg" class="banner info hidden"></p>
+          <button onclick="updateUserSettings()">Enregistrer les paramètres</button>
+          <p id="settingsMsg" class="banner hidden"></p>
         </div>
-      </div>
-
-      <div class="card">
-        <div class="toolbar">
-          <div><strong>Configuration Email Automatique</strong></div>
-        </div>
+        
         <div class="email-settings">
-          <div class="row">
-            <div class="col">
-              <label>Activer les notifications par email</label>
-              <select id="enableEmail" onchange="toggleEmailFields()">
-                <option value="non">Non</option>
-                <option value="oui">Oui</option>
-              </select>
-            </div>
-          </div>
+          <h4>Notifications par Email (Gmail)</h4>
+          <p class="note">Recevez une notification quand un invité s'enregistre.</p>
+          
+          <label>Activer les notifications</label>
+          <select id="enableEmail" onchange="toggleEmailFields()">
+            <option value="non">Non</option>
+            <option value="oui">Oui</option>
+          </select>
+          
           <div id="emailFields" class="hidden">
             <div class="smtp-info">
-              <strong>Configuration SMTP (Gmail) :</strong><br>
-              Serveur SMTP: smtp.gmail.com<br>
-              Port: 587 (TLS) ou 465 (SSL)<br>
-              Authentification requise: Oui<br>
-              <strong>IMPORTANT:</strong> Activez l'accès aux applications moins sécurisées dans votre compte Gmail ou utilisez un mot de passe d'application.
+              <strong>Important :</strong> Pour Gmail, utilisez un "Mot de passe d'application". 
+              <a href="https://myaccount.google.com/apppasswords" target="_blank">Générer ici</a>
             </div>
-            <div class="row">
-              <div class="col">
-                <label>Votre adresse Gmail</label>
-                <input type="email" id="userEmail" placeholder="votre@gmail.com" />
-              </div>
-              <div class="col">
-                <label>Mot de passe Gmail / Mot de passe d'application</label>
-                <input type="password" id="emailPassword" placeholder="Mot de passe" />
-              </div>
-            </div>
-            <div class="row">
-              <div class="col">
-                <label>Email du gardien (destinataire)</label>
-                <input type="email" id="guardEmail" placeholder="gardien@premiumvillage.com" />
-              </div>
-            </div>
-            <button onclick="saveEmailSettings()">Enregistrer les paramètres email</button>
-            <button onclick="testEmailSettings()" style="background: #f39c12; margin-left: 10px;">Tester l'envoi</button>
+            
+            <label>Votre adresse Gmail</label>
+            <input type="email" id="userEmail" placeholder="exemple@gmail.com" />
+            
+            <label>Mot de passe d'application Gmail</label>
+            <input type="password" id="emailPassword" placeholder="xxxx xxxx xxxx xxxx" />
+            
+            <label>Email du destinataire (ex: Sécurité)</label>
+            <input type="email" id="guardEmail" placeholder="securite@exemple.com" />
           </div>
-          <p id="emailMsg" class="banner info hidden"></p>
+          
+          <div class="row" style="margin-top: 15px;">
+            <button onclick="saveEmailSettings()" style="flex: 1;">Enregistrer Email</button>
+            <button onclick="testEmailSettings()" style="flex: 1; background: var(--ok);">Tester l'envoi</button>
+          </div>
+          <p id="emailMsg" class="banner hidden"></p>
         </div>
-      </div>
-
-      <div class="card">
-        <div class="toolbar">
-          <div><strong>Générer un lien d'invitation</strong></div>
-        </div>
-        <button onclick="genererLien()">Générer le lien</button>
-        <p id="lienInvite"></p>
       </div>
 
       <div class="card">
         <div class="toolbar">
           <div><strong>Mes enregistrements</strong></div>
+          <button onclick="genererLien()" style="background: var(--ok);">Générer lien invité</button>
         </div>
         <table id="tableUser">
           <thead>
@@ -427,7 +408,7 @@
             <div class="rules-container">
               <h4>Règlement intérieur à respecter :</h4>
               <ul>
-                <li><strong>1. Si vous êtes des Couples marocains: :</strong> selon la loi marocaine Ce logement autoris  que les couples  mariés . </li>
+                <li><strong>1. Si vous êtes des Couples marocains: :</strong> selon la loi marocaine Ce logement autorise que les couples mariés . </li>
                 <li><strong>2. Tranquillité et bruit :</strong> Silence total obligatoire après 23h00. Pas de musique forte, cris ou nuisances sonores à toute heure.</li>
                 <li><strong>3. Tabagisme :</strong> Fumer est strictement interdit à l'intérieur. Autorisé uniquement en extérieur (terrasse ou jardin), avec obligation de nettoyer les mégots et cendres.</li>
                 <li><strong>4. Nombre de personnes :</strong> Maximum 5 personnes autorisées dans l'appartement.</li>
@@ -478,11 +459,11 @@
     <div class="card">
       <h3>Document Signé - Premium Village</h3>
       <div id="documentPreview" class="document-preview">
-        <p>Sélectionnez un enregistrement pour voir le document.</p>
+        <p style="text-align: center; color: #666;">Sélectionnez un enregistrement pour voir le document.</p>
       </div>
       <div id="docActions" class="doc-actions hidden">
-        <button id="downloadDocBtn" onclick="downloadCurrentDocument()">Télécharger PDF</button>
-        <button id="viewDocBtn" onclick="viewCurrentDocument()">Ouvrir dans un nouvel onglet</button>
+        <button onclick="downloadCurrentDocument()" style="background: var(--ok);">Télécharger PDF</button>
+        <button onclick="partagerWhatsApp()" style="background: #25D366;">Partager WhatsApp</button>
       </div>
     </div>
   </div>
@@ -491,7 +472,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <script>
-  
   const firebaseConfig = {
     apiKey: "AIzaSyDbJe_e0Uz5YavmQDwabym11FStEPjxo2E",
     authDomain: "invitedb-6ce9f.firebaseapp.com",
@@ -514,7 +494,6 @@
   const database = firebase.database();
   const AUTH_EMAIL = "maraminho10@gmail.com";
   const AUTH_PASS = "M@ra10";
-
 
   let currentUser = null;
   const SESSION_TIMEOUT_MS = 10 * 60 * 1000;
@@ -582,7 +561,6 @@
     if(!expired) showBanner('info', "Vous êtes déconnecté.");
   }
 
-  
   async function login(){
     hideInlineMsg('loginMsg');
     const u = document.getElementById('loginUser').value.trim();
@@ -600,7 +578,6 @@
     try {
       // 1. Priorité Admin/Admin
       if(u === 'admin' && p === 'admin'){
-        // Authentification Firebase en arrière-plan pour l'admin
         try {
           await firebase.auth().signInWithEmailAndPassword(AUTH_EMAIL, AUTH_PASS);
         } catch (e) {
@@ -663,7 +640,6 @@
       btn.textContent = "Connexion";
     }
   }
-
 
   function toggleEmailFields(){
     const enableEmail = document.getElementById('enableEmail').value;
@@ -796,188 +772,105 @@
       
       refreshUser();
     } catch (error) {
-      showInlineMsg('settingsMsg','err',"Erreur lors de la mise à jour des paramètres.");
+      showInlineMsg('settingsMsg','err',"Erreur lors de la mise à jour.");
     }
   }
 
   async function creerUtilisateur(){
-    hideInlineMsg('userWarn');
-    const appart = (document.getElementById('appartAdmin').value || '').trim();
-    const bat = (document.getElementById('batAdmin').value || '').trim();
-    const pass = (document.getElementById('passAdmin').value || '').trim();
+    const app = document.getElementById('appartAdmin').value.trim();
+    const bat = document.getElementById('batAdmin').value.trim();
+    const pass = document.getElementById('passAdmin').value.trim();
+    if(!app || !bat || !pass) return;
     
-    if(!appart || !bat || !pass){
-      showInlineMsg('userWarn','warn',"Tous les champs utilisateur sont obligatoires.");
-      return;
-    }
-    
-    if(pass.length < 4){
-      showInlineMsg('userWarn','warn',"Le mot de passe doit contenir au moins 4 caractères.");
-      return;
-    }
-    
-    const userId = appart + bat;
-    
+    const id = app + bat;
     try {
-      const snapshot = await database.ref('users/' + userId).once('value');
-      
-      if(snapshot.exists()){
-        showInlineMsg('userWarn','warn',`L'utilisateur ${userId} existe déjà.`);
-      } else {
-        await database.ref('users/' + userId).set({
-          user: userId,
-          appart: appart,
-          bat: bat,
-          pass: pass
-        });
-        
-        await database.ref('settings/' + userId).set({
-          maxRecords: 10
-        });
-        
-        showBanner('ok', `Utilisateur ${userId} créé.`);
-        refreshAdmin();
-      }
-    } catch (error) {
-      showInlineMsg('userWarn','err',"Erreur lors de la création de l'utilisateur.");
+      await database.ref('users/' + id).set({ appart:app, bat:bat, pass:pass });
+      document.getElementById('appartAdmin').value = '';
+      document.getElementById('batAdmin').value = '';
+      document.getElementById('passAdmin').value = '';
+      refreshAdmin();
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async function supprimerUtilisateur(id){
+    if(confirm("Supprimer cet utilisateur ?")) {
+      await database.ref('users/' + id).remove();
+      refreshAdmin();
     }
   }
 
   async function refreshAdmin(){
-    const tbodyU = document.querySelector('#tableUsers tbody');
-    tbodyU.innerHTML = '';
-    
-    try {
-      const usersSnapshot = await database.ref('users').once('value');
-      const users = usersSnapshot.val() || {};
-      
-      let counter = 1;
-      for(const [userId, user] of Object.entries(users)){
-        const resetBtn = `<button onclick="adminResetPassword('${userId}')" style="background: #e74c3c; margin-left: 5px;">Réinitialiser</button>`;
-        tbodyU.insertAdjacentHTML('beforeend',
-          `<tr><td>${counter++}</td><td>${user.appart}</td><td>${user.bat}</td><td>${user.pass}</td><td>${resetBtn}</td></tr>`);
-      }
-    } catch (error) {
-      showBanner('err', "Erreur lors du chargement des utilisateurs.");
-    }
-
-    const tbody = document.querySelector('#tableAdmin tbody');
+    const snap = await database.ref('users').once('value');
+    const users = snap.val() || {};
+    const tbody = document.querySelector('#tableUsers tbody');
     tbody.innerHTML = '';
-    
-    try {
-      const recordsSnapshot = await database.ref('records').once('value');
-      const records = recordsSnapshot.val() || {};
-      
-      let counter = 1;
-      Object.entries(records).slice(-200).forEach(([id, r]) => {
-        const personnesList = r.personnes ? Object.values(r.personnes).map(p => `${p.nom} (${p.typeDoc}) - ${p.doc}`).join(', ') : '';
-        const sendBtn = `<button onclick="envoyerWhatsApp('${id}')">Envoyer</button>`;
-        const viewBtn = `<button onclick="afficherDocument('${id}')">Voir doc</button>`;
-        
-        tbody.insertAdjacentHTML('beforeend',
-          `<tr>
-            <td>${counter++}</td>
-            <td>${r.appart}</td>
-            <td>${r.bat}</td>
-            <td>${r.nom}</td>
-            <td>${r.doc}</td>
-            <td>${r.typeDoc || 'Non spécifié'}</td>
-            <td>${r.nationalite || 'Non spécifié'}</td>
-            <td>${r.personnes ? Object.keys(r.personnes).length + 1 : 1}</td>
-            <td>${personnesList}</td>
-            <td>${r.date}</td>
-            <td>${viewBtn}</td>
-            <td>${sendBtn}</td>
-            <td>${r.sent ? "Envoyé" : "Non envoyé"}</td>
-          </tr>`);
-      });
-    } catch (error) {
-      showBanner('err', "Erreur lors du chargement des enregistrements.");
+    let i = 1;
+    for(let id in users){
+      const u = users[id];
+      tbody.innerHTML += `<tr><td>${i++}</td><td>${u.appart}</td><td>${u.bat}</td><td>${u.pass}</td><td><button class="btn-delete" onclick="supprimerUtilisateur('${id}')">Supprimer</button></td></tr>`;
     }
-  }
 
-  async function adminResetPassword(userId){
-    const newPass = prompt(`Veuillez entrer le nouveau mot de passe pour l'utilisateur ${userId}:`);
-    if(newPass && newPass.length >= 4){
-      try {
-        await database.ref('users/' + userId).update({ pass: newPass });
-        showBanner('ok', `Mot de passe de ${userId} mis à jour.`);
-        refreshAdmin();
-      } catch (error) {
-        showBanner('err', "Erreur lors de la mise à jour du mot de passe.");
-      }
-    } else if(newPass){
-      showBanner('warn', "Le mot de passe doit contenir au moins 4 caractères.");
+    const snapRec = await database.ref('records').once('value');
+    const records = snapRec.val() || {};
+    const tbodyAdmin = document.querySelector('#tableAdmin tbody');
+    tbodyAdmin.innerHTML = '';
+    let j = 1;
+    const sortedKeys = Object.keys(records).sort((a,b) => records[b].timestamp - records[a].timestamp);
+    for(let id of sortedKeys){
+      const r = records[id];
+      const persStr = r.personnes ? Object.values(r.personnes).map(p => p.nom).join(', ') : '-';
+      const nbPers = r.personnes ? Object.keys(r.personnes).length + 1 : 1;
+      tbodyAdmin.innerHTML += `<tr>
+        <td>${j++}</td><td>${r.appart}</td><td>${r.bat}</td><td>${r.nom}</td><td>${r.doc}</td><td>${r.typeDoc}</td><td>${r.nationalite}</td>
+        <td>${nbPers}</td><td>${persStr}</td><td>${r.date}</td>
+        <td><button onclick="afficherDocument('${id}')">Voir</button></td>
+        <td>${r.sent ? '✅ Envoyé' : '⏳ En attente'}</td>
+        <td><button class="btn-delete" onclick="supprimerEnregistrement('${id}')">Suppr.</button></td>
+      </tr>`;
     }
   }
 
   async function refreshUser(){
+    const snap = await database.ref('records').once('value');
+    const records = snap.val() || {};
     const tbody = document.querySelector('#tableUser tbody');
     tbody.innerHTML = '';
-    
-    try {
-      const recordsSnapshot = await database.ref('records').once('value');
-      const records = recordsSnapshot.val() || {};
-      
-      const userRecords = Object.entries(records)
-        .filter(([id, r]) => r.appart === currentUser.appart && r.bat === currentUser.bat);
-      
-      const maxRecords = userSettings.maxRecords || 10;
-      if(userRecords.length >= maxRecords){
-        showInlineMsg('settingsMsg','warn',`Vous avez atteint la limite de ${maxRecords} enregistrements.`);
+    let i = 1;
+    const sortedKeys = Object.keys(records).sort((a,b) => records[b].timestamp - records[a].timestamp);
+    for(let id of sortedKeys){
+      const r = records[id];
+      if(r.appart === currentUser.appart && r.bat === currentUser.bat){
+        const persStr = r.personnes ? Object.values(r.personnes).map(p => p.nom).join(', ') : '-';
+        const nbPers = r.personnes ? Object.keys(r.personnes).length + 1 : 1;
+        tbody.innerHTML += `<tr>
+          <td>${i++}</td><td>${r.nom}</td><td>${r.doc}</td><td>${r.typeDoc}</td><td>${r.nationalite}</td>
+          <td>${nbPers}</td><td>${persStr}</td><td>${r.date}</td>
+          <td><button onclick="afficherDocument('${id}')">Voir</button></td>
+          <td>${r.sent ? '✅ Envoyé' : '⏳ En attente'}</td>
+          <td><button class="btn-delete" onclick="supprimerEnregistrement('${id}')">Suppr.</button></td>
+        </tr>`;
       }
-      
-      let counter = 1;
-      userRecords.slice(-maxRecords).forEach(([id, r]) => {
-        const personnesList = r.personnes ? Object.values(r.personnes).map(p => `${p.nom} (${p.typeDoc}) - ${p.doc}`).join(', ') : '';
-        const sendBtn = `<button onclick="envoyerWhatsApp('${id}')">Envoyer</button>`;
-        const viewBtn = `<button onclick="afficherDocument('${id}')">Voir doc</button>`;
-        const deleteBtn = `<button class="btn-delete" onclick="supprimerEnregistrement('${id}')">Supprimer</button>`;
-        
-        tbody.insertAdjacentHTML('beforeend',
-          `<tr>
-            <td>${counter++}</td>
-            <td>${r.nom}</td>
-            <td>${r.doc}</td>
-            <td>${r.typeDoc || 'Non spécifié'}</td>
-            <td>${r.nationalite || 'Non spécifié'}</td>
-            <td>${r.personnes ? Object.keys(r.personnes).length + 1 : 1}</td>
-            <td>${personnesList}</td>
-            <td>${r.date}</td>
-            <td>${viewBtn}</td>
-            <td>${r.sent ? "Envoyé" : "Non envoyé"}</td>
-            <td>${sendBtn}${deleteBtn}</td>
-          </tr>`);
-      });
-      
-      document.getElementById('maxRecords').value = maxRecords;
-    } catch (error) {
-      showBanner('err', "Erreur de lecture des enregistrements.");
     }
   }
 
-  async function supprimerEnregistrement(id) {
-    if (!confirm("Êtes-vous sûr de vouloir supprimer cet enregistrement ?")) {
-      return;
-    }
-    
-    try {
+  async function supprimerEnregistrement(id){
+    if(confirm("Supprimer cet enregistrement ?")) {
       await database.ref('records/' + id).remove();
       await database.ref('documents/' + id).remove();
-      showBanner('ok', "Enregistrement et document supprimés avec succès.");
-      refreshUser();
-      document.getElementById('documentPreview').innerHTML = '<p>Sélectionnez un enregistrement pour voir le document.</p>';
-      document.getElementById('docActions').classList.add('hidden');
-    } catch (error) {
-      showBanner('err', "Erreur lors de la suppression de l'enregistrement.");
+      if(currentUser.role === 'admin') refreshAdmin(); else refreshUser();
     }
   }
 
   function genererLien(){
-    const base = location.href.split('?')[0];
-    const lien = `${base}?invite=${encodeURIComponent(currentUser.id)}`;
-    const p = document.getElementById('lienInvite');
-    p.innerHTML = `Lien pour vos invités : <a href="${lien}" target="_blank">${lien}</a>`;
+    const url = window.location.origin + window.location.pathname + "?invite=" + currentUser.id;
+    const tempInput = document.createElement('input');
+    tempInput.value = url;
+    document.body.appendChild(tempInput);
+    tempInput.select();
+    document.execCommand('copy');
+    document.body.removeChild(tempInput);
     showBanner('info', "Copiez/partagez ce lien avec vos invités.");
   }
 
@@ -1017,91 +910,56 @@
   function getPos(e) {
     const rect = canvas.getBoundingClientRect();
     let x, y;
-    
-    if (e.type.includes('touch')) {
-      const touch = e.touches[0] || e.changedTouches[0];
-      x = touch.clientX - rect.left;
-      y = touch.clientY - rect.top;
+    if (e.touches && e.touches[0]) {
+      x = e.touches[0].clientX - rect.left;
+      y = e.touches[0].clientY - rect.top;
     } else {
       x = e.clientX - rect.left;
       y = e.clientY - rect.top;
     }
-    
     return { x, y };
   }
 
   function startDraw(e) {
     isDrawing = true;
     const pos = getPos(e);
-    [lastX, lastY] = [pos.x, pos.y];
-    
-    ctx.beginPath();
-    ctx.arc(lastX, lastY, ctx.lineWidth/2, 0, Math.PI*2);
-    ctx.fill();
+    lastX = pos.x;
+    lastY = pos.y;
   }
 
   function draw(e) {
     if (!isDrawing) return;
     e.preventDefault();
-    
     const pos = getPos(e);
-    const currentX = pos.x;
-    const currentY = pos.y;
-    
     ctx.beginPath();
     ctx.moveTo(lastX, lastY);
-    ctx.lineTo(currentX, currentY);
+    ctx.lineTo(pos.x, pos.y);
     ctx.stroke();
-    
-    [lastX, lastY] = [currentX, currentY];
+    lastX = pos.x;
+    lastY = pos.y;
+    hasSignature = true;
+    updateRegisterButton();
   }
 
   function stopDraw() {
-    if (!isDrawing) return;
     isDrawing = false;
-    hasSignature = true;
-    updateRegisterButton();
-    updateSignaturePreview();
-    hideError('signatureError');
-    canvas.classList.remove('error-border');
   }
 
-  function updateSignaturePreview() {
-    const preview = document.getElementById('signaturePreview');
-    const signatureImg = canvas.toDataURL('image/png');
-    preview.innerHTML = `<img src="${signatureImg}" alt="Signature" style="width:100%; height:auto; border: 2px solid #000;" />`;
-    preview.classList.remove('hidden');
-  }
-
-  function showError(elementId, message) {
-    const errorElement = document.getElementById(elementId);
-    errorElement.textContent = message;
-    errorElement.style.display = 'block';
-    const inputElement = document.getElementById(elementId.replace('Error', ''));
-    if(inputElement) {
-      inputElement.classList.add('error-border');
+  function showError(id, msg) {
+    const el = document.getElementById(id);
+    if(el) {
+      el.textContent = msg;
+      el.style.display = 'block';
     }
   }
 
-  function hideError(elementId) {
-    const errorElement = document.getElementById(elementId);
-    errorElement.style.display = 'none';
-    const inputElement = document.getElementById(elementId.replace('Error', ''));
-    if(inputElement) {
-      inputElement.classList.remove('error-border');
-    }
+  function hideError(id) {
+    const el = document.getElementById(id);
+    if(el) el.style.display = 'none';
   }
 
   function validateForm() {
     let isValid = true;
-    
-    const nom = document.getElementById('nomPrincipal').value.trim();
-    if(!nom) {
-      showError('nomPrincipalError', 'Veuillez entrer le nom et prénom');
-      isValid = false;
-    } else {
-      hideError('nomPrincipalError');
-    }
     
     const date = document.getElementById('dateArrivee').value;
     if(!date) {
@@ -1111,15 +969,23 @@
       hideError('dateArriveeError');
     }
     
-    const nb = parseInt(document.getElementById('nbPers').value || '0', 10);
-    if(!Number.isInteger(nb) || nb < 1) {
-      showError('nbPersError', 'Veuillez entrer un nombre valide (minimum 1)');
+    const nbPers = document.getElementById('nbPers').value;
+    if(!nbPers || nbPers < 1) {
+      showError('nbPersError', 'Veuillez entrer le nombre d\'invités (minimum 1)');
       isValid = false;
     } else {
       hideError('nbPersError');
     }
     
-    const typeDoc = document.getElementById('typeDocPrincipal').value.trim();
+    const nom = document.getElementById('nomPrincipal').value.trim();
+    if(!nom) {
+      showError('nomPrincipalError', 'Veuillez entrer le nom et prénom');
+      isValid = false;
+    } else {
+      hideError('nomPrincipalError');
+    }
+    
+    const typeDoc = document.getElementById('typeDocPrincipal').value;
     if(!typeDoc) {
       showError('typeDocPrincipalError', 'Veuillez sélectionner un type de document');
       isValid = false;
@@ -1143,8 +1009,8 @@
       hideError('nationalitePrincipalError');
     }
     
-    const nbPers = parseInt(document.getElementById('nbPers').value || '1', 10);
-    for(let i=2; i<=nbPers; i++){
+    const nbPersInt = parseInt(nbPers || '1', 10);
+    for(let i=2; i<=nbPersInt; i++){
       const nomVal = (document.getElementById(`pers${i}Nom`)?.value || '').trim();
       const docVal = (document.getElementById(`pers${i}Doc`)?.value || '').trim();
       const typeDocVal = (document.getElementById(`pers${i}TypeDoc`)?.value || '').trim();
@@ -1321,12 +1187,12 @@ Cette réservation a été enregistrée via l'application Premium Village.
     canvas.addEventListener('touchstart', (e) => {
       e.preventDefault();
       startDraw(e);
-    });
+    }, { passive: false });
     
     canvas.addEventListener('touchmove', (e) => {
       e.preventDefault();
       draw(e);
-    });
+    }, { passive: false });
     
     canvas.addEventListener('touchend', (e) => {
       e.preventDefault();
@@ -1341,6 +1207,13 @@ Cette réservation a été enregistrée via l'application Premium Village.
 
   async function enterInviteMode(userId){
     try {
+      // 1. Authentification Firebase en arrière-plan pour l'invité
+      try {
+        await firebase.auth().signInWithEmailAndPassword(AUTH_EMAIL, AUTH_PASS);
+      } catch (e) {
+        console.error("Firebase Auth failed for invite mode:", e);
+      }
+
       const snapshot = await database.ref('users/' + userId).once('value');
       const user = snapshot.val();
       
@@ -1349,6 +1222,12 @@ Cette réservation a été enregistrée via l'application Premium Village.
         return;
       }
       
+      // Charger les paramètres email de l'utilisateur pour l'envoi automatique
+      const emailSnapshot = await database.ref('emailSettings/' + userId).once('value');
+      if(emailSnapshot.exists()){
+        emailSettings = emailSnapshot.val();
+      }
+
       document.getElementById('loginCard').classList.add('hidden');
       document.getElementById('invitePanel').classList.remove('hidden');
       document.getElementById('invAppart').value = user.appart;
@@ -1434,69 +1313,6 @@ Cette réservation a été enregistrée via l'application Premium Village.
       
       cont.appendChild(group);
     }
-  }
-
-  function buildMessage(rec){
-    const nb = rec.personnes ? Object.keys(rec.personnes).length + 1 : 1;
-    const nomPrincipal = rec.nom;
-    const docPrincipal = rec.doc;
-    const typeDocPrincipal = rec.typeDoc || 'Document';
-    const nationalitePrincipal = rec.nationalite || 'Non spécifié';
-    const autres = rec.personnes ? Object.values(rec.personnes).map(p => `${p.nom} (${p.typeDoc}) - ${p.doc} - ${p.nationalite}`) : [];
-    
-    let message = `Salam :
-    
-Arrivée: ${rec.date}
-Appartement: ${rec.appart}
-Imm: ${rec.bat}
-Nombre de personnes: ${nb} personnes
-
-Réservation au nom de:
-Nom et Prénom: ${nomPrincipal}
-Type de document: ${typeDocPrincipal}
-Numéro: ${docPrincipal}
-Nationalité: ${nationalitePrincipal}
-`;
-
-    if (autres.length > 0) {
-      message += "\nAutres personnes:\n";
-      autres.forEach((personne, index) => {
-        message += `${index + 1}. ${personne}\n`;
-      });
-    }
-
-    message += `
-NB : Svp pas d'autres personnes autorisées seul Les personnes figurent dans la réservation.
-
-Merci
-------------------------------------------
-السلام عليكم:
-
-الوصول: ${rec.date}
-الشقة: ${rec.appart}
-رقم العمارة: ${rec.bat}
-عدد الأشخاص: ${nb} أشخاص
-
-الحجز باسم:
-الإسم و اللقب: ${nomPrincipal}
-نوع الوثيقة: ${typeDocPrincipal}
-الرقم: ${docPrincipal}
-الجنسية: ${nationalitePrincipal}
-`;
-
-    if (autres.length > 0) {
-      message += "\nأشخاص آخرون:\n";
-      autres.forEach((personne, index) => {
-        message += `${index + 1}. ${personne}\n`;
-      });
-    }
-
-    message += `
-ملاحظة: الرجاء عدم السماح لأي أشخاص آخرين، فقط الأشخاص المذكورين في الحجز.
-
-شكرًا.`;
-
-    return message;
   }
 
   function generateDocumentHTML(rec) {
@@ -1596,7 +1412,7 @@ Merci
     pdf.setFontSize(12);
     const rules = [
       '1. Si vous êtes des Couples marocains:',
-      'selon la loi marocaine ce logement autorise que    les couples mariés .',
+      'selon la loi marocaine ce logement autorise que les couples mariés .',
       'marocaine seulement.',
       '',
       '2. Tranquillité et bruit',
@@ -1693,6 +1509,7 @@ Merci
         currentDocumentData = record;
         currentDocumentData.id = id;
         document.getElementById('docActions').classList.remove('hidden');
+        document.getElementById('documentColumn').classList.remove('hidden');
       } else {
         document.getElementById('documentPreview').innerHTML = '<p>Document non trouvé.</p>';
         document.getElementById('docActions').classList.add('hidden');
@@ -1705,168 +1522,13 @@ Merci
 
   function downloadCurrentDocument() {
     if (!currentDocumentData) return;
-    
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    let yPos = 20;
-    
-    pdf.setFontSize(20);
-    pdf.setTextColor(44, 62, 80);
-    pdf.text('PREMIUM VILLAGE', 105, yPos, { align: 'center' });
-    yPos += 10;
-    
-    pdf.setFontSize(16);
-    pdf.text('RÈGLEMENT INTÉRIEUR ET INFORMATIONS DE RÉSERVATION', 105, yPos, { align: 'center' });
-    yPos += 15;
-    
-    pdf.setDrawColor(44, 62, 80);
-    pdf.setLineWidth(1);
-    pdf.line(20, yPos, 190, yPos);
-    yPos += 15;
-    
-    const totalPersons = currentDocumentData.personnes ? Object.keys(currentDocumentData.personnes).length + 1 : 1;
-    const now = new Date();
-    
-    pdf.setFontSize(12);
-    pdf.setTextColor(0, 0, 0);
-    
-    pdf.text(`Date de réservation : ${now.toLocaleDateString('fr-FR')}`, 20, yPos);
-    yPos += 8;
-    
-    pdf.text(`Appartement : ${currentDocumentData.appart} - Immeuble : ${currentDocumentData.bat}`, 20, yPos);
-    yPos += 8;
-    
-    pdf.text(`Nom du réservateur : ${currentDocumentData.nom}`, 20, yPos);
-    yPos += 8;
-    
-    pdf.text(`Type de document : ${currentDocumentData.typeDoc}`, 20, yPos);
-    yPos += 8;
-    
-    pdf.text(`Numéro de document : ${currentDocumentData.doc}`, 20, yPos);
-    yPos += 8;
-    
-    pdf.text(`Nombre de personnes : ${totalPersons}`, 20, yPos);
-    yPos += 8;
-    
-    pdf.text(`Date d'arrivée : ${currentDocumentData.date}`, 20, yPos);
-    yPos += 15;
-    
-    pdf.setFontSize(14);
-    pdf.setTextColor(44, 62, 80);
-    pdf.text('RÈGLEMENT INTÉRIEUR ACCEPTÉ :', 20, yPos);
-    yPos += 10;
-    
-    pdf.setFontSize(12);
-    const rules = [
-      '1. Si vous êtes Couples marocains:',
-      '.selon la loi marocain Ce logement autorise que les les couples mariés',
-      'marocaine seulement.',
-      '',
-      '2. Tranquillité et bruit',
-      'Silence total obligatoire après 23h00. Pas de musique forte, cris ou',
-      'nuisances sonores à toute heure.',
-      '',
-      '3. Tabagisme',
-      'Fumer est strictement interdit à l\'intérieur. Autorisé uniquement en',
-      'extérieur (terrasse ou jardin), avec obligation de nettoyer les mégots',
-      'et cendres.',
-      '',
-      '4. Nombre de personnes',
-      'Maximum 5 personnes autorisées dans l\'appartement.',
-      '',
-      '5. Piscine',
-      'Douche obligatoire avant la baignade.',
-      'Pas de verre ni objets fragiles autour de la piscine.',
-      'Surveillance permanente des enfants par un adulte.',
-      'Horaires : fermeture à 20h00.',
-      'Pas de courses ni plongeons.',
-      '',
-      '6. Propreté et entretien',
-      'Maintenir les lieux propres en permanence.',
-      'Vider régulièrement les poubelles.',
-      'Respecter les sols et surfaces (pas de traces, pas de nourriture hors cuisine).'
-    ];
-
-    rules.forEach(line => {
-      if (yPos > 250) {
-        pdf.addPage();
-        yPos = 20;
-      }
-      pdf.text(line, 20, yPos);
-      yPos += line === '' ? 5 : 7;
-    });
-    
-    yPos += 10;
-    
-    if (yPos > 200) {
-      pdf.addPage();
-      yPos = 20;
-    }
-    
-    pdf.setFontSize(14);
-    pdf.setTextColor(44, 62, 80);
-    pdf.text('CONSENTEMENT AUX DONNÉES :', 20, yPos);
-    yPos += 10;
-    
-    pdf.setFontSize(12);
-    pdf.text('Je consente au traitement de mes données personnelles conformément à la', 20, yPos);
-    yPos += 7;
-    pdf.text('loi marocaine n° 09-08 relative à la protection des personnes physiques', 20, yPos);
-    yPos += 7;
-    pdf.text('à l\'égard du traitement des données à caractère personnel, ainsi qu\'aux', 20, yPos);
-    yPos += 7;
-    pdf.text('dispositions de la loi 31-08 édictant des mesures de protection des', 20, yPos);
-    yPos += 7;
-    pdf.text('consommateurs.', 20, yPos);
-    yPos += 15;
-    
-    pdf.text(`${currentDocumentData.nom}`, 20, yPos);
-    yPos += 8;
-    
-    pdf.text(`Date : ${now.toLocaleDateString('fr-FR')}`, 20, yPos);
-    yPos += 15;
-    
-    try {
-      const imgWidth = 80;
-      const imgHeight = 40;
-      if (currentDocumentData.signature && currentDocumentData.signature.startsWith('data:image')) {
-        pdf.addImage(currentDocumentData.signature, 'PNG', 20, yPos, imgWidth, imgHeight);
-        pdf.setDrawColor(0, 0, 0);
-        pdf.setLineWidth(2);
-        pdf.rect(20, yPos, imgWidth, imgHeight);
-      }
-    } catch (e) {
-      console.log('Erreur avec la signature:', e);
-    }
-    
-    pdf.save(`premium_village_document_${currentDocumentData.nom.replace(/\s+/g, '_')}.pdf`);
-  }
-
-  function viewCurrentDocument() {
-    if (!currentDocumentData) return;
     generateAndOpenPDF(currentDocumentData);
   }
 
-  async function envoyerWhatsApp(id){
-    try {
-      const snapshot = await database.ref('records/' + id).once('value');
-      const r = snapshot.val();
-      
-      if(!r){ 
-        showBanner('err',"Enregistrement introuvable."); 
-        return; 
-      }
-      
-      const msg = buildMessage(r);
-      const url = "https://wa.me/?text=" + encodeURIComponent(msg);
-      window.open(url, "_blank");
-      
-      await database.ref('records/' + id).update({ sent: true });
-      
-      if(currentUser.role === 'admin') refreshAdmin();
-      else refreshUser();
-    } catch (error) {
-      showBanner('err',"Erreur de lecture de l'enregistrement.");
-    }
+  function partagerWhatsApp() {
+    if (!currentDocumentData) return;
+    const text = `Bonjour, voici l'enregistrement pour l'appartement ${currentDocumentData.appart} au nom de ${currentDocumentData.nom} pour le ${currentDocumentData.date}.`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   }
 
   document.getElementById('btnLogin').disabled = false;
@@ -1878,4 +1540,3 @@ Merci
 </script>
 </body>
 </html>
-
