@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -483,7 +484,6 @@
     measurementId: "G-BS2EBMM7T3"
   };
   
-  // Initialisation Firebase
   try {
     if (!firebase.apps.length) {
       firebase.initializeApp(firebaseConfig);
@@ -576,7 +576,6 @@
     btn.textContent = "Connexion...";
 
     try {
-      // 1. Priorité Admin/Admin
       if(u === 'admin' && p === 'admin'){
         try {
           await firebase.auth().signInWithEmailAndPassword(AUTH_EMAIL, AUTH_PASS);
@@ -594,10 +593,8 @@
         return;
       }
 
-      // 2. Authentification Firebase pour les autres utilisateurs
       await firebase.auth().signInWithEmailAndPassword(AUTH_EMAIL, AUTH_PASS);
 
-      // 3. Recherche de l'utilisateur dans la base de données
       const snapshot = await database.ref('users/' + u).once('value');
       const user = snapshot.val();
       
@@ -826,8 +823,8 @@
         <td>${j++}</td><td>${r.appart}</td><td>${r.bat}</td><td>${r.nom}</td><td>${r.doc}</td><td>${r.typeDoc}</td><td>${r.nationalite}</td>
         <td>${nbPers}</td><td>${persStr}</td><td>${r.date}</td>
         <td><button onclick="afficherDocument('${id}')">Voir</button></td>
+        <td><button onclick="envoyerWhatsAppAdmin('${id}')" style="background:#25D366;">WhatsApp</button><button class="btn-delete" onclick="supprimerEnregistrement('${id}')">Suppr.</button></td>
         <td>${r.sent ? '✅ Envoyé' : '⏳ En attente'}</td>
-        <td><button class="btn-delete" onclick="supprimerEnregistrement('${id}')">Suppr.</button></td>
       </tr>`;
     }
   }
@@ -849,9 +846,55 @@
           <td>${nbPers}</td><td>${persStr}</td><td>${r.date}</td>
           <td><button onclick="afficherDocument('${id}')">Voir</button></td>
           <td>${r.sent ? '✅ Envoyé' : '⏳ En attente'}</td>
-          <td><button class="btn-delete" onclick="supprimerEnregistrement('${id}')">Suppr.</button></td>
+          <td><button onclick="envoyerWhatsAppUser('${id}')" style="background:#25D366;">WhatsApp</button><button class="btn-delete" onclick="supprimerEnregistrement('${id}')">Suppr.</button></td>
         </tr>`;
       }
+    }
+  }
+
+  function envoyerWhatsAppAdmin(recordId) {
+    if (!currentDocumentData || currentDocumentData.id !== recordId) {
+      const records = document.querySelectorAll('#tableAdmin tbody tr');
+      for (let tr of records) {
+        const tds = tr.querySelectorAll('td');
+        if (tds.length > 0 && tds[0].textContent) {
+          const firstTdText = tds[0].textContent.trim();
+          if (firstTdText === String(parseInt(firstTdText, 10))) {
+            const nom = tds[3].textContent.trim();
+            const appart = tds[1].textContent.trim();
+            const bat = tds[2].textContent.trim();
+            const date = tds[9].textContent.trim();
+            const text = `Bonjour, voici l'enregistrement pour l'appartement ${appart}${bat} au nom de ${nom} pour le ${date}.`;
+            window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+            break;
+          }
+        }
+      }
+    } else {
+      const text = `Bonjour, voici l'enregistrement pour l'appartement ${currentDocumentData.appart}${currentDocumentData.bat} au nom de ${currentDocumentData.nom} pour le ${currentDocumentData.date}.`;
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+    }
+  }
+
+  function envoyerWhatsAppUser(recordId) {
+    if (!currentDocumentData || currentDocumentData.id !== recordId) {
+      const records = document.querySelectorAll('#tableUser tbody tr');
+      for (let tr of records) {
+        const tds = tr.querySelectorAll('td');
+        if (tds.length > 0 && tds[0].textContent) {
+          const firstTdText = tds[0].textContent.trim();
+          if (firstTdText === String(parseInt(firstTdText, 10))) {
+            const nom = tds[1].textContent.trim();
+            const date = tds[7].textContent.trim();
+            const text = `Bonjour, voici l'enregistrement pour l'appartement ${currentUser.appart}${currentUser.bat} au nom de ${nom} pour le ${date}.`;
+            window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+            break;
+          }
+        }
+      }
+    } else {
+      const text = `Bonjour, voici l'enregistrement pour l'appartement ${currentDocumentData.appart}${currentDocumentData.bat} au nom de ${currentDocumentData.nom} pour le ${currentDocumentData.date}.`;
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
     }
   }
 
@@ -1207,7 +1250,6 @@ Cette réservation a été enregistrée via l'application Premium Village.
 
   async function enterInviteMode(userId){
     try {
-      // 1. Authentification Firebase en arrière-plan pour l'invité
       try {
         await firebase.auth().signInWithEmailAndPassword(AUTH_EMAIL, AUTH_PASS);
       } catch (e) {
@@ -1222,7 +1264,6 @@ Cette réservation a été enregistrée via l'application Premium Village.
         return;
       }
       
-      // Charger les paramètres email de l'utilisateur pour l'envoi automatique
       const emailSnapshot = await database.ref('emailSettings/' + userId).once('value');
       if(emailSnapshot.exists()){
         emailSettings = emailSnapshot.val();
@@ -1540,3 +1581,4 @@ Cette réservation a été enregistrée via l'application Premium Village.
 </script>
 </body>
 </html>
+```
