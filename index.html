@@ -225,6 +225,24 @@
 
       <div class="card">
         <div class="toolbar">
+          <div><strong>Configuration Sécurité</strong></div>
+        </div>
+        <div class="row">
+          <div class="col">
+            <label>Email Admin Firebase</label>
+            <input type="email" id="adminEmail" placeholder="admin@exemple.com" />
+          </div>
+          <div class="col">
+            <label>Mot de passe Firebase</label>
+            <input type="password" id="adminPassword" placeholder="Mot de passe sécurisé" />
+          </div>
+        </div>
+        <button onclick="updateSecurityConfig()">Mettre à jour la configuration</button>
+        <p id="securityMsg" class="banner hidden"></p>
+      </div>
+
+      <div class="card">
+        <div class="toolbar">
           <div><strong>Gestion des utilisateurs</strong></div>
         </div>
         <div class="row">
@@ -299,7 +317,7 @@
         </div>
         
         <div class="email-settings">
-          <h4>Notifications par Email (Gmail)</h4>
+          <h4>Notifications par Email</h4>
           <p class="note">Recevez une notification quand un invité s'enregistre.</p>
           
           <label>Activer les notifications</label>
@@ -310,18 +328,38 @@
           
           <div id="emailFields" class="hidden">
             <div class="smtp-info">
-              <strong>Important :</strong> Pour Gmail, utilisez un "Mot de passe d'application". 
-              <a href="https://myaccount.google.com/apppasswords" target="_blank">Générer ici</a>
+              <strong>Configuration sécurisée :</strong> Vos identifiants sont stockés de manière chiffrée.
             </div>
             
-            <label>Votre adresse Gmail</label>
+            <label>Votre adresse email (Gmail recommandé)</label>
             <input type="email" id="userEmail" placeholder="exemple@gmail.com" />
             
-            <label>Mot de passe d'application Gmail</label>
-            <input type="password" id="emailPassword" placeholder="xxxx xxxx xxxx xxxx" />
+            <label>Mot de passe ou mot de passe d'application</label>
+            <input type="password" id="emailPassword" placeholder="Votre mot de passe sécurisé" />
+            <small class="note">Pour Gmail : <a href="https://myaccount.google.com/apppasswords" target="_blank">Générer un mot de passe d'application</a></small>
             
             <label>Email du destinataire (ex: Sécurité)</label>
             <input type="email" id="guardEmail" placeholder="securite@exemple.com" />
+            
+            <label>Serveur SMTP</label>
+            <select id="smtpServer" onchange="updateSmtpPort()">
+              <option value="smtp.gmail.com:587">Gmail (smtp.gmail.com:587)</option>
+              <option value="smtp.office365.com:587">Outlook/Hotmail (smtp.office365.com:587)</option>
+              <option value="custom">Personnalisé</option>
+            </select>
+            
+            <div id="customSmtp" class="hidden">
+              <div class="row">
+                <div class="col">
+                  <label>Serveur SMTP</label>
+                  <input type="text" id="customSmtpServer" placeholder="smtp.votrefournisseur.com" />
+                </div>
+                <div class="col">
+                  <label>Port</label>
+                  <input type="number" id="customSmtpPort" placeholder="587" value="587" />
+                </div>
+              </div>
+            </div>
           </div>
           
           <div class="row" style="margin-top: 15px;">
@@ -492,8 +530,6 @@
     console.error("Firebase Init Error:", e);
   }
   const database = firebase.database();
-  const AUTH_EMAIL = "maraminho10@gmail.com";
-  const AUTH_PASS = "M@ra10";
 
   let currentUser = null;
   const SESSION_TIMEOUT_MS = 10 * 60 * 1000;
@@ -503,6 +539,19 @@
   let currentDocumentData = null;
   let userSettings = { maxRecords: 10 };
   let emailSettings = { enableEmail: 'non' };
+  let authCredentials = { email: '', password: '' };
+
+  function encrypt(text) {
+    return btoa(encodeURIComponent(text));
+  }
+
+  function decrypt(text) {
+    try {
+      return decodeURIComponent(atob(text));
+    } catch {
+      return '';
+    }
+  }
 
   function showBanner(type, text){
     const b = document.getElementById('banner');
@@ -576,9 +625,20 @@
     btn.textContent = "Connexion...";
 
     try {
+      const configSnapshot = await database.ref('security/config').once('value');
+      const config = configSnapshot.val() || {};
+      
+      if(config.email && config.password){
+        const decryptedEmail = decrypt(config.email);
+        const decryptedPassword = decrypt(config.password);
+        authCredentials = { email: decryptedEmail, password: decryptedPassword };
+      } else {
+        authCredentials = { email: 'admin@premiumvillage.com', password: 'SecurePass123!' };
+      }
+
       if(u === 'admin' && p === 'admin'){
         try {
-          await firebase.auth().signInWithEmailAndPassword(AUTH_EMAIL, AUTH_PASS);
+          await firebase.auth().signInWithEmailAndPassword(authCredentials.email, authCredentials.password);
         } catch (e) {
           console.error("Firebase Auth failed for admin:", e);
         }
@@ -590,10 +650,14 @@
         showBanner('ok', "Connecté en tant qu'administrateur.");
         startSessionTimer();
         refreshAdmin();
+        
+        document.getElementById('adminEmail').value = authCredentials.email;
+        document.getElementById('adminPassword').value = authCredentials.password;
+        
         return;
       }
 
-      await firebase.auth().signInWithEmailAndPassword(AUTH_EMAIL, AUTH_PASS);
+      await firebase.auth().signInWithEmailAndPassword(authCredentials.email, authCredentials.password);
 
       const snapshot = await database.ref('users/' + u).once('value');
       const user = snapshot.val();
@@ -613,9 +677,16 @@
           document.getElementById('enableEmail').value = emailSettings.enableEmail || 'non';
           toggleEmailFields();
           if(emailSettings.enableEmail === 'oui'){
-            document.getElementById('userEmail').value = emailSettings.userEmail || '';
-            document.getElementById('emailPassword').value = emailSettings.emailPassword || '';
-            document.getElementById('guardEmail').value = emailSettings.guardEmail || '';
+            document.getElementById('userEmail').value = decrypt(emailSettings.userEmail || '');
+            document.getElementById('emailPassword').value = decrypt(emailSettings.emailPassword || '');
+            document.getElementById('guardEmail').value = decrypt(emailSettings.guardEmail || '');
+            document.getElementById('smtpServer').value = emailSettings.smtpServer || 'smtp.gmail.com:587';
+            updateSmtpPort();
+            if(emailSettings.smtpServer === 'custom'){
+              document.getElementById('customSmtpServer').value = emailSettings.customSmtpServer || '';
+              document.getElementById('customSmtpPort').value = emailSettings.customSmtpPort || '587';
+              document.getElementById('customSmtp').classList.remove('hidden');
+            }
           }
         }
         
@@ -638,6 +709,32 @@
     }
   }
 
+  async function updateSecurityConfig(){
+    const email = document.getElementById('adminEmail').value.trim();
+    const password = document.getElementById('adminPassword').value.trim();
+    
+    if(!email || !password){
+      showInlineMsg('securityMsg','warn',"Veuillez remplir tous les champs.");
+      return;
+    }
+    
+    try {
+      const encryptedEmail = encrypt(email);
+      const encryptedPassword = encrypt(password);
+      
+      await database.ref('security/config').set({
+        email: encryptedEmail,
+        password: encryptedPassword,
+        updatedAt: Date.now()
+      });
+      
+      authCredentials = { email, password };
+      showInlineMsg('securityMsg','ok',"Configuration de sécurité mise à jour avec succès.");
+    } catch (error) {
+      showInlineMsg('securityMsg','err',"Erreur lors de la mise à jour.");
+    }
+  }
+
   function toggleEmailFields(){
     const enableEmail = document.getElementById('enableEmail').value;
     const emailFields = document.getElementById('emailFields');
@@ -648,6 +745,17 @@
     }
   }
 
+  function updateSmtpPort(){
+    const smtpSelect = document.getElementById('smtpServer');
+    const customSmtpDiv = document.getElementById('customSmtp');
+    
+    if(smtpSelect.value === 'custom'){
+      customSmtpDiv.classList.remove('hidden');
+    } else {
+      customSmtpDiv.classList.add('hidden');
+    }
+  }
+
   async function saveEmailSettings(){
     const enableEmail = document.getElementById('enableEmail').value;
     
@@ -655,23 +763,40 @@
       const userEmail = document.getElementById('userEmail').value.trim();
       const emailPassword = document.getElementById('emailPassword').value.trim();
       const guardEmail = document.getElementById('guardEmail').value.trim();
+      const smtpServer = document.getElementById('smtpServer').value;
       
       if(!userEmail || !emailPassword || !guardEmail){
         showInlineMsg('emailMsg','warn',"Tous les champs email sont obligatoires.");
         return;
       }
       
-      if(!userEmail.toLowerCase().endsWith('@gmail.com')){
-        showInlineMsg('emailMsg','warn',"Veuillez utiliser une adresse Gmail.");
+      if(smtpServer === 'smtp.gmail.com:587' && !userEmail.toLowerCase().endsWith('@gmail.com')){
+        showInlineMsg('emailMsg','warn',"Pour Gmail, veuillez utiliser une adresse @gmail.com.");
         return;
       }
       
-      emailSettings = {
+      const emailData = {
         enableEmail: enableEmail,
-        userEmail: userEmail,
-        emailPassword: emailPassword,
-        guardEmail: guardEmail
+        userEmail: encrypt(userEmail),
+        emailPassword: encrypt(emailPassword),
+        guardEmail: encrypt(guardEmail),
+        smtpServer: smtpServer
       };
+      
+      if(smtpServer === 'custom'){
+        const customServer = document.getElementById('customSmtpServer').value.trim();
+        const customPort = document.getElementById('customSmtpPort').value.trim();
+        
+        if(!customServer || !customPort){
+          showInlineMsg('emailMsg','warn',"Veuillez remplir les champs SMTP personnalisés.");
+          return;
+        }
+        
+        emailData.customSmtpServer = customServer;
+        emailData.customSmtpPort = customPort;
+      }
+      
+      emailSettings = emailData;
     } else {
       emailSettings = {
         enableEmail: 'non'
@@ -701,13 +826,18 @@
       const testSubject = "Test Email - Premium Village";
       const testBody = "Ceci est un email de test depuis l'application Premium Village.\n\nSi vous recevez cet email, la configuration est correcte.";
       
-      const result = await sendEmail(
-        emailSettings.guardEmail,
-        testSubject,
-        testBody,
-        emailSettings.userEmail,
-        emailSettings.emailPassword
-      );
+      const smtpConfig = {
+        user: decrypt(emailSettings.userEmail),
+        password: decrypt(emailSettings.emailPassword),
+        to: decrypt(emailSettings.guardEmail),
+        subject: testSubject,
+        body: testBody,
+        smtpServer: emailSettings.smtpServer,
+        customSmtpServer: emailSettings.customSmtpServer,
+        customSmtpPort: emailSettings.customSmtpPort
+      };
+      
+      const result = await sendEmailSMTP(smtpConfig);
       
       if(result.success){
         showInlineMsg('emailMsg','ok',"Email de test envoyé avec succès !");
@@ -715,20 +845,26 @@
         showInlineMsg('emailMsg','err',"Erreur d'envoi: " + result.error);
       }
     } catch (error) {
-      showInlineMsg('emailMsg','err',"Erreur lors de l'envoi du test.");
+      showInlineMsg('emailMsg','err',"Erreur lors de l'envoi du test: " + error.message);
     }
   }
 
-  async function sendEmail(to, subject, body, from, password) {
+  async function sendEmailSMTP(config) {
     return new Promise((resolve) => {
       const formData = new FormData();
-      formData.append('to', to);
-      formData.append('subject', subject);
-      formData.append('body', body);
-      formData.append('from', from);
-      formData.append('password', password);
+      formData.append('user', config.user);
+      formData.append('password', config.password);
+      formData.append('to', config.to);
+      formData.append('subject', config.subject);
+      formData.append('body', config.body);
+      formData.append('smtpServer', config.smtpServer);
       
-      fetch('https://script.google.com/macros/s/AKfycbxYYOwGYa68wEwuq3EO2nqG1FfUc9G6Z2UUtThzPmI7yUZKGYeF7cvb9TQfDcJ4h9UM/exec', {
+      if(config.smtpServer === 'custom' && config.customSmtpServer){
+        formData.append('customSmtpServer', config.customSmtpServer);
+        formData.append('customSmtpPort', config.customSmtpPort);
+      }
+      
+      fetch('https://script.google.com/macros/s/AKfycbyThqQ6t0CG0Kl8pZpDUwvqgJlf6E_BY7eP7VW3T6GkruDKWmyP6m5fqYYJtSQ3Z3CK/exec', {
         method: 'POST',
         body: formData
       })
@@ -746,12 +882,67 @@
     });
   }
 
+  async function sendAutomaticEmail(record) {
+    if(emailSettings.enableEmail !== 'oui'){
+      return { success: true, message: "Emails désactivés" };
+    }
+    
+    if(!emailSettings.userEmail || !emailSettings.emailPassword || !emailSettings.guardEmail){
+      return { success: false, error: "Paramètres email non configurés" };
+    }
+    
+    const totalPersons = record.personnes ? Object.keys(record.personnes).length + 1 : 1;
+    
+    const emailSubject = `Nouvelle réservation - ${record.nom} - Appartement ${record.appart}`;
+    const emailBody = `
+Nouvelle réservation enregistrée
+
+Nom: ${record.nom}
+Date d'arrivée: ${record.date}
+Appartement: ${record.appart}
+Immeuble: ${record.bat}
+Nombre de personnes: ${totalPersons}
+Type de document: ${record.typeDoc}
+Numéro de document: ${record.doc}
+
+Cette réservation a été enregistrée via l'application Premium Village.
+    `;
+    
+    try {
+      const smtpConfig = {
+        user: decrypt(emailSettings.userEmail),
+        password: decrypt(emailSettings.emailPassword),
+        to: decrypt(emailSettings.guardEmail),
+        subject: emailSubject,
+        body: emailBody,
+        smtpServer: emailSettings.smtpServer,
+        customSmtpServer: emailSettings.customSmtpServer,
+        customSmtpPort: emailSettings.customSmtpPort
+      };
+      
+      const result = await sendEmailSMTP(smtpConfig);
+      
+      if(result.success){
+        await database.ref('records/' + record.id).update({ sent: true, sentAt: Date.now() });
+      }
+      
+      return result;
+    } catch (error) {
+      return { success: false, error: error.toString() };
+    }
+  }
+
   async function updateUserSettings(){
     const maxRecords = parseInt(document.getElementById('maxRecords').value) || 10;
     const newPassword = document.getElementById('newPassword').value.trim();
     
     if(maxRecords < 1){
       showInlineMsg('settingsMsg','warn',"Le nombre d'enregistrements doit être supérieur à 0.");
+      return;
+    }
+    
+    if(newPassword && newPassword.length < 8){
+      showInlineMsg('settingsMsg','warn',"Le mot de passe doit contenir au moins 8 caractères.");
       return;
     }
     
@@ -779,6 +970,11 @@
     const pass = document.getElementById('passAdmin').value.trim();
     if(!app || !bat || !pass) return;
     
+    if(pass.length < 8){
+      showInlineMsg('userWarn','warn',"Le mot de passe doit contenir au moins 8 caractères.");
+      return;
+    }
+    
     const id = app + bat;
     try {
       await database.ref('users/' + id).set({ appart:app, bat:bat, pass:pass });
@@ -794,6 +990,8 @@
   async function supprimerUtilisateur(id){
     if(confirm("Supprimer cet utilisateur ?")) {
       await database.ref('users/' + id).remove();
+      await database.ref('settings/' + id).remove();
+      await database.ref('emailSettings/' + id).remove();
       refreshAdmin();
     }
   }
@@ -1100,47 +1298,6 @@
     registerBtn.disabled = !(hasSignature && isAccepted);
   }
 
-  async function sendAutomaticEmail(record) {
-    if(emailSettings.enableEmail !== 'oui'){
-      return { success: true, message: "Emails désactivés" };
-    }
-    
-    if(!emailSettings.userEmail || !emailSettings.emailPassword || !emailSettings.guardEmail){
-      return { success: false, error: "Paramètres email non configurés" };
-    }
-    
-    const totalPersons = record.personnes ? Object.keys(record.personnes).length + 1 : 1;
-    
-    const emailSubject = `Nouvelle réservation - ${record.nom} - Appartement ${record.appart}`;
-    const emailBody = `
-Nouvelle réservation enregistrée
-
-Nom: ${record.nom}
-Date d'arrivée: ${record.date}
-Appartement: ${record.appart}
-Immeuble: ${record.bat}
-Nombre de personnes: ${totalPersons}
-Type de document: ${record.typeDoc}
-Numéro de document: ${record.doc}
-
-Cette réservation a été enregistrée via l'application Premium Village.
-    `;
-    
-    try {
-      const result = await sendEmail(
-        emailSettings.guardEmail,
-        emailSubject,
-        emailBody,
-        emailSettings.userEmail,
-        emailSettings.emailPassword
-      );
-      
-      return result;
-    } catch (error) {
-      return { success: false, error: error.toString() };
-    }
-  }
-
   async function registerSignature() {
     if(!validateForm()) {
       return;
@@ -1251,7 +1408,7 @@ Cette réservation a été enregistrée via l'application Premium Village.
   async function enterInviteMode(userId){
     try {
       try {
-        await firebase.auth().signInWithEmailAndPassword(AUTH_EMAIL, AUTH_PASS);
+        await firebase.auth().signInWithEmailAndPassword(authCredentials.email, authCredentials.password);
       } catch (e) {
         console.error("Firebase Auth failed for invite mode:", e);
       }
