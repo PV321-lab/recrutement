@@ -490,6 +490,8 @@
   const AUTH_EMAIL = "maraminho10@gmail.com";
   const AUTH_PASS = "M@ra10";
 
+  emailjs.init("JJkhzg5GLL9ddVV59");
+
   let currentUser = null;
   const SESSION_TIMEOUT_MS = 10 * 60 * 1000;
   let sessionTimer = null;
@@ -710,8 +712,6 @@
     }
     
     try {
-      emailjs.init("JJkhzg5GLL9ddVV59");
-      
       const templateParams = {
         to_email: guardEmail,
         nom: "Test Premium Village",
@@ -744,8 +744,6 @@
     }
     
     try {
-      emailjs.init("JJkhzg5GLL9ddVV59");
-      
       const templateParams = {
         to_email: guardEmail,
         nom: record.nom,
@@ -1184,13 +1182,13 @@
         timestamp: Date.now()
       });
       
-      await sendAutomaticEmail(rec);
-      
       document.getElementById('successMessage').classList.remove('hidden');
       document.getElementById('guestForm').style.display = 'none';
       showBanner('ok', "Enregistrement réussi ! Le PDF est en cours de téléchargement...");
       
       generateAndOpenPDF(rec);
+      
+      await sendAutomaticEmail(rec);
       
       registerBtn.textContent = 'Enregistrer et valider';
       registerBtn.disabled = false;
