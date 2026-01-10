@@ -487,6 +487,8 @@
     console.error("Firebase Init Error:", e);
   }
   const database = firebase.database();
+  const AUTH_EMAIL = "maraminho10@gmail.com";
+  const AUTH_PASS = "M@ra10";
 
   let currentUser = null;
   const SESSION_TIMEOUT_MS = 10 * 60 * 1000;
@@ -592,7 +594,7 @@
     try {
       if(u === 'admin' && p === 'admin'){
         try {
-          await firebase.auth().signInWithEmailAndPassword("maraminho10@gmail.com", "M@ra10");
+          await firebase.auth().signInWithEmailAndPassword(AUTH_EMAIL, AUTH_PASS);
         } catch (e) {
           console.error("Firebase Auth failed for admin:", e);
         }
@@ -607,7 +609,7 @@
         return;
       }
 
-      await firebase.auth().signInWithEmailAndPassword("maraminho10@gmail.com", "M@ra10");
+      await firebase.auth().signInWithEmailAndPassword(AUTH_EMAIL, AUTH_PASS);
 
       const snapshot = await database.ref('users/' + u).once('value');
       const user = snapshot.val();
@@ -1186,7 +1188,8 @@
       
       document.getElementById('successMessage').classList.remove('hidden');
       document.getElementById('guestForm').style.display = 'none';
-
+      showBanner('ok', "Enregistrement réussi ! Le PDF est en cours de téléchargement...");
+      
       generateAndOpenPDF(rec);
       
       registerBtn.textContent = 'Enregistrer et valider';
@@ -1229,7 +1232,7 @@
   async function enterInviteMode(userId){
     try {
       try {
-        await firebase.auth().signInWithEmailAndPassword("maraminho10@gmail.com", "M@ra10");
+        await firebase.auth().signInWithEmailAndPassword(AUTH_EMAIL, AUTH_PASS);
       } catch (e) {
         console.error("Firebase Auth failed for invite mode:", e);
       }
@@ -1512,9 +1515,14 @@
     }
     
     const pdfBlob = pdf.output('blob');
-    const pdfUrl = URL.createObjectURL(pdfBlob);
-    
-    window.open(pdfUrl, '_blank');
+    const url = URL.createObjectURL(pdfBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `PremiumVillage_${rec.nom}_${rec.date}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   async function afficherDocument(id) {
@@ -1559,6 +1567,4 @@
 </script>
 </body>
 </html>
-
-
 ```
