@@ -7,7 +7,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
   <style>
     :root{
       --c1:#007bff; --bg:#f0f2f5; --ok:#0f9d58; --warn:#f4b400; --err:#d93025; --info:#4285f4;
@@ -318,7 +317,6 @@
             
             <label>Mot de passe email</label>
             <input type="password" id="emailPassword" placeholder="Votre mot de passe email" />
-            <small class="note">Pour Gmail : <a href="https://myaccount.google.com/apppasswords" target="_blank">Générer un mot de passe d'application</a></small>
             
             <label>Email du destinataire (ex: Sécurité)</label>
             <input type="email" id="guardEmail" placeholder="securite@exemple.com" />
@@ -471,6 +469,7 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 
 <script>
   const firebaseConfig = {
@@ -507,10 +506,7 @@
   function encrypt(text) {
     if (!text) return '';
     try {
-      const key = CryptoJS.enc.Utf8.parse('PremiumVillage2024!SecureKeyForEncryption123');
-      const iv = CryptoJS.enc.Utf8.parse('1234567890123456');
-      const encrypted = CryptoJS.AES.encrypt(text, key, { iv: iv });
-      return encrypted.toString();
+      return CryptoJS.AES.encrypt(text, 'PremiumVillage2024Key').toString();
     } catch (e) {
       console.error("Encryption error:", e);
       return text;
@@ -520,10 +516,8 @@
   function decrypt(text) {
     if (!text) return '';
     try {
-      const key = CryptoJS.enc.Utf8.parse('PremiumVillage2024!SecureKeyForEncryption123');
-      const iv = CryptoJS.enc.Utf8.parse('1234567890123456');
-      const decrypted = CryptoJS.AES.decrypt(text, key, { iv: iv });
-      return decrypted.toString(CryptoJS.enc.Utf8);
+      const bytes = CryptoJS.AES.decrypt(text, 'PremiumVillage2024Key');
+      return bytes.toString(CryptoJS.enc.Utf8);
     } catch (e) {
       console.error("Decryption error:", e);
       return text;
@@ -1071,7 +1065,7 @@ Cette réservation a été enregistrée via l'application Premium Village.
     
     const date = document.getElementById('dateArrivee').value;
     if(!date) {
-      showError('dateArriveeError', 'Veuillez sélectionner une date d'arrivée');
+      showError('dateArriveeError', 'Veuillez sélectionner une date d\'arrivée');
       isValid = false;
     } else {
       hideError('dateArriveeError');
@@ -1079,7 +1073,7 @@ Cette réservation a été enregistrée via l'application Premium Village.
     
     const nbPers = document.getElementById('nbPers').value;
     if(!nbPers || nbPers < 1) {
-      showError('nbPersError', 'Veuillez entrer le nombre d'invités (minimum 1)');
+      showError('nbPersError', 'Veuillez entrer le nombre d\'invités (minimum 1)');
       isValid = false;
     } else {
       hideError('nbPersError');
