@@ -510,35 +510,59 @@
   }
 
   async function login() {
-    const user = document.getElementById('loginUser').value;
-    const pass = document.getElementById('loginPass').value;
+    const user = document.getElementById('loginUser').value.trim();
+    const pass = document.getElementById('loginPass').value.trim();
     const msg = document.getElementById('loginMsg');
+    const btn = document.getElementById('btnLogin');
 
-    if (user === 'admin' && pass === 'admin123') {
-      isAdmin = true;
-      document.getElementById('loginCard').classList.add('hidden');
-      document.getElementById('adminPanel').classList.remove('hidden');
-      loadAdminData();
-    } else {
-      const snapshot = await database.ref('users').once('value');
-      const users = snapshot.val();
-      let found = false;
-      for (let id in users) {
-        if (users[id].appart === user && users[id].pass === pass) {
-          currentUser = users[id];
-          currentUser.id = id;
-          found = true;
-          break;
+    if (!user || !pass) {
+      msg.textContent = "Veuillez remplir tous les champs";
+      msg.classList.remove('hidden');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = "Chargement...";
+
+    try {
+      if (user.toLowerCase() === 'admin' && pass === 'admin123') {
+        isAdmin = true;
+        document.getElementById('loginCard').classList.add('hidden');
+        document.getElementById('adminPanel').classList.remove('hidden');
+        loadAdminData();
+      } else {
+        const snapshot = await database.ref('users').once('value');
+        const users = snapshot.val();
+        let found = false;
+        
+        if (users) {
+          for (let id in users) {
+            // Comparaison flexible (string vs number)
+            if (String(users[id].appart) === String(user) && String(users[id].pass) === String(pass)) {
+              currentUser = users[id];
+              currentUser.id = id;
+              found = true;
+              break;
+            }
+          }
+        }
+
+        if (found) {
+          document.getElementById('loginCard').classList.add('hidden');
+          document.getElementById('userPanel').classList.remove('hidden');
+          loadUserData();
+        } else {
+          msg.textContent = "Identifiants incorrects";
+          msg.classList.remove('hidden');
         }
       }
-      if (found) {
-        document.getElementById('loginCard').classList.add('hidden');
-        document.getElementById('userPanel').classList.remove('hidden');
-        loadUserData();
-      } else {
-        msg.textContent = "Identifiants incorrects";
-        msg.classList.remove('hidden');
-      }
+    } catch (error) {
+      console.error("Erreur de connexion:", error);
+      msg.textContent = "Erreur de connexion à la base de données";
+      msg.classList.remove('hidden');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Connexion";
     }
   }
 
