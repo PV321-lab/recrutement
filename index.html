@@ -4,439 +4,123 @@
   <meta charset="UTF-8" />
   <title>Premium Village - Enregistrement des invités</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  
+  <!-- Scripts de base -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
   <style>
-    :root{
-      --c1:#007bff; --bg:#f0f2f5; --ok:#0f9d58; --warn:#f4b400; --err:#d93025; --info:#4285f4;
-    }
+    :root{ --c1:#007bff; --bg:#f0f2f5; --ok:#0f9d58; --warn:#f4b400; --err:#d93025; --info:#4285f4; }
     body { font-family: Arial, sans-serif; margin: 16px; background: var(--bg); }
-    h2 { text-align: center; margin: 8px 0 16px; color: #2c3e50; }
     .card { background:#fff; padding:16px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.12); margin-bottom:16px; }
     label { font-weight:600; display:block; margin-top:10px; }
-    input, select, button { font-size:16px; }
-    input, select { width:100%; padding:10px; margin-top:6px; border:1px solid #ccc; border-radius:8px; }
-    input[readonly]{ background:#e9ecef; }
-    button { margin-top:14px; padding:10px 14px; border:none; border-radius:10px; background:var(--c1); color:#fff; cursor:pointer; }
-    button:disabled{ opacity:.6; cursor:not-allowed; }
-    table { width:100%; border-collapse: collapse; margin-top: 10px; }
-    th, td { border:1px solid #e5e7eb; padding:8px; text-align:center; }
+    input, select, button { font-size:16px; width:100%; padding:10px; margin-top:6px; border-radius:8px; border:1px solid #ccc; box-sizing: border-box; }
+    button { background:var(--c1); color:#fff; border:none; cursor:pointer; font-weight: bold; margin-top: 15px; }
+    button:hover { opacity: 0.9; }
+    .hidden { display:none !important; }
+    .banner { padding:10px; border-radius:8px; margin-top:10px; font-weight:bold; text-align:center; }
+    .banner.err { background:#fce8e6; color:#a50e0e; border:1px solid #f7b9b4; }
+    .banner.ok { background:#e6f4ea; color:#137333; border:1px solid #cce8d3; }
+    .premium-header { background: linear-gradient(135deg, #2c3e50, #4a6491); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; text-align: center; }
+    table { width:100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+    th, td { border:1px solid #ddd; padding:8px; text-align:center; }
     th { background:var(--c1); color:#fff; }
-    .hidden{ display:none !important; }
-    .row { display:flex; gap:12px; flex-wrap:wrap; }
-    .col { flex:1 1 220px; min-width:220px; }
-    .banner{ padding:10px 12px; border-radius:10px; margin-bottom:12px; font-weight:600; }
-    .banner.info{ background:#e8f0fe; color:#174ea6; border:1px solid #c6dafc; }
-    .banner.ok{ background:#e6f4ea; color:#137333; border:1px solid #cce8d3; }
-    .banner.warn{ background:#fef7e0; color:#a66300; border:1px solid #fde293; }
-    .banner.err{ background:#fce8e6; color:#a50e0e; border:1px solid #f7b9b4; }
-    .toolbar{ display:flex; gap:10px; justify-content:space-between; align-items:center; flex-wrap:wrap; }
-    .note{ font-size:13px; opacity:.8; }
-    .recap{ background:#fafafa; border:1px dashed #ccc; padding:10px; border-radius:8px; min-width:240px; }
-    .person-group { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #e9ecef; }
-    .person-group h4 { margin: 0 0 10px 0; color: #1E40AF; }
-    .consent-container { margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6; }
-    .consent-text { max-height: 150px; overflow-y: auto; padding: 10px; background: white; border-radius: 5px; border: 1px solid #ced4da; margin: 10px 0; }
-    .btn-delete { background: var(--err) !important; margin-left: 5px; }
-    .signature-area { margin: 40px 0; padding: 20px; border: 2px solid #ddd; border-radius: 8px; text-align: center; }
-    .signature-title { font-size: 18px; margin-bottom: 20px; color: #2c3e50; }
-    .signature-canvas { width: 100%; height: 200px; border: 1px solid #ccc; border-radius: 5px; background: white; cursor: crosshair; margin-bottom: 20px; }
-    .doc-type-row { display: flex; gap: 10px; }
-    .doc-type-row .col { flex: 1; }
-    .rules-container { 
-      margin: 20px 0; 
-      padding: 15px; 
-      background: #f8f9fa; 
-      border-radius: 8px; 
-      border: 1px solid #dee2e6;
-      max-height: 250px;
-      overflow-y: auto;
-    }
-    .rules-container h4 { margin-top: 0; color: #2c3e50; }
-    .rules-container ul { padding-left: 20px; margin: 10px 0; }
-    .rules-container li { margin-bottom: 8px; }
-    .signature-controls { display: flex; gap: 10px; justify-content: center; margin-top: 15px; }
-    .document-column { 
-      border-left: 2px solid #007bff; 
-      padding-left: 20px; 
-      min-height: 100vh;
-      background: #f9f9f9;
-    }
-    .document-preview { 
-      background: white; 
-      padding: 20px; 
-      border-radius: 8px; 
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
-      margin-top: 20px;
-      max-height: 500px;
-      overflow-y: auto;
-    }
-    .doc-title { 
-      text-align: center; 
-      font-size: 24px; 
-      font-weight: bold; 
-      color: #2c3e50; 
-      margin-bottom: 30px; 
-      border-bottom: 2px solid #2c3e50; 
-      padding-bottom: 10px;
-    }
-    .doc-info { margin-bottom: 20px; }
-    .doc-info p { margin: 5px 0; }
-    .doc-section { margin-bottom: 30px; }
-    .doc-section-title { 
-      font-size: 18px; 
-      font-weight: bold; 
-      color: #2c3e50; 
-      margin-bottom: 10px; 
-      border-bottom: 1px solid #ddd; 
-      padding-bottom: 5px;
-    }
-    .doc-signature { 
-      text-align: center; 
-      margin-top: 40px; 
-      padding-top: 20px; 
-      border-top: 2px solid #2c3e50;
-    }
-    .doc-signature-box { 
-      border: 1px solid #000; 
-      height: 100px; 
-      margin: 20px auto; 
-      width: 300px; 
-      position: relative;
-    }
-    .two-column-layout {
-      display: flex;
-      gap: 20px;
-      flex-wrap: wrap;
-    }
-    .form-column {
-      flex: 2;
-      min-width: 300px;
-    }
-    .document-column {
-      flex: 1;
-      min-width: 300px;
-    }
-    .doc-actions {
-      display: flex;
-      gap: 10px;
-      justify-content: center;
-      margin-top: 20px;
-    }
-    .nationality-row {
-      display: flex;
-      gap: 10px;
-      margin-top: 10px;
-    }
-    .nationality-row .col {
-      flex: 1;
-    }
-    .accept-signature-container {
-      margin-top: 20px;
-      padding: 15px;
-      background: #f8f9fa;
-      border-radius: 8px;
-      border: 1px solid #dee2e6;
-    }
-    .premium-header {
-      background: linear-gradient(135deg, #2c3e50, #4a6491);
-      color: white;
-      padding: 20px;
-      border-radius: 12px;
-      margin-bottom: 20px;
-      text-align: center;
-    }
-    .user-settings {
-      background: #fff;
-      padding: 15px;
-      border-radius: 8px;
-      border: 1px solid #dee2e6;
-      margin-top: 15px;
-    }
-    .email-settings {
-      background: #fff;
-      padding: 15px;
-      border-radius: 8px;
-      border: 1px solid #dee2e6;
-      margin-top: 15px;
-    }
-    .email-settings h4 {
-      margin-top: 0;
-      color: #2c3e50;
-    }
-    .signature-preview {
-      border: 2px solid #000;
-      background: white;
-      margin: 10px auto;
-      max-width: 300px;
-    }
-    .error-message {
-      color: #d93025;
-      font-size: 14px;
-      margin-top: 5px;
-      display: none;
-    }
-    .error-border {
-      border-color: #d93025 !important;
-    }
-    .smtp-info {
-      background: #e8f4f8;
-      padding: 12px;
-      border-radius: 6px;
-      margin-top: 10px;
-      font-size: 13px;
-      border-left: 4px solid #007bff;
-    }
+    .row { display:flex; gap:10px; flex-wrap:wrap; }
+    .col { flex:1; min-width:200px; }
+    .signature-canvas { width: 100%; height: 150px; border: 1px solid #ccc; background: #fff; margin-top: 10px; }
   </style>
 </head>
 <body>
 
 <div class="premium-header">
   <h1>Premium Village</h1>
-  <p>Gestion des enregistrements des invités</p>
+  <p>Gestion des enregistrements</p>
 </div>
 
-<div class="two-column-layout">
-  <div class="form-column">
-    <div id="banner" class="banner info hidden"></div>
+<div id="loginCard" class="card" style="max-width: 400px; margin: 0 auto;">
+  <h3 style="text-align:center;">Connexion</h3>
+  <label>Utilisateur (Appartement + Immeuble)</label>
+  <input type="text" id="loginUser" placeholder="Ex: 6A6" />
+  <label>Mot de passe</label>
+  <input type="password" id="loginPass" placeholder="Votre mot de passe" />
+  <button id="btnLogin" onclick="handleLogin()">Se connecter</button>
+  <p id="loginMsg" class="banner err hidden"></p>
+</div>
 
-    <div id="loginCard" class="card">
-      <div class="toolbar">
-        <div><strong>Connexion - Premium Village</strong></div>
-        <div class="note">Veuillez entrer vos identifiants</div>
-      </div>
-      <label>Utilisateur</label>
-      <input type="text" id="loginUser" autocomplete="username" placeholder="Identifiant" required />
-      <label>Mot de passe</label>
-      <input type="password" id="loginPass" autocomplete="current-password" placeholder="Mot de passe" required />
-      <button id="btnLogin" onclick="login()">Connexion</button>
-      <p id="loginMsg" class="banner err hidden"></p>
+<!-- Panneau Utilisateur -->
+<div id="userPanel" class="hidden">
+  <div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h3>Mon Espace</h3>
+      <button onclick="location.reload()" style="width:auto; margin:0; background:#6c757d;">Déconnexion</button>
     </div>
-
-    <div id="adminPanel" class="hidden">
-      <div class="toolbar card">
-        <div><strong>Panneau administrateur - Premium Village</strong></div>
-        <div>
-          <button onclick="logout()">Déconnexion</button>
-        </div>
+    <div class="row">
+      <div class="col">
+        <label>Email de notification (Sécurité)</label>
+        <input type="email" id="guardEmail" placeholder="securite@exemple.com" />
+        <button onclick="saveSettings()" style="background:var(--ok);">Enregistrer Email</button>
       </div>
-
-      <div class="card">
-        <div class="toolbar">
-          <div><strong>Gestion des utilisateurs</strong></div>
-        </div>
-        <div class="row">
-          <div class="col">
-            <label>Appartement</label>
-            <input type="text" id="appartAdmin" placeholder="Ex: 12" />
-          </div>
-          <div class="col">
-            <label>Immeuble</label>
-            <input type="text" id="batAdmin" placeholder="Ex: A" />
-          </div>
-          <div class="col">
-            <label>Mot de passe</label>
-            <input type="text" id="passAdmin" placeholder="Choisir un mot de passe" />
-          </div>
-        </div>
-        <button onclick="creerUtilisateur()">Créer utilisateur</button>
-        <p id="userWarn" class="banner warn hidden"></p>
-      </div>
-
-      <div class="card">
-        <div class="toolbar">
-          <div><strong>Utilisateurs existants</strong></div>
-        </div>
-        <table id="tableUsers">
-          <thead>
-            <tr><th>N°</th><th>Appartement</th><th>Immeuble</th><th>Mot de passe</th><th>Action</th></tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-
-      <div class="card">
-        <div class="toolbar">
-          <div><strong>Enregistrements des invités</strong></div>
-        </div>
-        <table id="tableAdmin">
-          <thead>
-            <tr>
-              <th>N°</th><th>Appart.</th><th>Immeuble</th><th>Nom</th><th>Document</th><th>Type Doc</th><th>Nationalité</th>
-              <th>Nb Pers.</th><th>Personnes</th><th>Date</th><th>Document</th><th>Action</th><th>Statut</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
-
-    <div id="userPanel" class="hidden">
-      <div class="toolbar card">
-        <div><strong>Mon espace - Premium Village</strong></div>
-        <div><button onclick="logout()">Déconnexion</button></div>
-      </div>
-
-      <div class="card">
-        <div class="toolbar">
-          <div><strong>Paramètres de mon compte</strong></div>
-        </div>
-        <div class="user-settings">
-          <div class="row">
-            <div class="col">
-              <label>Nombre maximum d'enregistrements</label>
-              <input type="number" id="maxRecords" min="1" value="10" />
-            </div>
-            <div class="col">
-              <label>Nouveau mot de passe (optionnel)</label>
-              <input type="password" id="newPassword" placeholder="Laisser vide pour ne pas changer" />
-            </div>
-          </div>
-          <button onclick="updateUserSettings()">Enregistrer les paramètres</button>
-          <p id="settingsMsg" class="banner hidden"></p>
-        </div>
-        
-        <div class="email-settings">
-          <h4>Notifications par Email</h4>
-          <p class="note">Recevez une notification quand un invité s'enregistre.</p>
-          
-          <label>Activer les notifications</label>
-          <select id="enableEmail" onchange="toggleEmailFields()">
-            <option value="non">Non</option>
-            <option value="oui">Oui</option>
-          </select>
-          
-          <div id="emailFields" class="hidden">
-            <label>Email du destinataire (ex: Sécurité)</label>
-            <input type="email" id="guardEmail" placeholder="securite@exemple.com" />
-          </div>
-          
-          <div class="row" style="margin-top: 15px;">
-            <button onclick="saveEmailSettings()" style="flex: 1;">Enregistrer Email</button>
-            <button onclick="testEmailSettings()" style="flex: 1; background: var(--ok);">Tester l'envoi</button>
-          </div>
-          <p id="emailMsg" class="banner hidden"></p>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="toolbar">
-          <div><strong>Mes enregistrements</strong></div>
-          <button onclick="genererLien()" style="background: var(--ok);">Générer lien invité</button>
-        </div>
-        <table id="tableUser">
-          <thead>
-            <tr>
-              <th>N°</th><th>Nom</th><th>Document</th><th>Type Doc</th><th>Nationalité</th><th>Nb Pers.</th><th>Personnes</th><th>Date</th><th>Document</th><th>Statut</th><th>Action</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
-
-    <div id="invitePanel" class="hidden">
-      <div class="guest-form-container">
-        <div class="card">
-          <div class="toolbar">
-            <div><strong>Enregistrement Invité</strong></div>
-            <div class="note" id="inviteInfo"></div>
-          </div>
-          
-          <div id="guestForm">
-            <label>Nom et Prénom</label>
-            <input type="text" id="guestNom" placeholder="Votre nom complet" required />
-            
-            <div class="doc-type-row">
-              <div class="col">
-                <label>Type de document</label>
-                <select id="guestTypeDoc">
-                  <option value="CIN">CIN</option>
-                  <option value="Passeport">Passeport</option>
-                  <option value="Carte de séjour">Carte de séjour</option>
-                </select>
-              </div>
-              <div class="col">
-                <label>Numéro de document</label>
-                <input type="text" id="guestDoc" placeholder="N° de document" required />
-              </div>
-            </div>
-            
-            <div class="nationality-row">
-              <div class="col">
-                <label>Nationalité</label>
-                <input type="text" id="guestNationalite" placeholder="Ex: Marocaine" required />
-              </div>
-              <div class="col">
-                <label>Date d'arrivée</label>
-                <input type="date" id="guestDate" required />
-              </div>
-            </div>
-
-            <div id="additionalPersons">
-              <label>Autres personnes (Optionnel)</label>
-              <div id="personsList"></div>
-              <button type="button" onclick="addPersonField()" style="background: #6c757d; margin-top: 5px;">+ Ajouter une personne</button>
-            </div>
-
-            <div class="rules-container">
-              <h4>Règlement Intérieur</h4>
-              <ul>
-                <li>1. Si vous êtes des Couples marocains: selon la loi marocaine ce logement autorise que les couples mariés.</li>
-                <li>2. Silence total obligatoire après 23h00. Pas de musique forte.</li>
-                <li>3. Fumer est strictement interdit à l'intérieur.</li>
-                <li>4. Maximum 5 personnes autorisées dans l'appartement.</li>
-                <li>5. Piscine : Douche obligatoire, fermeture à 20h00.</li>
-                <li>6. Maintenir les lieux propres en permanence.</li>
-              </ul>
-            </div>
-
-            <div class="consent-container">
-              <label>
-                <input type="checkbox" id="consentCheck" style="width: auto; margin-right: 10px;">
-                J'accepte le règlement intérieur et le traitement de mes données personnelles.
-              </label>
-            </div>
-
-            <div class="signature-area">
-              <div class="signature-title">Signature</div>
-              <canvas id="signatureCanvas" class="signature-canvas"></canvas>
-              <div class="signature-controls">
-                <button type="button" onclick="clearSignature()" style="background: #6c757d;">Effacer</button>
-              </div>
-            </div>
-
-            <button id="btnSubmitGuest" onclick="submitGuestForm()" style="width: 100%; background: var(--ok); font-weight: bold; padding: 15px;">ENREGISTRER ET TÉLÉCHARGER LE PDF</button>
-            <p id="guestMsg" class="banner hidden"></p>
-          </div>
-        </div>
+      <div class="col">
+        <label>Test</label>
+        <button onclick="testEmail()" style="background:var(--info);">Tester l'envoi Email</button>
       </div>
     </div>
   </div>
 
-  <div id="documentColumn" class="document-column hidden">
-    <div class="card">
-      <div class="toolbar">
-        <div><strong>Aperçu du document</strong></div>
-        <button onclick="closeDocument()">Fermer</button>
-      </div>
-      <div id="documentPreview" class="document-preview"></div>
-      <div id="docActions" class="doc-actions hidden">
-        <button onclick="downloadCurrentDocument()" style="background: var(--c1);">Télécharger PDF</button>
-        <button onclick="partagerWhatsApp()" style="background: #25D366;">Partager WhatsApp</button>
-      </div>
+  <div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h3>Mes Enregistrements</h3>
+      <button onclick="generateInviteLink()" style="width:auto; margin:0; background:var(--ok);">Générer Lien Invité</button>
     </div>
+    <table id="tableUser">
+      <thead>
+        <tr><th>N°</th><th>Nom</th><th>Date</th><th>Statut</th><th>Action</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<!-- Panneau Invité -->
+<div id="invitePanel" class="hidden">
+  <div class="card">
+    <h3 id="inviteTitle">Enregistrement Invité</h3>
+    <label>Nom et Prénom</label>
+    <input type="text" id="guestNom" required />
+    <div class="row">
+      <div class="col">
+        <label>Type Document</label>
+        <select id="guestTypeDoc"><option>CIN</option><option>Passeport</option></select>
+      </div>
+      <div class="col">
+        <label>N° Document</label>
+        <input type="text" id="guestDoc" required />
+      </div>
+    </div>
+    <label>Date d'arrivée</label>
+    <input type="date" id="guestDate" required />
+    
+    <div id="others">
+      <label>Autres personnes</label>
+      <div id="othersList"></div>
+      <button onclick="addOther()" style="background:#6c757d; width:auto;">+ Ajouter</button>
+    </div>
+
+    <label>Signature</label>
+    <canvas id="sigCanvas" class="signature-canvas"></canvas>
+    <button onclick="clearSig()" style="background:#6c757d; width:auto;">Effacer</button>
+
+    <button onclick="submitGuest()" style="background:var(--ok); padding:15px;">ENREGISTRER ET TÉLÉCHARGER PDF</button>
+  </div>
+</div>
 
 <script>
-  // Configuration Firebase (à remplir par l'utilisateur si nécessaire)
+  // CONFIGURATION FIREBASE
   const firebaseConfig = {
-    apiKey: "AIzaSy...",
+    apiKey: "AIzaSy...", // À REMPLACER
     authDomain: "premium-village.firebaseapp.com",
     databaseURL: "https://premium-village-default-rtdb.firebaseio.com",
     projectId: "premium-village",
@@ -445,468 +129,239 @@
     appId: "..."
   };
 
-  firebase.initializeApp(firebaseConfig);
-  const database = firebase.database();
-  const auth = firebase.auth();
+  // INITIALISATION
+  try {
+    firebase.initializeApp(firebaseConfig);
+    var database = firebase.database();
+    console.log("Firebase initialisé");
+  } catch(e) {
+    alert("Erreur d'initialisation Firebase : " + e.message);
+  }
 
-  // EmailJS Configuration (Sécurisée par obfuscation simple)
-  const _0x1a2b = {
+  // EMAILJS
+  const emailConfig = {
     s: 'service_qnnmvxe',
     p: 'IWJc8rbQr6EMWWQbs',
-    k: 'hlLKeIvqpIkMWbiIxz4S7',
-    t: 'template_default' // Template par défaut ou à créer sur EmailJS
+    t: 'template_default'
   };
-
-  emailjs.init(_0x1a2b.p);
+  emailjs.init(emailConfig.p);
 
   let currentUser = null;
-  let isAdmin = false;
-  let currentDocumentData = null;
   let inviteData = null;
 
-  // Signature logic
-  const canvas = document.getElementById('signatureCanvas');
-  const ctx = canvas ? canvas.getContext('2d') : null;
-  let drawing = false;
-
-  if (canvas) {
-    canvas.width = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight;
-
-    canvas.addEventListener('mousedown', startDrawing);
-    canvas.addEventListener('mousemove', draw);
-    canvas.addEventListener('mouseup', stopDrawing);
-    canvas.addEventListener('touchstart', (e) => { e.preventDefault(); startDrawing(e.touches[0]); });
-    canvas.addEventListener('touchmove', (e) => { e.preventDefault(); draw(e.touches[0]); });
-    canvas.addEventListener('touchend', stopDrawing);
-  }
-
-  function startDrawing(e) {
-    drawing = true;
-    ctx.beginPath();
-    ctx.moveTo(e.clientX - canvas.getBoundingClientRect().left, e.clientY - canvas.getBoundingClientRect().top);
-  }
-
-  function draw(e) {
-    if (!drawing) return;
-    ctx.lineTo(e.clientX - canvas.getBoundingClientRect().left, e.clientY - canvas.getBoundingClientRect().top);
-    ctx.stroke();
-  }
-
-  function stopDrawing() { drawing = false; }
-  function clearSignature() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
-
-  function addPersonField() {
-    const div = document.createElement('div');
-    div.className = 'person-group';
-    div.innerHTML = `
-      <div class="row">
-        <div class="col"><input type="text" placeholder="Nom et Prénom" class="p-nom"></div>
-        <div class="col"><input type="text" placeholder="N° Document" class="p-doc"></div>
-        <button class="btn-delete" onclick="this.parentElement.parentElement.remove()">X</button>
-      </div>
-    `;
-    document.getElementById('personsList').appendChild(div);
-  }
-
-  async function login() {
-    const userVal = document.getElementById('loginUser').value.trim();
-    const passVal = document.getElementById('loginPass').value.trim();
+  // FONCTION DE CONNEXION
+  async function handleLogin() {
+    const user = document.getElementById('loginUser').value.trim();
+    const pass = document.getElementById('loginPass').value.trim();
     const msg = document.getElementById('loginMsg');
     const btn = document.getElementById('btnLogin');
 
-    if (!userVal || !passVal) {
-      msg.textContent = "Veuillez remplir tous les champs";
+    console.log("Tentative:", user, pass);
+    
+    if(!user || !pass) {
+      msg.textContent = "Champs vides";
       msg.classList.remove('hidden');
       return;
     }
 
     btn.disabled = true;
-    btn.textContent = "Chargement...";
+    btn.textContent = "Vérification...";
     msg.classList.add('hidden');
 
     try {
-      if (userVal.toLowerCase() === 'admin' && passVal === 'admin123') {
-        isAdmin = true;
-        document.getElementById('loginCard').classList.add('hidden');
-        document.getElementById('adminPanel').classList.remove('hidden');
-        loadAdminData();
-      } else {
-        const snapshot = await database.ref('users').once('value');
-        const users = snapshot.val();
-        let found = false;
-        
-        if (users) {
-          for (let id in users) {
-            const u = users[id];
-            // On teste plusieurs combinaisons possibles pour l'identifiant
-            // 1. Appartement seul (ex: "6")
-            // 2. Appartement + Immeuble (ex: "6A6")
-            const combo1 = String(u.appart) + String(u.bat || "");
-            const combo2 = String(u.appart);
-            
-            if ((userVal === combo1 || userVal === combo2) && String(u.pass) === String(passVal)) {
-              currentUser = u;
-              currentUser.id = id;
-              found = true;
-              break;
-            }
+      const snapshot = await database.ref('users').once('value');
+      const users = snapshot.val();
+      let found = false;
+
+      if(users) {
+        for(let id in users) {
+          const u = users[id];
+          const combo = String(u.appart) + String(u.bat || "");
+          if((user === combo || user === String(u.appart)) && String(u.pass) === pass) {
+            currentUser = u;
+            currentUser.id = id;
+            found = true;
+            break;
           }
         }
-
-        if (found) {
-          document.getElementById('loginCard').classList.add('hidden');
-          document.getElementById('userPanel').classList.remove('hidden');
-          loadUserData();
-        } else {
-          msg.textContent = "Identifiants incorrects (Vérifiez Appartement/Immeuble et Mot de passe)";
-          msg.classList.remove('hidden');
-        }
       }
-    } catch (error) {
-      console.error("Erreur Firebase:", error);
-      alert("Erreur de connexion à la base de données. Vérifiez votre configuration Firebase.");
-      msg.textContent = "Erreur de connexion";
-      msg.classList.remove('hidden');
+
+      if(found) {
+        document.getElementById('loginCard').classList.add('hidden');
+        document.getElementById('userPanel').classList.remove('hidden');
+        loadUserRecords();
+        document.getElementById('guardEmail').value = currentUser.guardEmail || "";
+      } else {
+        msg.textContent = "Identifiants incorrects";
+        msg.classList.remove('hidden');
+      }
+    } catch(e) {
+      console.error(e);
+      alert("Erreur base de données : " + e.message);
     } finally {
       btn.disabled = false;
-      btn.textContent = "Connexion";
+      btn.textContent = "Se connecter";
     }
   }
 
-  function logout() { location.reload(); }
-
-  async function loadAdminData() {
-    database.ref('users').on('value', snap => {
-      const users = snap.val();
-      const tbody = document.querySelector('#tableUsers tbody');
-      tbody.innerHTML = '';
-      let i = 1;
-      for (let id in users) {
-        tbody.innerHTML += `<tr>
-          <td>${i++}</td><td>${users[id].appart}</td><td>${users[id].bat}</td><td>${users[id].pass}</td>
-          <td><button class="btn-delete" onclick="supprimerUser('${id}')">Suppr.</button></td>
-        </tr>`;
-      }
-    });
-
-    database.ref('records').on('value', snap => {
-      const records = snap.val();
-      const tbody = document.querySelector('#tableAdmin tbody');
-      tbody.innerHTML = '';
-      let i = 1;
-      for (let id in records) {
-        const r = records[id];
-        const persStr = r.personnes ? Object.values(r.personnes).map(p => p.nom).join(', ') : '-';
-        const nbPers = r.personnes ? Object.keys(r.personnes).length + 1 : 1;
-        tbody.innerHTML += `<tr>
-          <td>${i++}</td><td>${r.appart}</td><td>${r.bat}</td><td>${r.nom}</td><td>${r.doc}</td><td>${r.typeDoc}</td>
-          <td>${r.nationalite}</td><td>${nbPers}</td><td>${persStr}</td><td>${r.date}</td>
-          <td><button onclick="afficherDocument('${id}')">Voir</button></td>
-          <td><button onclick="envoyerWhatsAppAdmin('${id}')" style="background:#25D366;">WhatsApp</button></td>
-          <td>${r.sent ? '✅ Envoyé' : '⏳ En attente'}</td>
-        </tr>`;
-      }
-    });
-  }
-
-  async function loadUserData() {
-    document.getElementById('maxRecords').value = currentUser.maxRecords || 10;
-    document.getElementById('enableEmail').value = currentUser.enableEmail || 'non';
-    document.getElementById('guardEmail').value = currentUser.guardEmail || '';
-    toggleEmailFields();
-
+  // CHARGEMENT DONNÉES
+  function loadUserRecords() {
     database.ref('records').orderByChild('userId').equalTo(currentUser.id).on('value', snap => {
       const records = snap.val();
       const tbody = document.querySelector('#tableUser tbody');
       tbody.innerHTML = '';
       let i = 1;
-      for (let id in records) {
+      for(let id in records) {
         const r = records[id];
-        const persStr = r.personnes ? Object.values(r.personnes).map(p => p.nom).join(', ') : '-';
-        const nbPers = r.personnes ? Object.keys(r.personnes).length + 1 : 1;
         tbody.innerHTML += `<tr>
-          <td>${i++}</td><td>${r.nom}</td><td>${r.doc}</td><td>${r.typeDoc}</td><td>${r.nationalite}</td>
-          <td>${nbPers}</td><td>${persStr}</td><td>${r.date}</td>
-          <td><button onclick="afficherDocument('${id}')">Voir</button></td>
-          <td>${r.sent ? '✅ Envoyé' : '⏳ En attente'}</td>
-          <td><button onclick="envoyerWhatsAppUser('${id}')" style="background:#25D366;">WhatsApp</button></td>
+          <td>${i++}</td><td>${r.nom}</td><td>${r.date}</td>
+          <td>${r.sent ? '✅' : '⏳'}</td>
+          <td><button onclick="sendWA('${id}')" style="background:#25D366; margin:0; padding:5px;">WA</button></td>
         </tr>`;
       }
     });
   }
 
-  function toggleEmailFields() {
-    const val = document.getElementById('enableEmail').value;
-    document.getElementById('emailFields').className = val === 'oui' ? '' : 'hidden';
-  }
-
-  async function saveEmailSettings() {
-    const enable = document.getElementById('enableEmail').value;
-    const guard = document.getElementById('guardEmail').value;
-    await database.ref('users/' + currentUser.id).update({
-      enableEmail: enable,
-      guardEmail: guard
-    });
-    const msg = document.getElementById('emailMsg');
-    msg.textContent = "Paramètres enregistrés";
-    msg.className = "banner ok";
-    setTimeout(() => msg.className = "banner hidden", 3000);
-  }
-
-  async function testEmailSettings() {
-    const guard = document.getElementById('guardEmail').value;
-    if (!guard) return alert("Veuillez entrer un email de destinataire");
-    
-    try {
-      await emailjs.send(_0x1a2b.s, _0x1a2b.t, {
-        to_email: guard,
-        subject: "Test de notification - Premium Village",
-        message: "Ceci est un test de configuration EmailJS pour Premium Village.",
-        user_name: "Test Admin"
-      });
-      alert("Email de test envoyé avec succès !");
-    } catch (err) {
-      console.error(err);
-      alert("Erreur lors de l'envoi : " + JSON.stringify(err));
-    }
-  }
-
-  function formatWhatsAppMessage(r) {
-    const totalPersons = r.personnes ? Object.keys(r.personnes).length + 1 : 1;
-    const autres = r.personnes ? Object.values(r.personnes).map((p, idx) => `${idx + 1}. ${p.nom} - ${p.doc}`).join('\n') : 'Aucun';
-    
+  // WHATSAPP MESSAGE
+  function getWAMessage(r) {
+    const autres = r.personnes ? Object.values(r.personnes).map((p, i) => `${i+1}. ${p.nom} - ${p.doc}`).join('\n') : 'Aucun';
     return `Salam :
-      
 Arrivée: ${r.date}
 Appartement: ${r.appart}
 Imm: ${r.bat}
-Nombre de personnes: ${totalPersons} personnes
+Nombre de personnes: ${r.personnes ? Object.keys(r.personnes).length + 1 : 1}
 
 Réservation au nom de:
-Nom et Prénom: ${r.nom}
-Numéro de passeport: ${r.doc}
+Nom: ${r.nom}
+Passeport: ${r.doc}
 
-Autres personnes:
+Autres:
 ${autres}
 
-NB : Svp pas d'autres personnes autorisées seul Les personnes figurent dans la réservation.
-
-Merci
-------------------------------------------
+NB: Seul les personnes figurant dans la réservation sont autorisées. Merci.
+--------------------
 السلام عليكم:
-
 الوصول: ${r.date}
 الشقة: ${r.appart}
-رقم العمارة: ${r.bat}
-عدد الأشخاص: ${totalPersons} أشخاص
-
-الحجز باسم:
-الإسم و اللقب: ${r.nom}
-رقم جواز السفر: ${r.doc}
-
+العمارة: ${r.bat}
+عدد الأشخاص: ${r.personnes ? Object.keys(r.personnes).length + 1 : 1}
+الحجز باسم: ${r.nom}
+جواز السفر: ${r.doc}
 أشخاص آخرون:
 ${autres}
-
-ملاحظة: الرجاء عدم السماح لأي أشخاص آخرين، فقط الأشخاص المذكورين في الحجز.`;
+ملاحظة: فقط الأشخاص المذكورين في الحجز. شكرا.`;
   }
 
-  function envoyerWhatsAppAdmin(id) {
-    database.ref('records/' + id).once('value', snap => {
-      const r = snap.val();
-      const text = formatWhatsAppMessage(r);
-      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-    });
+  async function sendWA(id) {
+    const snap = await database.ref('records/' + id).once('value');
+    const r = snap.val();
+    window.open(`https://wa.me/?text=${encodeURIComponent(getWAMessage(r))}`, '_blank');
   }
 
-  function envoyerWhatsAppUser(id) {
-    database.ref('records/' + id).once('value', snap => {
-      const r = snap.val();
-      const text = formatWhatsAppMessage(r);
-      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-    });
+  // GESTION PARAMÈTRES
+  async function saveSettings() {
+    const email = document.getElementById('guardEmail').value;
+    await database.ref('users/' + currentUser.id).update({ guardEmail: email });
+    alert("Email enregistré");
   }
 
-  function partagerWhatsApp() {
-    if (!currentDocumentData) return;
-    const text = formatWhatsAppMessage(currentDocumentData);
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+  async function testEmail() {
+    const email = document.getElementById('guardEmail').value;
+    if(!email) return alert("Entrez un email");
+    try {
+      await emailjs.send(emailConfig.s, emailConfig.t, { to_email: email, message: "Test Premium Village" });
+      alert("Email envoyé !");
+    } catch(e) { alert("Erreur EmailJS"); }
   }
 
-  async function submitGuestForm() {
-    if (!document.getElementById('consentCheck').checked) return alert("Veuillez accepter le règlement.");
-    
+  // GESTION INVITÉ
+  function generateInviteLink() {
+    const url = window.location.origin + window.location.pathname + "?invite=" + currentUser.id;
+    prompt("Lien à copier :", url);
+  }
+
+  // SIGNATURE
+  const canvas = document.getElementById('sigCanvas');
+  const ctx = canvas.getContext('2d');
+  let drawing = false;
+  canvas.addEventListener('mousedown', () => drawing = true);
+  canvas.addEventListener('mouseup', () => drawing = false);
+  canvas.addEventListener('mousemove', (e) => {
+    if(!drawing) return;
+    const rect = canvas.getBoundingClientRect();
+    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+    ctx.stroke();
+  });
+  function clearSig() { ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.beginPath(); }
+
+  function addOther() {
+    const div = document.createElement('div');
+    div.innerHTML = `<input type="text" placeholder="Nom" class="o-nom" style="width:45%"> <input type="text" placeholder="Doc" class="o-doc" style="width:45%">`;
+    document.getElementById('othersList').appendChild(div);
+  }
+
+  async function submitGuest() {
     const nom = document.getElementById('guestNom').value;
     const doc = document.getElementById('guestDoc').value;
-    const typeDoc = document.getElementById('guestTypeDoc').value;
-    const nat = document.getElementById('guestNationalite').value;
     const date = document.getElementById('guestDate').value;
-    
-    if (!nom || !doc || !date) return alert("Veuillez remplir tous les champs obligatoires.");
+    if(!nom || !doc || !date) return alert("Remplissez tout");
 
     const personnes = {};
-    document.querySelectorAll('.person-group').forEach((div, idx) => {
-      const pNom = div.querySelector('.p-nom').value;
-      const pDoc = div.querySelector('.p-doc').value;
-      if (pNom) personnes['p' + idx] = { nom: pNom, doc: pDoc };
+    document.querySelectorAll('#othersList div').forEach((d, i) => {
+      personnes['p'+i] = { nom: d.querySelector('.o-nom').value, doc: d.querySelector('.o-doc').value };
     });
 
-    const signature = canvas.toDataURL();
-    
     const record = {
       userId: inviteData.userId,
       appart: inviteData.appart,
       bat: inviteData.bat,
-      nom, doc, typeDoc, nationalite: nat, date,
-      personnes, signature,
-      timestamp: Date.now(),
-      sent: false
+      nom, doc, date, personnes,
+      signature: canvas.toDataURL(),
+      timestamp: Date.now()
     };
 
     const newRef = database.ref('records').push();
     await newRef.set(record);
-    
-    // Envoi automatique d'email si configuré
-    const userSnap = await database.ref('users/' + inviteData.userId).once('value');
-    const userData = userSnap.val();
-    
-    if (userData && userData.enableEmail === 'oui' && userData.guardEmail) {
-      try {
-        await emailjs.send(_0x1a2b.s, _0x1a2b.t, {
-          to_email: userData.guardEmail,
-          subject: `Nouvel enregistrement : ${nom}`,
-          message: `Un nouvel invité s'est enregistré.\nNom: ${nom}\nDocument: ${doc}\nAppartement: ${inviteData.appart}${inviteData.bat}`,
-          user_name: nom,
-          id_number: doc
-        });
-      } catch (e) { console.error("Email error:", e); }
-    }
 
-    alert("Enregistrement réussi ! Le PDF va s'ouvrir.");
-    generateAndOpenPDF(record);
-    document.getElementById('guestForm').innerHTML = "<h3>Merci ! Votre enregistrement a été transmis.</h3>";
-  }
-
-  function generateAndOpenPDF(rec) {
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    let yPos = 20;
-    
-    pdf.setFontSize(20);
-    pdf.text('PREMIUM VILLAGE', 105, yPos, { align: 'center' });
-    yPos += 15;
-    
-    pdf.setFontSize(12);
-    pdf.text(`Date : ${new Date().toLocaleDateString()}`, 20, yPos);
-    yPos += 10;
-    pdf.text(`Appartement : ${rec.appart} - Immeuble : ${rec.bat}`, 20, yPos);
-    yPos += 10;
-    pdf.text(`Nom : ${rec.nom}`, 20, yPos);
-    yPos += 10;
-    pdf.text(`Document : ${rec.typeDoc} ${rec.doc}`, 20, yPos);
-    yPos += 10;
-    pdf.text(`Date d'arrivée : ${rec.date}`, 20, yPos);
-    yPos += 15;
-
-    if (rec.personnes) {
-      pdf.text('Autres personnes :', 20, yPos);
-      yPos += 10;
-      Object.values(rec.personnes).forEach(p => {
-        pdf.text(`- ${p.nom} (${p.doc})`, 30, yPos);
-        yPos += 8;
+    // Email Auto
+    const uSnap = await database.ref('users/' + inviteData.userId).once('value');
+    const u = uSnap.val();
+    if(u && u.guardEmail) {
+      emailjs.send(emailConfig.s, emailConfig.t, {
+        to_email: u.guardEmail,
+        message: `Nouvel invité: ${nom} (${doc}) pour l'appartement ${u.appart}${u.bat}`
       });
     }
 
-    if (rec.signature) {
-      yPos += 10;
-      pdf.text('Signature :', 20, yPos);
-      pdf.addImage(rec.signature, 'PNG', 20, yPos + 5, 50, 25);
-    }
-
-    const pdfBlob = pdf.output('blob');
-    const pdfUrl = URL.createObjectURL(pdfBlob);
-    window.open(pdfUrl, '_blank');
+    alert("Enregistré !");
+    generatePDF(record);
   }
 
-  function enterInviteMode(userId) {
-    database.ref('users/' + userId).once('value', snap => {
+  function generatePDF(r) {
+    const doc = new jspdf.jsPDF();
+    doc.text("PREMIUM VILLAGE - ENREGISTREMENT", 10, 10);
+    doc.text(`Nom: ${r.nom}`, 10, 20);
+    doc.text(`Document: ${r.doc}`, 10, 30);
+    doc.text(`Appartement: ${r.appart}${r.bat}`, 10, 40);
+    doc.text(`Date: ${r.date}`, 10, 50);
+    doc.addImage(r.signature, 'PNG', 10, 60, 50, 25);
+    doc.save(`Enregistrement_${r.nom}.pdf`);
+  }
+
+  // MODE INVITÉ
+  const params = new URLSearchParams(location.search);
+  if(params.has('invite')) {
+    const uid = params.get('invite');
+    database.ref('users/' + uid).once('value', snap => {
       const u = snap.val();
-      if (u) {
-        inviteData = { userId, appart: u.appart, bat: u.bat };
+      if(u) {
+        inviteData = { userId: uid, appart: u.appart, bat: u.bat };
         document.getElementById('loginCard').classList.add('hidden');
         document.getElementById('invitePanel').classList.remove('hidden');
-        document.getElementById('inviteInfo').textContent = `Appartement ${u.appart} - Immeuble ${u.bat}`;
+        document.getElementById('inviteTitle').textContent = `Enregistrement - Appartement ${u.appart}${u.bat}`;
       }
     });
   }
-
-  async function creerUtilisateur() {
-    const appart = document.getElementById('appartAdmin').value;
-    const bat = document.getElementById('batAdmin').value;
-    const pass = document.getElementById('passAdmin').value;
-    if (!appart || !pass) return;
-    await database.ref('users').push({ appart, bat, pass, maxRecords: 10 });
-    document.getElementById('appartAdmin').value = '';
-    document.getElementById('batAdmin').value = '';
-    document.getElementById('passAdmin').value = '';
-  }
-
-  async function supprimerUser(id) {
-    if (confirm("Supprimer cet utilisateur ?")) await database.ref('users/' + id).remove();
-  }
-
-  async function updateUserSettings() {
-    const max = document.getElementById('maxRecords').value;
-    const pass = document.getElementById('newPassword').value;
-    const updates = { maxRecords: parseInt(max) };
-    if (pass) updates.pass = pass;
-    await database.ref('users/' + currentUser.id).update(updates);
-    alert("Paramètres mis à jour");
-  }
-
-  function genererLien() {
-    const url = window.location.origin + window.location.pathname + "?invite=" + currentUser.id;
-    alert("Lien invité : " + url);
-  }
-
-  async function afficherDocument(id) {
-    const snap = await database.ref('records/' + id).once('value');
-    const r = snap.val();
-    if (r) {
-      currentDocumentData = r;
-      currentDocumentData.id = id;
-      let html = `<h3>Détails de l'enregistrement</h3>
-        <p><strong>Nom:</strong> ${r.nom}</p>
-        <p><strong>Document:</strong> ${r.typeDoc} ${r.doc}</p>
-        <p><strong>Date d'arrivée:</strong> ${r.date}</p>
-        <p><strong>Appartement:</strong> ${r.appart}${r.bat}</p>`;
-      
-      if (r.personnes) {
-        html += `<p><strong>Autres personnes:</strong></p><ul>`;
-        Object.values(r.personnes).forEach(p => {
-          html += `<li>${p.nom} - ${p.doc}</li>`;
-        });
-        html += `</ul>`;
-      }
-      
-      if (r.signature) {
-        html += `<p><strong>Signature:</strong></p><img src="${r.signature}" style="max-width:200px; border:1px solid #ccc;">`;
-      }
-
-      document.getElementById('documentPreview').innerHTML = html;
-      document.getElementById('documentColumn').classList.remove('hidden');
-      document.getElementById('docActions').classList.remove('hidden');
-    }
-  }
-
-  function closeDocument() {
-    document.getElementById('documentColumn').classList.add('hidden');
-  }
-
-  function downloadCurrentDocument() {
-    if (currentDocumentData) generateAndOpenPDF(currentDocumentData);
-  }
-
 </script>
 </body>
 </html>
