@@ -3,59 +3,30 @@
 <head>
     <title>Envoyer Email</title>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-    <style>
-        body { font-family: Arial; margin: 40px; }
-        input { padding: 10px; width: 250px; }
-        button { padding: 10px 20px; background: #007BFF; color: white; border: none; cursor: pointer; }
-        button:disabled { background: #ccc; cursor: not-allowed; }
-        #message { margin-top: 15px; font-weight: bold; }
-        .success { color: green; }
-        .error { color: red; }
-    </style>
 </head>
 <body>
-    <h3>Envoi d'Email</h3>
     <input type="email" id="email" placeholder="email@exemple.com">
-    <button onclick="envoyerEmail()" id="btn">Envoyer</button>
-    <div id="message"></div>
+    <button onclick="send()">Envoyer</button>
+    <div id="msg"></div>
 
     <script>
         emailjs.init('IWJc8rbQr6EMWWQbs');
-        const SERVICE_ID = 'service_qnnmvxe';
-        const TEMPLATE_ID = 'template_4e2gb4n';
+        const serviceId = 'service_qnnmvxe';
+        const templateId = 'template_4e2gb4n';
 
-        async function envoyerEmail() {
+        async function send() {
             const email = document.getElementById('email').value;
-            const btn = document.getElementById('btn');
-            const msg = document.getElementById('message');
-
-            if (!email.includes('@')) {
-                msg.innerHTML = 'Email invalide';
-                msg.className = 'error';
-                return;
-            }
-
-            btn.disabled = true;
-            btn.textContent = 'Envoi...';
+            const msg = document.getElementById('msg');
+            msg.textContent = 'Envoi...';
 
             try {
-                const result = await emailjs.send(SERVICE_ID, TEMPLATE_ID, {
-                    to_email: email,
-                    from_name: 'Mon Site',
-                    date: new Date().toLocaleDateString('fr-FR')
-                });
-
-                msg.innerHTML = '✅ Email envoyé avec succès !';
-                msg.className = 'success';
+                await emailjs.send(serviceId, templateId, { to_email: email });
+                msg.textContent = '✅ Email envoyé !';
                 document.getElementById('email').value = '';
             } catch (error) {
-                console.error('Erreur détaillée :', error);
-                msg.innerHTML = '❌ Échec. Vérifiez votre configuration dans le tableau de bord EmailJS.';
-                msg.className = 'error';
+                msg.textContent = '❌ Échec. Vérifiez le tableau de bord EmailJS.';
+                console.log('Erreur:', error);
             }
-
-            btn.disabled = false;
-            btn.textContent = 'Envoyer';
         }
     </script>
 </body>
