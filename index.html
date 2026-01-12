@@ -6,12 +6,14 @@
   <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
   <script>
     (function(){
-      emailjs.init("IWJc8rbQr6EMWWQbs"); // Public Key
+      emailjs.init("IWJc8rbQr6EMWWQbs");
     })();
 
     function envoyerEmail() {
+      const email = document.getElementById("email").value;
+
       emailjs.send("service_qnnmvxe", "template_4e2gb4n", {
-        to_name: "Test",
+        to_email: email,
         message: "Ceci est un email de test"
       }).then(
         () => alert("Email envoyé ✅"),
@@ -21,6 +23,7 @@
   </script>
 </head>
 <body>
-  <button onclick="envoyerEmail()">Envoyer l'email</button>
+  <input type="email" id="email" placeholder="Adresse email" required>
+  <button onclick="envoyerEmail()">Envoyer</button>
 </body>
 </html>
