@@ -10,11 +10,11 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Arial', sans-serif;
         }
 
         body {
-            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -23,30 +23,30 @@
         }
 
         .container {
-            background: rgba(255, 255, 255, 0.95);
+            background: white;
             border-radius: 20px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             width: 100%;
             max-width: 500px;
             overflow: hidden;
-            animation: slideUp 0.5s ease-out;
+            animation: fadeIn 0.5s ease-out;
         }
 
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(30px); }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
         .header {
-            background: linear-gradient(to right, #2575fc, #6a11cb);
+            background: linear-gradient(to right, #667eea, #764ba2);
             color: white;
-            padding: 25px 30px;
+            padding: 25px;
             text-align: center;
         }
 
         .header h1 {
             font-size: 28px;
-            margin-bottom: 5px;
+            margin-bottom: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -55,7 +55,7 @@
 
         .header p {
             opacity: 0.9;
-            font-size: 15px;
+            font-size: 14px;
         }
 
         .content {
@@ -68,10 +68,9 @@
 
         label {
             display: block;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             color: #333;
             font-weight: 600;
-            font-size: 16px;
         }
 
         .input-container {
@@ -80,19 +79,17 @@
 
         input {
             width: 100%;
-            padding: 16px 20px;
-            border: 2px solid #e1e5ee;
-            border-radius: 12px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
             font-size: 16px;
             transition: all 0.3s;
-            background: #f8f9fa;
         }
 
         input:focus {
             outline: none;
-            border-color: #6a11cb;
-            background: white;
-            box-shadow: 0 0 0 4px rgba(106, 17, 203, 0.1);
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
         .input-icon {
@@ -100,21 +97,16 @@
             right: 15px;
             top: 50%;
             transform: translateY(-50%);
-            color: #6a11cb;
-            font-size: 20px;
-        }
-
-        .button-container {
-            margin-top: 30px;
+            color: #667eea;
         }
 
         button {
             width: 100%;
-            padding: 18px;
-            background: linear-gradient(to right, #6a11cb, #2575fc);
+            padding: 16px;
+            background: linear-gradient(to right, #667eea, #764ba2);
             color: white;
             border: none;
-            border-radius: 12px;
+            border-radius: 10px;
             font-size: 18px;
             font-weight: 600;
             cursor: pointer;
@@ -122,28 +114,23 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
         }
 
         button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 20px rgba(106, 17, 203, 0.3);
-        }
-
-        button:active {
-            transform: translateY(-1px);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
         }
 
         button:disabled {
             opacity: 0.6;
             cursor: not-allowed;
             transform: none;
-            box-shadow: none;
         }
 
         .spinner {
-            width: 22px;
-            height: 22px;
+            width: 20px;
+            height: 20px;
             border: 3px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
             border-top-color: white;
@@ -155,101 +142,45 @@
             to { transform: rotate(360deg); }
         }
 
-        .message-container {
-            margin-top: 25px;
-            min-height: 60px;
-        }
-
         .message {
-            padding: 18px;
-            border-radius: 12px;
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
             text-align: center;
             font-weight: 500;
             display: none;
-            animation: fadeIn 0.5s;
-            font-size: 16px;
+            animation: slideIn 0.3s ease-out;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .success {
             background-color: #d4edda;
             color: #155724;
             border: 1px solid #c3e6cb;
-            display: block;
         }
 
         .error {
             background-color: #f8d7da;
             color: #721c24;
             border: 1px solid #f5c6cb;
-            display: block;
         }
 
         .info {
             background-color: #d1ecf1;
             color: #0c5460;
             border: 1px solid #bee5eb;
-            display: block;
-        }
-
-        .security-note {
-            margin-top: 25px;
-            padding: 15px;
-            background-color: #f8f9fa;
-            border-radius: 10px;
-            border-left: 4px solid #6a11cb;
-            font-size: 14px;
-            color: #555;
-        }
-
-        .security-note h3 {
-            color: #333;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
         }
 
         .footer {
             text-align: center;
             padding: 20px;
-            border-top: 1px solid #eee;
             color: #666;
-            font-size: 14px;
-        }
-
-        @media (max-width: 600px) {
-            .container {
-                border-radius: 15px;
-            }
-            
-            .content {
-                padding: 25px 20px;
-            }
-            
-            .header {
-                padding: 20px;
-            }
-            
-            .header h1 {
-                font-size: 24px;
-            }
-        }
-
-        /* Animation pour le message */
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            font-size: 12px;
+            border-top: 1px solid #eee;
         }
     </style>
 </head>
@@ -257,80 +188,78 @@
     <div class="container">
         <div class="header">
             <h1>📧 Envoi d'Email</h1>
-            <p>Système d'envoi d'emails sécurisé</p>
+            <p>Système sécurisé d'envoi d'emails</p>
         </div>
         
         <div class="content">
             <form id="emailForm">
                 <div class="form-group">
-                    <label for="emailInput">Adresse Email du Destinataire</label>
+                    <label for="email">Adresse Email du Destinataire</label>
                     <div class="input-container">
                         <input 
                             type="email" 
-                            id="emailInput" 
-                            placeholder="exemple@domaine.com" 
+                            id="email" 
+                            placeholder="exemple@gmail.com" 
                             required
-                            autocomplete="off"
                         >
-                        <div class="input-icon">✉️</div>
+                        <span class="input-icon">✉️</span>
                     </div>
                 </div>
                 
-                <div class="button-container">
-                    <button type="submit" id="submitBtn">
-                        <div class="spinner" id="spinner"></div>
-                        <span id="buttonText">Envoyer l'Email</span>
-                    </button>
-                </div>
+                <button type="submit" id="submitBtn">
+                    <span class="spinner" id="spinner"></span>
+                    <span id="buttonText">Envoyer l'Email</span>
+                </button>
             </form>
             
-            <div class="message-container">
-                <div class="message" id="message"></div>
-            </div>
-            
-            <div class="security-note">
-                <h3>🔒 Sécurité</h3>
-                <p>Vos données sont protégées. Les informations sensibles sont sécurisées et ne sont pas visibles dans le code source.</p>
-            </div>
+            <div class="message" id="message"></div>
         </div>
         
         <div class="footer">
-            <p>Système d'envoi d'emails sécurisé | Protégé par EmailJS</p>
+            <p>Service sécurisé - Les données sont protégées</p>
         </div>
     </div>
 
     <script>
-        // Configuration sécurisée - les informations sont obfusquées
-        // En production réelle, il est recommandé d'utiliser un serveur proxy
-        const CONFIG = {
-            SERVICE_ID: atob('c2VydmljZV9xbm5tdnhl'),
-            PUBLIC_KEY: atob('SVdKYzhyYlFyNkVNV1dRYnM='),
-            TEMPLATE_ID: 'template_contact' // Vous devrez créer ce template dans EmailJS
-        };
-
-        // Initialisation d'EmailJS
+        // ============================================
+        // CONFIGURATION EMAILJS - NE PAS MODIFIER
+        // ============================================
+        
+        // Initialisation d'EmailJS avec votre clé publique
         (function() {
-            // Décoder la clé publique avant l'initialisation
-            const publicKey = atob('SVdKYzhyYlFyNkVNV1dRYnM=');
-            emailjs.init(publicKey);
-            console.log('EmailJS initialisé avec succès');
+            // Clé publique EmailJS
+            const PUBLIC_KEY = 'IWJc8rbQr6EMWWQbs';
+            
+            // Initialisation
+            emailjs.init(PUBLIC_KEY);
+            console.log('EmailJS initialisé avec la clé publique');
         })();
 
-        // Fonction de validation d'email
+        // IDs de service et template
+        const EMAIL_CONFIG = {
+            SERVICE_ID: 'service_qnnmvxe',      // Votre Service ID
+            TEMPLATE_ID: 'template_default',    // Template par défaut
+            PUBLIC_KEY: 'IWJc8rbQr6EMWWQbs'     // Votre Public Key
+        };
+
+        // ============================================
+        // FONCTIONS UTILITAIRES
+        // ============================================
+
+        // Vérification de l'email
         function isValidEmail(email) {
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            return emailRegex.test(email);
+            const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return regex.test(email);
         }
 
-        // Fonction pour afficher un message
-        function showMessage(text, type) {
+        // Affichage des messages
+        function showMessage(text, type = 'info') {
             const messageDiv = document.getElementById('message');
             messageDiv.textContent = text;
             messageDiv.className = `message ${type}`;
             messageDiv.style.display = 'block';
-            messageDiv.style.animation = 'slideIn 0.3s ease-out';
             
-            // Cacher le message après 5 secondes pour les messages de succès/erreur
+            // Masquer après 5 secondes pour succès/erreur
             if (type === 'success' || type === 'error') {
                 setTimeout(() => {
                     messageDiv.style.display = 'none';
@@ -338,127 +267,191 @@
             }
         }
 
-        // Fonction pour simuler un envoi d'email (à remplacer par l'appel réel à EmailJS)
+        // ============================================
+        // FONCTION D'ENVOI D'EMAIL
+        // ============================================
+
         async function sendEmail(toEmail) {
-            // Simulation d'un délai réseau
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            
-            // Décoder les identifiants pour l'envoi
-            const serviceId = atob('c2VydmljZV9xbm5tdnhl');
-            const templateId = 'template_contact'; // Remplacez par votre ID de template
-            
-            // Préparer les paramètres du template
-            const templateParams = {
-                to_email: toEmail,
-                from_name: "Votre Service",
-                reply_to: "contact@votreservice.com",
-                subject: "Message de votre service",
-                message: "Ceci est un message de test envoyé via le système sécurisé.",
-                date: new Date().toLocaleDateString('fr-FR'),
-                time: new Date().toLocaleTimeString('fr-FR')
-            };
-            
             try {
-                // Envoyer l'email via EmailJS
+                // 1. Vérifier qu'EmailJS est chargé
+                if (typeof emailjs === 'undefined') {
+                    throw new Error('EmailJS n\'est pas chargé');
+                }
+
+                // 2. Créer un ID de template simple si vous n'en avez pas
+                // Vous pouvez créer un template dans EmailJS et mettre son ID ici
+                const templateId = 'template_default';
+                
+                // 3. Paramètres de l'email
+                const templateParams = {
+                    to_email: toEmail,
+                    from_name: 'Votre Service',
+                    to_name: 'Destinataire',
+                    message: 'Ceci est un email de test envoyé depuis votre formulaire.',
+                    reply_to: 'no-reply@votresite.com',
+                    subject: 'Email de Test',
+                    date: new Date().toLocaleDateString('fr-FR'),
+                    time: new Date().toLocaleTimeString('fr-FR')
+                };
+
+                console.log('Envoi en cours...');
+                console.log('Service ID:', EMAIL_CONFIG.SERVICE_ID);
+                console.log('Template ID:', templateId);
+                console.log('Destinataire:', toEmail);
+
+                // 4. Envoi via EmailJS
                 const response = await emailjs.send(
-                    serviceId,
+                    EMAIL_CONFIG.SERVICE_ID,
                     templateId,
                     templateParams
                 );
+
+                console.log('Réponse EmailJS:', response);
                 
                 return {
                     success: true,
-                    message: "Email envoyé avec succès",
-                    response: response
+                    message: 'Email envoyé avec succès!',
+                    data: response
                 };
+
             } catch (error) {
-                console.error("Erreur EmailJS:", error);
+                console.error('Erreur détaillée:', error);
+                
+                // Messages d'erreur personnalisés
+                let errorMessage = 'Erreur lors de l\'envoi';
+                
+                if (error.status === 0) {
+                    errorMessage = 'Problème de connexion. Vérifiez votre internet.';
+                } else if (error.status === 400) {
+                    errorMessage = 'Paramètres incorrects. Vérifiez votre configuration.';
+                } else if (error.status === 401) {
+                    errorMessage = 'Clé API non autorisée. Vérifiez vos identifiants.';
+                } else if (error.text) {
+                    try {
+                        const errorData = JSON.parse(error.text);
+                        errorMessage = errorData.message || error.text;
+                    } catch {
+                        errorMessage = error.text || 'Erreur inconnue';
+                    }
+                }
+                
                 return {
                     success: false,
-                    message: "Échec de l'envoi de l'email. Veuillez vérifier votre connexion et réessayer."
+                    message: errorMessage
                 };
             }
         }
 
-        // Gestionnaire de soumission du formulaire
+        // ============================================
+        // GESTION DU FORMULAIRE
+        // ============================================
+
         document.getElementById('emailForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            const emailInput = document.getElementById('emailInput');
+            const emailInput = document.getElementById('email');
             const submitBtn = document.getElementById('submitBtn');
             const buttonText = document.getElementById('buttonText');
             const spinner = document.getElementById('spinner');
             
             const email = emailInput.value.trim();
             
-            // Valider l'email
-            if (!isValidEmail(email)) {
-                showMessage("❌ Veuillez entrer une adresse email valide", "error");
-                emailInput.style.borderColor = "#f44336";
+            // Validation
+            if (!email) {
+                showMessage('Veuillez entrer une adresse email', 'error');
                 return;
             }
             
-            emailInput.style.borderColor = "#4CAF50";
+            if (!isValidEmail(email)) {
+                showMessage('Adresse email invalide', 'error');
+                return;
+            }
             
-            // Afficher le message d'envoi
-            showMessage("⏳ Envoi de l'email en cours...", "info");
-            
-            // Désactiver le bouton et afficher le spinner
+            // Désactiver le bouton
             submitBtn.disabled = true;
-            buttonText.textContent = "Envoi en cours...";
-            spinner.style.display = "block";
+            buttonText.textContent = 'Envoi en cours...';
+            spinner.style.display = 'inline-block';
+            
+            // Message d'attente
+            showMessage('⏳ Envoi de l\'email en cours...', 'info');
             
             // Envoyer l'email
             const result = await sendEmail(email);
             
-            // Réactiver le bouton et cacher le spinner
+            // Réactiver le bouton
             submitBtn.disabled = false;
-            buttonText.textContent = "Envoyer l'Email";
-            spinner.style.display = "none";
+            buttonText.textContent = 'Envoyer l\'Email';
+            spinner.style.display = 'none';
             
             // Afficher le résultat
             if (result.success) {
-                showMessage("✅ Email envoyé avec succès à " + email, "success");
-                emailInput.value = "";
-                emailInput.style.borderColor = "#e1e5ee";
+                showMessage('✅ ' + result.message, 'success');
+                emailInput.value = ''; // Vider le champ
             } else {
-                showMessage("❌ " + result.message, "error");
+                showMessage('❌ ' + result.message, 'error');
             }
         });
 
-        // Validation en temps réel de l'email
-        document.getElementById('emailInput').addEventListener('input', function(e) {
-            const email = e.target.value.trim();
-            
-            if (email === "") {
-                e.target.style.borderColor = "#e1e5ee";
-                return;
-            }
-            
-            if (isValidEmail(email)) {
-                e.target.style.borderColor = "#4CAF50";
+        // ============================================
+        // INITIALISATION AU CHARGEMENT
+        // ============================================
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Vérifier que EmailJS est chargé
+            if (typeof emailjs !== 'undefined') {
+                console.log('✅ EmailJS est correctement chargé');
+                console.log('Service ID configuré:', EMAIL_CONFIG.SERVICE_ID);
+                showMessage('✅ Système prêt. Entrez un email et cliquez sur Envoyer.', 'info');
             } else {
-                e.target.style.borderColor = "#f44336";
-            }
-            
-            // Cacher le message si l'utilisateur commence à taper
-            const messageDiv = document.getElementById('message');
-            if (messageDiv.style.display === 'block' && 
-                !messageDiv.classList.contains('info')) {
-                messageDiv.style.display = 'none';
+                console.error('❌ EmailJS n\'est pas chargé');
+                showMessage('❌ Erreur de chargement du service. Rechargez la page.', 'error');
             }
         });
 
-        // Afficher un message de bienvenue au chargement
-        window.addEventListener('DOMContentLoaded', () => {
-            setTimeout(() => {
-                showMessage("👋 Bienvenue! Entrez l'adresse email du destinataire et cliquez sur Envoyer", "info");
-            }, 1000);
-        });
+        // ============================================
+        // SOLUTION SI VOUS N'AVEZ PAS DE TEMPLATE
+        // ============================================
+        
+        // Pour créer un template dans EmailJS :
+        // 1. Allez sur https://www.emailjs.com
+        // 2. Connectez-vous à votre compte
+        // 3. Cliquez sur "Email Templates" → "Create New Template"
+        // 4. Créez votre template avec les variables :
+        //    - {{to_email}}
+        //    - {{from_name}}
+        //    - {{message}}
+        //    - {{subject}}
+        //    - etc.
+        // 5. Copiez l'ID du template et remplacez 'template_default' par votre ID
 
-        // Protection supplémentaire : masquer les infos dans la console
-        console.log("%c🔒 Système sécurisé d'envoi d'emails", "color: #6a11cb; font-size: 16px; font-weight: bold;");
-        console.log("%cLes informations sensibles sont protégées", "color: #666;");
+        // TEMPLATE D'URGENCE - À utiliser si vous ne voulez pas créer de template
+        // Remplacer cette fonction sendEmail par celle-ci si nécessaire :
+
+        /*
+        async function sendEmailSimple(toEmail) {
+            try {
+                // Envoi simple sans template spécifique
+                const response = await emailjs.send(
+                    'service_qnnmvxe',
+                    'default_template', // Essayez ce template par défaut
+                    {
+                        to_email: toEmail,
+                        from_name: 'Mon Site Web',
+                        message: 'Email envoyé depuis le formulaire de contact',
+                        reply_to: 'contact@monsite.com'
+                    }
+                );
+                
+                return { success: true, message: 'Email envoyé!' };
+            } catch (error) {
+                return { 
+                    success: false, 
+                    message: 'Erreur: ' + (error.text || 'Veuillez créer un template dans EmailJS') 
+                };
+            }
+        }
+        */
+
     </script>
 </body>
 </html>
