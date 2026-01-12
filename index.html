@@ -1,130 +1,56 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html>
 <head>
-    <meta charset="UTF-8">
     <title>Envoyer Email</title>
-    <!-- Load EmailJS library -->
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
-        body {
-            font-family: sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background-color: #f0f0f0;
-            margin: 0;
-        }
-        .container {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-        #emailInput {
-            padding: 12px;
-            width: 250px;
-            margin-right: 10px;
-            border: 2px solid #667eea;
-            border-radius: 5px;
-            font-size: 16px;
-        }
-        #sendBtn {
-            padding: 12px 25px;
-            background: linear-gradient(to right, #667eea, #764ba2);
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-        #sendBtn:disabled {
-            background: #cccccc;
-            cursor: not-allowed;
-        }
-        .message {
-            margin-top: 20px;
-            padding: 10px;
-            border-radius: 5px;
-            font-weight: bold;
-        }
-        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        body { font-family: Arial; max-width: 400px; margin: 40px auto; padding: 20px; }
+        h2 { color: #333; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; }
+        button { background: #4CAF50; color: white; padding: 12px 20px; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #45a049; }
+        #message { margin-top: 15px; padding: 10px; border-radius: 4px; }
+        .success { background: #dff0d8; color: #3c763d; }
+        .error { background: #f2dede; color: #a94442; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>📧 Envoyer un Email</h1>
-        <p>Entrez l'adresse email du destinataire.</p>
-        <div>
-            <input type="email" id="emailInput" placeholder="email@exemple.com">
-            <button id="sendBtn">Envoyer</button>
-        </div>
-        <!-- This is where "Email envoyé" or "Email non envoyé" will appear -->
-        <div id="message" class="message"></div>
-    </div>
+    <h2>Envoyer un Email</h2>
+    <input type="email" id="email" placeholder="adresse@exemple.com">
+    <button onclick="envoyerEmail()">Envoyer</button>
+    <div id="message"></div>
 
     <script>
-        // ============================================
-        // PARTIE 1: VOS INFORMATIONS (À MODIFIER)
-        // ============================================
-        emailjs.init("IWJc8rbQr6EMWWQbs"); // Votre clé publique
+        emailjs.init("IWJc8rbQr6EMWWQbs");
+        const SERVICE_ID = "service_qnnmvxe";
+        const TEMPLATE_ID = "template_4e2gb4n";
 
-        const CONFIG = {
-            SERVICE_ID: "service_qnnmvxe",     // Votre Service ID (déjà bon)
-            // ⬇️ REMPLACEZ CETTE LIGNE PAR VOTRE VRAI TEMPLATE ID ⬇️
-            TEMPLATE_ID: "template_xxxxxxxx"   // ❌ A CHANGER: Collez votre Template ID ici
-        };
-
-        // ============================================
-        // PARTIE 2: LA LOGIQUE D'ENVOI
-        // ============================================
-        document.getElementById('sendBtn').addEventListener('click', sendEmail);
-
-        async function sendEmail() {
-            const email = document.getElementById('emailInput').value;
-            const btn = document.getElementById('sendBtn');
-            const messageDiv = document.getElementById('message');
-
-            // 1. Vérifier l'email
-            if(!email || !email.includes('@')) {
-                showMessage("❌ Entrez un email valide.", "error");
+        async function envoyerEmail() {
+            const email = document.getElementById("email").value;
+            const messageDiv = document.getElementById("message");
+            
+            if (!email.includes("@")) {
+                messageDiv.innerHTML = "Veuillez entrer un email valide";
+                messageDiv.className = "error";
                 return;
             }
 
-            // 2. Préparer le bouton
-            btn.disabled = true;
-            btn.textContent = "Envoi...";
-
-            // 3. Envoyer via EmailJS
             try {
-                const result = await emailjs.send(CONFIG.SERVICE_ID, CONFIG.TEMPLATE_ID, {
-                    to_email: email,      // Cette variable doit exister dans votre template !
-                    message: "Ce message a été envoyé depuis mon site simple.",
-                    date: new Date().toLocaleDateString()
+                await emailjs.send(SERVICE_ID, TEMPLATE_ID, {
+                    to_email: email,
+                    from_name: "Votre Site",
+                    date: new Date().toLocaleDateString("fr-FR")
                 });
-
-                console.log("✅ Succès:", result);
-                showMessage("✅ Email envoyé avec succès !", "success");
-                document.getElementById('emailInput').value = ""; // Vide le champ
-
+                
+                messageDiv.innerHTML = "Email envoyé avec succès !";
+                messageDiv.className = "success";
+                document.getElementById("email").value = "";
+                
             } catch (error) {
-                console.error("❌ Erreur:", error);
-                showMessage("❌ Échec d'envoi. Vérifiez la console.", "error");
-            } finally {
-                // 4. Remettre le bouton normal
-                btn.disabled = false;
-                btn.textContent = "Envoyer";
+                messageDiv.innerHTML = "Échec d'envoi. Vérifiez votre configuration EmailJS.";
+                messageDiv.className = "error";
+                console.error("Erreur:", error);
             }
-        }
-
-        // Fonction pour afficher un message à l'écran
-        function showMessage(text, type) {
-            const msg = document.getElementById('message');
-            msg.textContent = text;
-            msg.className = 'message ' + type; // 'success' ou 'error'
-            msg.style.display = 'block';
         }
     </script>
 </body>
