@@ -1,34 +1,6 @@
-Vous avez raison de poser cette question ! OUI, les informations que vous avez fournies sont suffisantes pour envoyer des emails avec EmailJS. Je vais vous expliquer clairement ce dont on a besoin :
-
-📋 CE QU'ON A BESOIN EXACTEMENT :
-
-✅ INFORMATIONS QUE VOUS AVEZ DÉJÀ FOURNIES :
-
-1. Service ID : service_qnnmvxe ✓
-2. Clé Publique : IWJc8rbQr6EMWWQbs ✓
-
-❓ CE QUI MANQUE :
-
-1. Template ID - C'est le modèle d'email que vous devez créer dans EmailJS
-
----
-
-🚀 CODE COMPLET ET SIMPLIFIÉ :
-
-Voici le code 100% fonctionnel avec seulement ce dont on a vraiment besoin :
-
-```html
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Envoi d'Email</title>
-    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
-        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
-        .container { background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); width: 100%; max-width: 500px; }
-        h1 { color: #333; text-align: center; margin-bottom: 10px; }
-        input { width: 100%; padding: 15px; margin: 10px 0; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; }
-        button { width: 100%; padding: 15px; background: linear-gradient(to right, #667eea, #764ba2); color: white; border:
+// Get these EXACT values from your EmailJS Dashboard:
+const CONFIG = {
+  SERVICE_ID: 'service_qnnmvxe',        // From "Email Services"
+  PUBLIC_KEY: 'IWJc8rbQr6EMWWQbs',      // From "Account" > "API Keys"
+  TEMPLATE_ID: 'template_xxxxxxx'       // From "Email Templates" (NOT the template name)
+};
