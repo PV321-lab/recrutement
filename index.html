@@ -1,33 +1,26 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
-    <title>Envoyer Email</title>
-    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+  <meta charset="UTF-8">
+  <title>Test EmailJS</title>
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+  <script>
+    (function(){
+      emailjs.init("IWJc8rbQr6EMWWQbs"); // Public Key
+    })();
+
+    function envoyerEmail() {
+      emailjs.send("service_qnnmvxe", "template_4e2gb4n", {
+        to_name: "Test",
+        message: "Ceci est un email de test"
+      }).then(
+        () => alert("Email envoyé ✅"),
+        (error) => alert("Erreur ❌ " + error.text)
+      );
+    }
+  </script>
 </head>
 <body>
-    <input type="email" id="email" placeholder="email@exemple.com">
-    <button onclick="send()">Envoyer</button>
-    <div id="msg"></div>
-
-    <script>
-        emailjs.init('IWJc8rbQr6EMWWQbs');
-        const serviceId = 'service_qnnmvxe';
-        const templateId = 'template_4e2gb4n';
-
-        async function send() {
-            const email = document.getElementById('email').value;
-            const msg = document.getElementById('msg');
-            msg.textContent = 'Envoi...';
-
-            try {
-                await emailjs.send(serviceId, templateId, { to_email: email });
-                msg.textContent = '✅ Email envoyé !';
-                document.getElementById('email').value = '';
-            } catch (error) {
-                msg.textContent = '❌ Échec. Vérifiez le tableau de bord EmailJS.';
-                console.log('Erreur:', error);
-            }
-        }
-    </script>
+  <button onclick="envoyerEmail()">Envoyer l'email</button>
 </body>
 </html>
