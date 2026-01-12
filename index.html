@@ -13,7 +13,7 @@
       const email = document.getElementById("email").value;
 
       emailjs.send("service_qnnmvxe", "template_4e2gb4n", {
-        to_email: email,
+        email: email,       // 🔹 doit correspondre à {{email}} dans ton template
         message: "Ceci est un email de test"
       }).then(
         () => alert("Email envoyé ✅"),
