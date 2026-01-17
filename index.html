@@ -1,1552 +1,1560 @@
-
+<!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <title>Enregistrement des invités / Guest Registration</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
-  <style>
-    :root{
-      --c1:#007bff; --bg:#f0f2f5; --ok:#0f9d58; --warn:#f4b400; --err:#d93025; --info:#4285f4;
-    }
-    body { font-family: Arial, sans-serif; margin: 16px; background: var(--bg); }
-    h2 { text-align: center; margin: 8px 0 16px; color: #2c3e50; }
-    .card { background:#fff; padding:16px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.12); margin-bottom:16px; }
-    label { font-weight:600; display:block; margin-top:10px; }
-    input, select, button { font-size:16px; }
-    input, select { width:100%; padding:10px; margin-top:6px; border:1px solid #ccc; border-radius:8px; }
-    input[readonly]{ background:#e9ecef; }
-    button { margin-top:14px; padding:10px 14px; border:none; border-radius:10px; background:var(--c1); color:#fff; cursor:pointer; }
-    button:disabled{ opacity:.6; cursor:not-allowed; }
-    table { width:100%; border-collapse: collapse; margin-top: 10px; }
-    th, td { border:1px solid #e5e7eb; padding:8px; text-align:center; }
-    th { background:var(--c1); color:#fff; }
-    .hidden{ display:none !important; }
-    .row { display:flex; gap:12px; flex-wrap:wrap; }
-    .col { flex:1 1 220px; min-width:220px; }
-    .banner{ padding:10px 12px; border-radius:10px; margin-bottom:12px; font-weight:600; }
-    .banner.info{ background:#e8f0fe; color:#174ea6; border:1px solid #c6dafc; }
-    .banner.ok{ background:#e6f4ea; color:#137333; border:1px solid #cce8d3; }
-    .banner.warn{ background:#fef7e0; color:#a66300; border:1px solid #fde293; }
-    .banner.err{ background:#fce8e6; color:#a50e0e; border:1px solid #f7b9b4; }
-    .toolbar{ display:flex; gap:10px; justify-content:space-between; align-items:center; flex-wrap:wrap; }
-    .note{ font-size:13px; opacity:.8; }
-    .recap{ background:#fafafa; border:1px dashed #ccc; padding:10px; border-radius:8px; min-width:240px; }
-    .person-group { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #e9ecef; }
-    .person-group h4 { margin: 0 0 10px 0; color: #1E40AF; }
-    .consent-container { margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6; }
-    .consent-text { max-height: 150px; overflow-y: auto; padding: 10px; background: white; border-radius: 5px; border: 1px solid #ced4da; margin: 10px 0; }
-    .btn-delete { background: var(--err) !important; margin-left: 5px; }
-    .signature-area { margin: 40px 0; padding: 20px; border: 2px solid #ddd; border-radius: 8px; text-align: center; }
-    .signature-title { font-size: 18px; margin-bottom: 20px; color: #2c3e50; }
-    .signature-canvas { width: 100%; height: 200px; border: 1px solid #ccc; border-radius: 5px; background: white; cursor: crosshair; margin-bottom: 20px; }
-    .doc-type-row { display: flex; gap: 10px; }
-    .doc-type-row .col { flex: 1; }
-    .rules-container { 
-      margin: 20px 0; 
-      padding: 15px; 
-      background: #f8f9fa; 
-      border-radius: 8px; 
-      border: 1px solid #dee2e6;
-      max-height: 250px;
-      overflow-y: auto;
-    }
-    .rules-container h4 { margin-top: 0; color: #2c3e50; }
-    .rules-container ul { padding-left: 20px; margin: 10px 0; }
-    .rules-container li { margin-bottom: 8px; }
-    .signature-controls { display: flex; gap: 10px; justify-content: center; margin-top: 15px; }
-    .document-column { 
-      border-left: 2px solid #007bff; 
-      padding-left: 20px; 
-      min-height: 100vh;
-      background: #f9f9f9;
-    }
-    .document-preview { 
-      background: white; 
-      padding: 20px; 
-      border-radius: 8px; 
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
-      margin-top: 20px;
-      max-height: 500px;
-      overflow-y: auto;
-    }
-    .doc-title { 
-      text-align: center; 
-      font-size: 24px; 
-      font-weight: bold; 
-      color: #2c3e50; 
-      margin-bottom: 30px; 
-      border-bottom: 2px solid #2c3e50; 
-      padding-bottom: 10px;
-    }
-    .doc-info { margin-bottom: 20px; }
-    .doc-info p { margin: 5px 0; }
-    .doc-section { margin-bottom: 30px; }
-    .doc-section-title { 
-      font-size: 18px; 
-      font-weight: bold; 
-      color: #2c3e50; 
-      margin-bottom: 10px; 
-      border-bottom: 1px solid #ddd; 
-      padding-bottom: 5px;
-    }
-    .doc-signature { 
-      text-align: center; 
-      margin-top: 40px; 
-      padding-top: 20px; 
-      border-top: 2px solid #2c3e50;
-    }
-    .doc-signature-box { 
-      border: 1px solid #000; 
-      height: 100px; 
-      margin: 20px auto; 
-      width: 300px; 
-      position: relative;
-    }
-    .two-column-layout {
-      display: flex;
-      gap: 20px;
-      flex-wrap: wrap;
-    }
-    .form-column {
-      flex: 2;
-      min-width: 300px;
-    }
-    .document-column {
-      flex: 1;
-      min-width: 300px;
-    }
-    .doc-actions {
-      display: flex;
-      gap: 10px;
-      justify-content: center;
-      margin-top: 20px;
-    }
-    .nationality-row {
-      display: flex;
-      gap: 10px;
-      margin-top: 10px;
-    }
-    .nationality-row .col {
-      flex: 1;
-    }
-    .accept-signature-container {
-      margin-top: 20px;
-      padding: 15px;
-      background: #f8f9fa;
-      border-radius: 8px;
-      border: 1px solid #dee2e6;
-    }
-    .premium-header {
-      background: linear-gradient(135deg, #2c3e50, #4a6491);
-      color: white;
-      padding: 20px;
-      border-radius: 12px;
-      margin-bottom: 20px;
-      text-align: center;
-    }
-    .user-settings {
-      background: #fff;
-      padding: 15px;
-      border-radius: 8px;
-      border: 1px solid #dee2e6;
-      margin-top: 15px;
-    }
-    .email-settings {
-      background: #fff;
-      padding: 15px;
-      border-radius: 8px;
-      border: 1px solid #dee2e6;
-      margin-top: 15px;
-    }
-    .email-settings h4 {
-      margin-top: 0;
-      color: #2c3e50;
-    }
-    .signature-preview {
-      border: 2px solid #000;
-      background: white;
-      margin: 10px auto;
-      max-width: 300px;
-    }
-    .error-message {
-      color: #d93025;
-      font-size: 14px;
-      margin-top: 5px;
-      display: none;
-    }
-    .error-border {
-      border-color: #d93025 !important;
-    }
-    .smtp-info {
-      background: #e8f4f8;
-      padding: 12px;
-      border-radius: 6px;
-      margin-top: 10px;
-      font-size: 13px;
-      border-left: 4px solid #007bff;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartRecrute - Matching Intelligent</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+    <style>
+        :root {
+            --primary-color: #3f51b5;
+            --secondary-color: #2196f3;
+            --accent-color: #4caf50;
+            --light-color: #f5f7fa;
+            --dark-color: #2c3e50;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header {
+            background: linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), 
+                        url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect fill="%233f51b5" opacity="0.1" width="100" height="100"/><path d="M0,0 L100,100" stroke="%232196f3" stroke-width="1" opacity="0.2"/><path d="M100,0 L0,100" stroke="%232196f3" stroke-width="1" opacity="0.2"/></svg>');
+            padding: 2rem 0;
+            border-radius: 0 0 20px 20px;
+            margin-bottom: 2rem;
+        }
+        
+        .card {
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s ease;
+            margin-bottom: 1.5rem;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card-header {
+            background-color: white;
+            border-bottom: 1px solid #eaeaea;
+            font-weight: 600;
+            padding: 1rem 1.25rem;
+            border-radius: 12px 12px 0 0 !important;
+        }
+        
+        .table-responsive {
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .table thead th {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            font-weight: 500;
+            padding: 0.75rem 1rem;
+        }
+        
+        .table tbody tr {
+            transition: background-color 0.2s;
+        }
+        
+        .table tbody tr:hover {
+            background-color: rgba(63, 81, 181, 0.05);
+        }
+        
+        .match-high {
+            background-color: rgba(76, 175, 80, 0.15);
+            color: #2e7d32;
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        
+        .match-medium {
+            background-color: rgba(255, 193, 7, 0.15);
+            color: #f57c00;
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        
+        .match-low {
+            background-color: rgba(244, 67, 54, 0.15);
+            color: #d32f2f;
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        
+        .tech-badge {
+            background-color: #e3f2fd;
+            color: var(--primary-color);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            margin: 2px;
+            display: inline-block;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            padding: 0.5rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        
+        .btn-primary:hover {
+            background-color: #303f9f;
+            border-color: #303f9f;
+        }
+        
+        .btn-success {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+            padding: 0.5rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        
+        .modal-content {
+            border-radius: 12px;
+            border: none;
+        }
+        
+        .modal-header {
+            background-color: var(--light-color);
+            border-radius: 12px 12px 0 0;
+        }
+        
+        .form-control, .form-select {
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            padding: 0.75rem;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 0.25rem rgba(33, 150, 243, 0.25);
+        }
+        
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        .remote-badge {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        .onsite-badge {
+            background-color: #fff3e0;
+            color: #ef6c00;
+        }
+        
+        .footer {
+            background-color: var(--dark-color);
+            color: white;
+            padding: 2rem 0;
+            margin-top: 3rem;
+            border-radius: 20px 20px 0 0;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(63, 81, 181, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(63, 81, 181, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(63, 81, 181, 0); }
+        }
+    </style>
 </head>
 <body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-brain"></i> <strong>SmartRecrute</strong>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#offres">Offres</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#candidats">Candidats</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#addOfferModal">
+                            <i class="fas fa-plus-circle"></i> Ajouter offre
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#addCandidateModal">
+                            <i class="fas fa-user-plus"></i> Ajouter candidat
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
 
-<div class="premium-header">
-  <h1>Enregistrement des invités / Guest Registration</h1>
-  <p>Gestion des enregistrements des invités</p>
-</div>
-
-<div class="two-column-layout">
-  <div class="form-column">
-    <div id="banner" class="banner info hidden"></div>
-
-    <div id="loginCard" class="card">
-      <div class="toolbar">
-        <div><strong>Connexion - Enregistrement des invités</strong></div>
-        <div class="note">Veuillez entrer vos identifiants</div>
-      </div>
-      <label>Utilisateur</label>
-      <input type="text" id="loginUser" autocomplete="username" placeholder="Identifiant" required />
-      <label>Mot de passe</label>
-      <input type="password" id="loginPass" autocomplete="current-password" placeholder="Mot de passe" required />
-      <button id="btnLogin" onclick="login()">Connexion</button>
-      <p id="loginMsg" class="banner err hidden"></p>
+    <!-- En-tête -->
+    <div class="header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="display-5 fw-bold text-primary">SmartRecrute</h1>
+                    <p class="lead">L'application intelligente de matching entre candidats et offres d'emploi IT</p>
+                    <p>Infrastructure, Cloud, DevOps, Administration de bases de données</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <button class="btn btn-success btn-lg pulse" id="runMatchingBtn">
+                        <i class="fas fa-cogs"></i> Lancer le matching IA
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div id="adminPanel" class="hidden">
-      <div class="toolbar card">
-        <div><strong>Panneau administrateur - Enregistrement des invités</strong></div>
-        <div>
-          <button onclick="logout()">Déconnexion</button>
-        </div>
-      </div>
+    <!-- Contenu principal -->
+    <div class="container">
+        <!-- Section des offres -->
+        <section id="offres">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <i class="fas fa-briefcase text-primary me-2"></i>
+                        <span>Offres d'emploi</span>
+                    </div>
+                    <div>
+                        <button class="btn btn-outline-primary btn-sm me-2" id="loadOffersBtn">
+                            <i class="fas fa-sync-alt"></i> Charger les offres
+                        </button>
+                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addOfferModal">
+                            <i class="fas fa-plus"></i> Nouvelle offre
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="offersTable">
+                            <thead>
+                                <tr>
+                                    <th>Intitulé de poste</th>
+                                    <th>Emplacement</th>
+                                    <th>Salaire/TJM</th>
+                                    <th>Technologies</th>
+                                    <th>Télétravail</th>
+                                    <th>Profils proposés</th>
+                                    <th>Matching</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="offersTableBody">
+                                <!-- Les offres seront chargées ici -->
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted py-4">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        Cliquez sur "Charger les offres" pour afficher les données
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-      <div class="card">
-        <div class="toolbar">
-          <div><strong>Gestion des utilisateurs</strong></div>
-        </div>
-        <div class="row">
-          <div class="col">
-            <label>Appartement</label>
-            <input type="text" id="appartAdmin" placeholder="Ex: 12" />
-          </div>
-          <div class="col">
-            <label>Immeuble</label>
-            <input type="text" id="batAdmin" placeholder="Ex: A" />
-          </div>
-          <div class="col">
-            <label>Mot de passe</label>
-            <input type="text" id="passAdmin" placeholder="Choisir un mot de passe" />
-          </div>
-        </div>
-        <button onclick="creerUtilisateur()">Créer utilisateur</button>
-        <p id="userWarn" class="banner warn hidden"></p>
-      </div>
-
-      <div class="card">
-        <div class="toolbar">
-          <div><strong>Utilisateurs existants</strong></div>
-        </div>
-        <table id="tableUsers">
-          <thead>
-            <tr><th>N°</th><th>Appartement</th><th>Immeuble</th><th>Mot de passe</th><th>Action</th></tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-
-      <div class="card">
-        <div class="toolbar">
-          <div><strong>Enregistrements des invités</strong></div>
-        </div>
-        <table id="tableAdmin">
-          <thead>
-            <tr>
-              <th>N°</th><th>Appart.</th><th>Immeuble</th><th>Nom</th><th>Document</th><th>Type Doc</th><th>Nationalité</th>
-              <th>Nb Pers.</th><th>Personnes</th><th>Date</th><th>Document</th><th>Action</th><th>Statut</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
+        <!-- Section des candidats -->
+        <section id="candidats">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <i class="fas fa-users text-primary me-2"></i>
+                        <span>Candidats</span>
+                    </div>
+                    <div>
+                        <button class="btn btn-outline-primary btn-sm me-2" id="loadCandidatesBtn">
+                            <i class="fas fa-sync-alt"></i> Charger les candidats
+                        </button>
+                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addCandidateModal">
+                            <i class="fas fa-plus"></i> Nouveau candidat
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="candidatesTable">
+                            <thead>
+                                <tr>
+                                    <th>Nom & Prénom</th>
+                                    <th>Téléphone</th>
+                                    <th>Email</th>
+                                    <th>Profil</th>
+                                    <th>Technologies maîtrisées</th>
+                                    <th>Offres potentielles</th>
+                                    <th>Matching</th>
+                                    <th>CV</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="candidatesTableBody">
+                                <!-- Les candidats seront chargés ici -->
+                                <tr>
+                                    <td colspan="9" class="text-center text-muted py-4">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        Cliquez sur "Charger les candidats" pour afficher les données
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
     </div>
 
-    <div id="userPanel" class="hidden">
-      <div class="toolbar card">
-        <div><strong>Mon espace - Enregistrement des invités</strong></div>
-        <div><button onclick="logout()">Déconnexion</button></div>
-      </div>
-
-      <div class="card">
-        <div class="toolbar">
-          <div><strong>Paramètres de mon compte</strong></div>
-        </div>
-        <div class="user-settings">
-          <div class="row">
-            <div class="col">
-              <label>Nombre maximum d'enregistrements</label>
-              <input type="number" id="maxRecords" min="1" value="10" />
+    <!-- Modal pour ajouter une offre -->
+    <div class="modal fade" id="addOfferModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Ajouter une offre d'emploi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addOfferForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="offerTitle" class="form-label">Intitulé du poste *</label>
+                                <input type="text" class="form-control" id="offerTitle" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="offerLocation" class="form-label">Emplacement *</label>
+                                <input type="text" class="form-control" id="offerLocation" required>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="offerSalary" class="form-label">Salaire/TJM *</label>
+                                <input type="text" class="form-control" id="offerSalary" placeholder="Ex: 50-60k€ ou 500€/jour" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="offerRemote" class="form-label">Télétravail *</label>
+                                <select class="form-select" id="offerRemote" required>
+                                    <option value="full">Complet</option>
+                                    <option value="partial">Partiel</option>
+                                    <option value="none">Non</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="offerTechnologies" class="form-label">Technologies demandées *</label>
+                            <input type="text" class="form-control" id="offerTechnologies" placeholder="Séparez par des virgules (AWS, Docker, Kubernetes, PostgreSQL...)" required>
+                            <div class="form-text">Listez les technologies, langages et outils requis</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="offerDescription" class="form-label">Description du poste</label>
+                            <textarea class="form-control" id="offerDescription" rows="3"></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="offerLink" class="form-label">Lien vers l'offre (LinkedIn, Indeed, etc.) *</label>
+                            <input type="url" class="form-control" id="offerLink" placeholder="https://www.linkedin.com/jobs/view/..." required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="offerCompany" class="form-label">Entreprise</label>
+                            <input type="text" class="form-control" id="offerCompany">
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save"></i> Enregistrer l'offre
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
-            <div class="col">
-              <label>Nouveau mot de passe (optionnel)</label>
-              <input type="password" id="newPassword" placeholder="Laisser vide pour ne pas changer" />
-            </div>
-          </div>
-          <button onclick="updateUserSettings()">Enregistrer les paramètres</button>
-          <p id="settingsMsg" class="banner hidden"></p>
         </div>
-        
-        <div class="email-settings">
-          <h4>Notifications par Email</h4>
-          <p class="note">Recevez une notification quand un invité s'enregistre.</p>
-          
-          <label>Activer les notifications</label>
-          <select id="enableEmail" onchange="toggleEmailFields()">
-            <option value="non">Non</option>
-            <option value="oui">Oui</option>
-          </select>
-          
-          <div id="emailFields" class="hidden">
-            <div class="smtp-info">
-              <strong>Configuration EmailJS :</strong> Utilise le service EmailJS pour envoyer les notifications.
-            </div>
-            
-            <label>Email du destinataire (ex: Sécurité)</label>
-            <input type="email" id="guardEmail" placeholder="securite@exemple.com" />
-          </div>
-          
-          <div class="row" style="margin-top: 15px;">
-            <button onclick="saveEmailSettings()" style="flex: 1;">Enregistrer Email</button>
-            <button onclick="testEmailSettings()" style="flex: 1; background: var(--ok);">Tester l'envoi</button>
-          </div>
-          <p id="emailMsg" class="banner hidden"></p>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="toolbar">
-          <div><strong>Mes enregistrements</strong></div>
-          <button onclick="genererLien()" style="background: var(--ok);">Générer lien invité</button>
-        </div>
-        <table id="tableUser">
-          <thead>
-            <tr>
-              <th>N°</th><th>Nom</th><th>Document</th><th>Type Doc</th><th>Nationalité</th><th>Nb Pers.</th><th>Personnes</th><th>Date</th><th>Document</th><th>Statut</th><th>Action</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
     </div>
 
-    <div id="invitePanel" class="hidden">
-      <div class="guest-form-container">
-        <div class="toolbar" style="margin-bottom: 20px;">
-          <h3 style="margin: 0; flex-grow: 1;">Enregistrement Invité - Enregistrement des invités</h3>
+    <!-- Modal pour ajouter un candidat -->
+    <div class="modal fade" id="addCandidateModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Ajouter un candidat</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addCandidateForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="candidateFirstName" class="form-label">Prénom *</label>
+                                <input type="text" class="form-control" id="candidateFirstName" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="candidateLastName" class="form-label">Nom *</label>
+                                <input type="text" class="form-control" id="candidateLastName" required>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="candidatePhone" class="form-label">Téléphone *</label>
+                                <input type="tel" class="form-control" id="candidatePhone" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="candidateEmail" class="form-label">Email *</label>
+                                <input type="email" class="form-control" id="candidateEmail" required>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="candidateDepartment" class="form-label">Département</label>
+                                <input type="text" class="form-control" id="candidateDepartment">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="candidateProfile" class="form-label">Profil *</label>
+                                <select class="form-select" id="candidateProfile" required>
+                                    <option value="Cloud Engineer">Cloud Engineer</option>
+                                    <option value="DevOps">DevOps</option>
+                                    <option value="Administrateur BDD">Administrateur BDD</option>
+                                    <option value="SRE">SRE</option>
+                                    <option value="Ingénieur Infrastructure">Ingénieur Infrastructure</option>
+                                    <option value="Autre">Autre</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="candidateTechnologies" class="form-label">Technologies maîtrisées *</label>
+                            <input type="text" class="form-control" id="candidateTechnologies" placeholder="Séparez par des virgules (AWS, Docker, Kubernetes, PostgreSQL...)" required>
+                            <div class="form-text">Listez les technologies, langages et outils que vous maîtrisez</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="candidateCV" class="form-label">Lien vers CV (LinkedIn, PDF, etc.) *</label>
+                            <input type="url" class="form-control" id="candidateCV" placeholder="https://www.linkedin.com/in/... ou https://moncv.com/cv.pdf" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="candidateExperience" class="form-label">Années d'expérience</label>
+                            <select class="form-select" id="candidateExperience">
+                                <option value="0-2">0-2 ans</option>
+                                <option value="2-5">2-5 ans</option>
+                                <option value="5-10">5-10 ans</option>
+                                <option value="10+">10+ ans</option>
+                            </select>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save"></i> Enregistrer le candidat
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
+    </div>
 
-        <div class="card">
-          <form id="guestForm">
+    <!-- Modal pour afficher les détails du matching -->
+    <div class="modal fade" id="matchingDetailsModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="matchingModalTitle">Détails du matching</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="matchingDetailsContent">
+                        <!-- Contenu dynamique pour les détails du matching -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pied de page -->
+    <footer class="footer">
+        <div class="container">
             <div class="row">
-              <div class="col">
-                <label>Appartement</label>
-                <input type="text" id="invAppart" readonly />
-              </div>
-              <div class="col">
-                <label>Immeuble</label>
-                <input type="text" id="invBat" readonly />
-              </div>
+                <div class="col-md-6">
+                    <h5><i class="fas fa-brain"></i> SmartRecrute</h5>
+                    <p>Application intelligente de matching entre candidats et offres d'emploi IT.</p>
+                    <p>Sources: LinkedIn, Monster, Indeed, Fribourg</p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <p>Développé avec <i class="fas fa-heart text-danger"></i> pour le recrutement IT</p>
+                    <p>Powered by Firebase & AI Matching</p>
+                </div>
             </div>
-
-            <label>Date d'arrivée *</label>
-            <input type="date" id="dateArrivee" required class="guest-input" />
-            <div class="error-message" id="dateArriveeError">Veuillez sélectionner une date d'arrivée</div>
-
-            <label>Nombre des invités *</label>
-            <input type="number" id="nbPers" min="1" value="1" onchange="genererChamps()" required class="guest-input" />
-            <div class="error-message" id="nbPersError">Veuillez entrer le nombre d'invités (minimum 1)</div>
-
-            <label>Nom et Prénom de la personne principale *</label>
-            <input type="text" id="nomPrincipal" required placeholder="Nom complet" class="guest-input" />
-            <div class="error-message" id="nomPrincipalError">Veuillez entrer le nom et prénom</div>
-
-            <div class="row doc-type-row">
-              <div class="col">
-                <label>Type de document *</label>
-                <select id="typeDocPrincipal" required class="guest-input">
-                  <option value="">Sélectionner</option>
-                  <option value="Passeport">Passeport</option>
-                  <option value="Carte d'identité">Carte d'identité</option>
-                </select>
-                <div class="error-message" id="typeDocPrincipalError">Veuillez sélectionner un type de document</div>
-              </div>
-              <div class="col">
-                <label>Numéro de document *</label>
-                <input type="text" id="docPrincipal" required placeholder="N° de document" class="guest-input" />
-                <div class="error-message" id="docPrincipalError">Veuillez entrer le numéro de document</div>
-              </div>
-            </div>
-
-            <div class="nationality-row">
-              <div class="col">
-                <label>Nationalité *</label>
-                <input type="text" id="nationalitePrincipal" required placeholder="Nationalité" class="guest-input" />
-                <div class="error-message" id="nationalitePrincipalError">Veuillez entrer la nationalité</div>
-              </div>
-            </div>
-
-            <div id="personnes"></div>
-
-            <div class="rules-container">
-              <h4>Règlement intérieur à respecter :</h4>
-              <ul>
-                <li><strong>1. Si vous êtes des Couples marocains: :</strong> selon la loi marocaine Ce logement autorise que les couples mariés . </li>
-                <li><strong>2. Tranquillité et bruit :</strong> Silence total obligatoire après 23h00. Pas de musique forte, cris ou nuisances sonores à toute heure.</li>
-                <li><strong>3. Tabagisme :</strong> Fumer est strictement interdit à l'intérieur. Autorisé uniquement en extérieur (terrasse ou jardin), avec obligation de nettoyer les mégots et cendres.</li>
-                <li><strong>4. Nombre de personnes :</strong> Maximum 5 personnes autorisées dans l'appartement.</li>
-                <li><strong>5. Piscine :</strong> Douche obligatoire avant la baignade. Pas de verre ni objets fragiles autour de la piscine. Surveillance permanente des enfants par un adulte. Horaires : fermeture à 20h00. Pas de courses ni plongeons.</li>
-                <li><strong>6. Propreté et entretien :</strong> Maintenir les lieux propres en permanence. Vider régulièrement les poubelles. Respecter les sols et surfaces (pas de traces, pas de nourriture hors cuisine).</li>
-              </ul>
-            </div>
-
-            <div class="signature-area">
-              <div class="signature-title">Signature *</div>
-              <canvas id="signatureCanvas" class="signature-canvas">
-                Votre navigateur ne supporte pas la signature.
-              </canvas>
-              <div class="error-message" id="signatureError">Veuillez signer le document</div>
-              <div class="signature-controls">
-                <button type="button" id="clearBtn" class="btn" style="background: #e74c3c;">Effacer la signature</button>
-              </div>
-              <div id="signaturePreview" class="signature-preview hidden"></div>
-              <p style="margin-top: 15px; font-size: 14px; color: #666;">
-                En signant, vous acceptez le règlement intérieur et consentez au traitement de vos données personnelles.
-              </p>
-            </div>
-
-            <div class="accept-signature-container">
-              <label style="display: flex; align-items: center; justify-content: center; margin-bottom: 15px;">
-                <input type="checkbox" id="acceptCheckbox" required style="margin-right: 10px; width: auto;">
-                <span style="font-size: 16px; font-weight: bold;">Je confirme avoir lu et j'accepte le règlement intérieur ainsi queJe déclare accepter, conformément à la loi marocaine, la protection et la confidentialité de mes données personnelles..</span>
-              </label>
-              <div class="error-message" id="acceptCheckboxError" style="text-align: center;">Veuillez accepter les conditions</div>
-              <div style="text-align: center;">
-                <button type="button" id="registerBtn" class="btn" style="background: #27ae60; padding: 12px 30px; font-size: 18px;">Enregistrer et valider</button>
-              </div>
-            </div>
-          </form>
         </div>
+    </footer>
 
-        <div id="successMessage" class="banner ok hidden">
-          Enregistrement réussi ! Un onglet s'ouvre avec votre document PDF.
-          <br><br>
-          <strong>Note importante :</strong> En cas de demande des agents de sécurité, présentez ce document signé.
-          Seules les personnes enregistrées dans cette réservation sont autorisées à entrer.
-        </div>
-      </div>
-    </div>
-  </div>
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Configuration Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyBv8YrH055qDZhMZFXEq4oUFTZQAM097Ao",
+            authDomain: "recrutement-it.firebaseapp.com",
+            databaseURL: "https://recrutement-it-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "recrutement-it",
+            storageBucket: "recrutement-it.firebasestorage.app",
+            messagingSenderId: "665734903354",
+            appId: "1:665734903354:web:ff512fca337c362833a703",
+            measurementId: "G-LH8Z73HX1C"
+        };
 
-  <div id="documentColumn" class="document-column hidden">
-    <div class="card">
-      <h3>Document Signé - Enregistrement des invités</h3>
-      <div id="documentPreview" class="document-preview">
-        <p style="text-align: center; color: #666;">Sélectionnez un enregistrement pour voir le document.</p>
-      </div>
-      <div id="docActions" class="doc-actions hidden">
-        <button onclick="downloadCurrentDocument()" style="background: var(--ok);">Télécharger PDF</button>
-        <button onclick="partagerWhatsApp()" style="background: #25D366;">Partager WhatsApp</button>
-      </div>
-    </div>
-  </div>
-</div>
+        // Initialiser Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const storage = firebase.storage();
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+        // Données de démonstration pour les offres et candidats
+        const sampleOffers = [
+            {
+                id: 1,
+                title: "Ingénieur Cloud DevOps",
+                location: "Paris",
+                salary: "60-75k€",
+                technologies: ["AWS", "Docker", "Kubernetes", "Terraform", "Jenkins"],
+                remote: "full",
+                company: "TechCorp",
+                link: "https://www.linkedin.com/jobs/view/123456789",
+                proposedProfiles: 0,
+                matchPercentage: 0,
+                description: "Nous recherchons un ingénieur Cloud DevOps pour rejoindre notre équipe."
+            },
+            {
+                id: 2,
+                title: "Administrateur Base de Données",
+                location: "Lyon",
+                salary: "45-55k€",
+                technologies: ["PostgreSQL", "MySQL", "MongoDB", "Redis", "SQL Server"],
+                remote: "partial",
+                company: "DataSystems",
+                link: "https://www.indeed.com/job/admin-bdd",
+                proposedProfiles: 0,
+                matchPercentage: 0,
+                description: "Gestion et optimisation des bases de données critiques."
+            },
+            {
+                id: 3,
+                title: "SRE - Site Reliability Engineer",
+                location: "Remote",
+                salary: "550€/jour",
+                technologies: ["Google Cloud", "Kubernetes", "Prometheus", "Grafana", "Python"],
+                remote: "full",
+                company: "CloudTech",
+                link: "https://www.monster.fr/emploi/sre",
+                proposedProfiles: 0,
+                matchPercentage: 0,
+                description: "Assurer la fiabilité et la performance des services cloud."
+            }
+        ];
 
-<script>
-  (function(){
-    emailjs.init("IWJc8rbQr6EMWWQbs");
-  })();
+        const sampleCandidates = [
+            {
+                id: 1,
+                firstName: "Jean",
+                lastName: "Dupont",
+                phone: "+33 6 12 34 56 78",
+                email: "jean.dupont@email.com",
+                department: "Île-de-France",
+                profile: "DevOps",
+                technologies: ["AWS", "Docker", "Kubernetes", "Terraform", "Linux", "Python"],
+                cv: "https://www.linkedin.com/in/jeandupont",
+                experience: "5-10",
+                potentialOffers: 0,
+                matchPercentage: 0
+            },
+            {
+                id: 2,
+                firstName: "Marie",
+                lastName: "Martin",
+                phone: "+33 6 23 45 67 89",
+                email: "marie.martin@email.com",
+                department: "Rhône-Alpes",
+                profile: "Administrateur BDD",
+                technologies: ["PostgreSQL", "MySQL", "Oracle", "MongoDB", "SQL"],
+                cv: "https://marie-martin-cv.com",
+                experience: "10+",
+                potentialOffers: 0,
+                matchPercentage: 0
+            },
+            {
+                id: 3,
+                firstName: "Ahmed",
+                lastName: "Benali",
+                phone: "+33 6 34 56 78 90",
+                email: "ahmed.benali@email.com",
+                department: "Provence-Alpes-Côte d'Azur",
+                profile: "Cloud Engineer",
+                technologies: ["AWS", "Azure", "Docker", "Kubernetes", "Terraform", "Ansible"],
+                cv: "https://www.linkedin.com/in/ahmedbenali",
+                experience: "2-5",
+                potentialOffers: 0,
+                matchPercentage: 0
+            }
+        ];
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyDbJe_e0Uz5YavmQDwabym11FStEPjxo2E",
-    authDomain: "invitedb-6ce9f.firebaseapp.com",
-    databaseURL: "https://invitedb-6ce9f-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "invitedb-6ce9f",
-    storageBucket: "invitedb-6ce9f.firebasestorage.app",
-    messagingSenderId: "253833375693",
-    appId: "1:253833375693:web:a1d68bef41916c86be5e84",
-    measurementId: "G-BS2EBMM7T3"
-  };
-  
-  try {
-    if (!firebase.apps.length) {
-      firebase.initializeApp(firebaseConfig);
-    }
-  } catch (e) {
-    console.error("Firebase Init Error:", e);
-  }
-  const database = firebase.database();
-  const AUTH_EMAIL = "maraminho10@gmail.com";
-  const AUTH_PASS = "M@ra10";
+        // Variables globales
+        let offers = [];
+        let candidates = [];
+        let currentMatchingResults = [];
 
-  let currentUser = null;
-  const SESSION_TIMEOUT_MS = 10 * 60 * 1000;
-  let sessionTimer = null;
-  let signatureData = '';
-  let hasSignature = false;
-  let currentDocumentData = null;
-  let userSettings = { maxRecords: 10 };
-  let emailSettings = { enableEmail: 'non' };
-
-  function encrypt(text) {
-    if (!text) return '';
-    try {
-      return CryptoJS.AES.encrypt(text, 'PremiumVillage2024Key').toString();
-    } catch (e) {
-      console.error("Encryption error:", e);
-      return text;
-    }
-  }
-
-  function decrypt(text) {
-    if (!text) return '';
-    try {
-      const bytes = CryptoJS.AES.decrypt(text, 'PremiumVillage2024Key');
-      return bytes.toString(CryptoJS.enc.Utf8);
-    } catch (e) {
-      console.error("Decryption error:", e);
-      return text;
-    }
-  }
-
-  function showBanner(type, text){
-    const b = document.getElementById('banner');
-    b.className = 'banner ' + type;
-    b.textContent = text;
-    b.classList.remove('hidden');
-  }
-  
-  function hideBanner(){ 
-    document.getElementById('banner').classList.add('hidden'); 
-  }
-
-  function showInlineMsg(elId, type, text){
-    const el = document.getElementById(elId);
-    el.textContent = text;
-    el.className = 'banner ' + type;
-    el.classList.remove('hidden');
-  }
-  
-  function hideInlineMsg(elId){
-    const el = document.getElementById(elId);
-    el.classList.add('hidden');
-  }
-
-  function startSessionTimer(){
-    stopSessionTimer();
-    sessionTimer = setTimeout(()=>{
-      logout(true);
-      showBanner('warn', "Session expirée (inactivité). Veuillez vous reconnecter.");
-    }, SESSION_TIMEOUT_MS);
-  }
-  
-  function stopSessionTimer(){
-    if(sessionTimer){ 
-      clearTimeout(sessionTimer); 
-      sessionTimer = null; 
-    }
-  }
-  
-  function resetSessionTimer(){
-    if(currentUser) startSessionTimer();
-  }
-  
-  ['click','keydown','touchstart'].forEach(evt=>{
-    document.addEventListener(evt, resetSessionTimer, {passive:true});
-  });
-
-  function logout(expired=false){
-    currentUser = null;
-    stopSessionTimer();
-    document.getElementById('adminPanel').classList.add('hidden');
-    document.getElementById('userPanel').classList.add('hidden');
-    document.getElementById('invitePanel').classList.add('hidden');
-    document.getElementById('loginCard').classList.remove('hidden');
-    document.getElementById('documentColumn').classList.add('hidden');
-    if(!expired) showBanner('info', "Vous êtes déconnecté.");
-  }
-
-  async function login(){
-    hideInlineMsg('loginMsg');
-    const u = document.getElementById('loginUser').value.trim();
-    const p = document.getElementById('loginPass').value.trim();
-
-    if(!u || !p){
-      showInlineMsg('loginMsg','err',"Saisissez l'utilisateur et le mot de passe.");
-      return;
-    }
-
-    const btn = document.getElementById('btnLogin');
-    btn.disabled = true;
-    btn.textContent = "Connexion...";
-
-    try {
-      if(u === 'admin' && p === 'admin'){
-        try {
-          await firebase.auth().signInWithEmailAndPassword(AUTH_EMAIL, AUTH_PASS);
-        } catch (e) {
-          console.error("Firebase Auth failed for admin:", e);
-        }
-        
-        currentUser = { role:'admin' };
-        document.getElementById('loginCard').classList.add('hidden');
-        document.getElementById('adminPanel').classList.remove('hidden');
-        document.getElementById('documentColumn').classList.remove('hidden');
-        showBanner('ok', "Connecté en tant qu'administrateur.");
-        startSessionTimer();
-        refreshAdmin();
-        return;
-      }
-
-      await firebase.auth().signInWithEmailAndPassword(AUTH_EMAIL, AUTH_PASS);
-
-      const snapshot = await database.ref('users/' + u).once('value');
-      const user = snapshot.val();
-      
-      if(user && user.pass === p){
-        currentUser = { role:'user', id:u, appart:user.appart, bat:user.bat };
-        
-        const settingsSnapshot = await database.ref('settings/' + u).once('value');
-        if(settingsSnapshot.exists()){
-          userSettings = settingsSnapshot.val();
-          document.getElementById('maxRecords').value = userSettings.maxRecords || 10;
-        }
-        
-        const emailSnapshot = await database.ref('emailSettings/' + u).once('value');
-        if(emailSnapshot.exists()){
-          emailSettings = emailSnapshot.val();
-          document.getElementById('enableEmail').value = emailSettings.enableEmail || 'non';
-          toggleEmailFields();
-          if(emailSettings.enableEmail === 'oui'){
-            document.getElementById('guardEmail').value = decrypt(emailSettings.guardEmail || '');
-          }
-        }
-        
-        document.getElementById('loginCard').classList.add('hidden');
-        document.getElementById('userPanel').classList.remove('hidden');
-        document.getElementById('documentColumn').classList.remove('hidden');
-        showBanner('ok', `Connecté. Appartement ${user.appart} / Immeuble ${user.bat}.`);
-        startSessionTimer();
-        refreshUser();
-      } else {
-        showInlineMsg('loginMsg','err',"Identifiants incorrects.");
-        await firebase.auth().signOut();
-      }
-    } catch (error) {
-      console.error("Login Error:", error);
-      showInlineMsg('loginMsg','err', "Erreur: " + (error.message || "Accès refusé"));
-    } finally {
-      btn.disabled = false;
-      btn.textContent = "Connexion";
-    }
-  }
-
-  function toggleEmailFields(){
-    const enableEmail = document.getElementById('enableEmail').value;
-    const emailFields = document.getElementById('emailFields');
-    if(enableEmail === 'oui'){
-      emailFields.classList.remove('hidden');
-    } else {
-      emailFields.classList.add('hidden');
-    }
-  }
-
-  async function saveEmailSettings(){
-    const enableEmail = document.getElementById('enableEmail').value;
-    
-    if(enableEmail === 'oui'){
-      const guardEmail = document.getElementById('guardEmail').value.trim();
-      
-      if(!guardEmail){
-        showInlineMsg('emailMsg','warn',"Veuillez entrer l'email du destinataire.");
-        return;
-      }
-      
-      if(!guardEmail.includes('@')){
-        showInlineMsg('emailMsg','warn',"Veuillez entrer une adresse email valide.");
-        return;
-      }
-      
-      emailSettings = {
-        enableEmail: enableEmail,
-        guardEmail: encrypt(guardEmail)
-      };
-    } else {
-      emailSettings = {
-        enableEmail: 'non'
-      };
-    }
-    
-    try {
-      await database.ref('emailSettings/' + currentUser.id).set(emailSettings);
-      showInlineMsg('emailMsg','ok',"Paramètres email enregistrés avec succès.");
-    } catch (error) {
-      showInlineMsg('emailMsg','err',"Erreur lors de l'enregistrement des paramètres email.");
-    }
-  }
-
-  async function testEmailSettings(){
-    if(emailSettings.enableEmail !== 'oui'){
-      showInlineMsg('emailMsg','warn',"Veuillez d'abord activer les notifications par email.");
-      return;
-    }
-    
-    const guardEmail = decrypt(emailSettings.guardEmail || '');
-    
-    if(!guardEmail){
-      showInlineMsg('emailMsg','warn',"Veuillez d'abord configurer l'email du destinataire.");
-      return;
-    }
-    
-    try {
-      await emailjs.send("service_qnnmvxe", "template_4e2gb4n", {
-        email: guardEmail,
-        message: "Ceci est un email de test depuis l'application Enregistrement des invités.\n\nSi vous recevez cet email, la configuration est correcte."
-      });
-      
-      showInlineMsg('emailMsg','ok',"Email de test envoyé avec succès !");
-    } catch (error) {
-      showInlineMsg('emailMsg','err',"Erreur d'envoi: " + (error.text || "Erreur inconnue"));
-    }
-  }
-
-  async function sendAutomaticEmail(record) {
-    if(emailSettings.enableEmail !== 'oui'){
-      return { success: true, message: "Emails désactivés" };
-    }
-    
-    const guardEmail = decrypt(emailSettings.guardEmail || '');
-    
-    if(!guardEmail){
-      return { success: false, error: "Email du destinataire non configuré" };
-    }
-    
-    const totalPersons = record.personnes ? Object.keys(record.personnes).length + 1 : 1;
-    
-    try {
-      await emailjs.send("service_qnnmvxe", "template_4e2gb4n", {
-        email: guardEmail,
-        message: `Nouvelle réservation enregistrée
-
-Nom: ${record.nom}
-Date d'arrivée: ${record.date}
-Appartement: ${record.appart}
-Immeuble: ${record.bat}
-Nombre de personnes: ${totalPersons}
-Type de document: ${record.typeDoc}
-Numéro de document: ${record.doc}
-
-Cette réservation a été enregistrée via l'application Enregistrement des invités.`
-      });
-      
-      await database.ref('records/' + record.id).update({ sent: true, sentAt: Date.now() });
-      return { success: true, message: "Email envoyé avec succès" };
-    } catch (error) {
-      return { success: false, error: error.text || "Erreur lors de l'envoi de l'email" };
-    }
-  }
-
-  async function updateUserSettings(){
-    const maxRecords = parseInt(document.getElementById('maxRecords').value) || 10;
-    const newPassword = document.getElementById('newPassword').value.trim();
-    
-    if(maxRecords < 1){
-      showInlineMsg('settingsMsg','warn',"Le nombre d'enregistrements doit être supérieur à 0.");
-      return;
-    }
-    
-    try {
-      userSettings.maxRecords = maxRecords;
-      await database.ref('settings/' + currentUser.id).set(userSettings);
-      
-      if(newPassword){
-        await database.ref('users/' + currentUser.id).update({ pass: newPassword });
-        document.getElementById('newPassword').value = '';
-        showInlineMsg('settingsMsg','ok',"Paramètres et mot de passe mis à jour avec succès.");
-      } else {
-        showInlineMsg('settingsMsg','ok',"Paramètres mis à jour avec succès.");
-      }
-      
-      refreshUser();
-    } catch (error) {
-      showInlineMsg('settingsMsg','err',"Erreur lors de la mise à jour.");
-    }
-  }
-
-  async function creerUtilisateur(){
-    const app = document.getElementById('appartAdmin').value.trim();
-    const bat = document.getElementById('batAdmin').value.trim();
-    const pass = document.getElementById('passAdmin').value.trim();
-    if(!app || !bat || !pass) return;
-    
-    const id = app + bat;
-    try {
-      await database.ref('users/' + id).set({ appart:app, bat:bat, pass:pass });
-      document.getElementById('appartAdmin').value = '';
-      document.getElementById('batAdmin').value = '';
-      document.getElementById('passAdmin').value = '';
-      refreshAdmin();
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
-  async function supprimerUtilisateur(id){
-    if(confirm("Supprimer cet utilisateur ?")) {
-      await database.ref('users/' + id).remove();
-      refreshAdmin();
-    }
-  }
-
-  async function refreshAdmin(){
-    const snap = await database.ref('users').once('value');
-    const users = snap.val() || {};
-    const tbody = document.querySelector('#tableUsers tbody');
-    tbody.innerHTML = '';
-    let i = 1;
-    for(let id in users){
-      const u = users[id];
-      tbody.innerHTML += `<tr><td>${i++}</td><td>${u.appart}</td><td>${u.bat}</td><td>${u.pass}</td><td><button class="btn-delete" onclick="supprimerUtilisateur('${id}')">Supprimer</button></td></tr>`;
-    }
-
-    const snapRec = await database.ref('records').once('value');
-    const records = snapRec.val() || {};
-    const tbodyAdmin = document.querySelector('#tableAdmin tbody');
-    tbodyAdmin.innerHTML = '';
-    let j = 1;
-    const sortedKeys = Object.keys(records).sort((a,b) => records[b].timestamp - records[a].timestamp);
-    for(let id of sortedKeys){
-      const r = records[id];
-      const persStr = r.personnes ? Object.values(r.personnes).map(p => p.nom).join(', ') : '-';
-      const nbPers = r.personnes ? Object.keys(r.personnes).length + 1 : 1;
-      tbodyAdmin.innerHTML += `<tr>
-        <td>${j++}</td><td>${r.appart}</td><td>${r.bat}</td><td>${r.nom}</td><td>${r.doc}</td><td>${r.typeDoc}</td><td>${r.nationalite}</td>
-        <td>${nbPers}</td><td>${persStr}</td><td>${r.date}</td>
-        <td><button onclick="afficherDocument('${id}')">Voir</button></td>
-        <td><button onclick="envoyerWhatsAppAdmin('${id}')" style="background:#25D366;">WhatsApp</button><button class="btn-delete" onclick="supprimerEnregistrement('${id}')">Suppr.</button></td>
-        <td>${r.sent ? '✅ Envoyé' : '⏳ En attente'}</td>
-      </tr>`;
-    }
-  }
-
-  async function refreshUser(){
-    const snap = await database.ref('records').once('value');
-    const records = snap.val() || {};
-    const tbody = document.querySelector('#tableUser tbody');
-    tbody.innerHTML = '';
-    let i = 1;
-    const sortedKeys = Object.keys(records).sort((a,b) => records[b].timestamp - records[a].timestamp);
-    for(let id of sortedKeys){
-      const r = records[id];
-      if(r.appart === currentUser.appart && r.bat === currentUser.bat){
-        const persStr = r.personnes ? Object.values(r.personnes).map(p => p.nom).join(', ') : '-';
-        const nbPers = r.personnes ? Object.keys(r.personnes).length + 1 : 1;
-        tbody.innerHTML += `<tr>
-          <td>${i++}</td><td>${r.nom}</td><td>${r.doc}</td><td>${r.typeDoc}</td><td>${r.nationalite}</td>
-          <td>${nbPers}</td><td>${persStr}</td><td>${r.date}</td>
-          <td><button onclick="afficherDocument('${id}')">Voir</button></td>
-          <td>${r.sent ? '✅ Envoyé' : '⏳ En attente'}</td>
-          <td><button onclick="envoyerWhatsAppUser('${id}')" style="background:#25D366;">WhatsApp</button><button class="btn-delete" onclick="supprimerEnregistrement('${id}')">Suppr.</button></td>
-        </tr>`;
-      }
-    }
-  }
-
-  async function envoyerWhatsAppAdmin(recordId) {
-    try {
-      const snapshot = await database.ref('records/' + recordId).once('value');
-      const record = snapshot.val();
-      
-      if (!record) {
-        alert("Enregistrement non trouvé");
-        return;
-      }
-      
-      const totalPersons = record.personnes ? Object.keys(record.personnes).length + 1 : 1;
-      let autresPersonnes = '';
-      
-      if (record.personnes) {
-        Object.values(record.personnes).forEach((p, index) => {
-          autresPersonnes += `${index + 1}. ${p.nom} - ${p.doc}\n`;
+        // Initialiser l'application
+        document.addEventListener('DOMContentLoaded', function() {
+            // Charger les données depuis Firebase au démarrage
+            loadOffers();
+            loadCandidates();
+            
+            // Événements pour les boutons
+            document.getElementById('loadOffersBtn').addEventListener('click', loadOffers);
+            document.getElementById('loadCandidatesBtn').addEventListener('click', loadCandidates);
+            document.getElementById('runMatchingBtn').addEventListener('click', runMatching);
+            
+            // Gestion des formulaires
+            document.getElementById('addOfferForm').addEventListener('submit', addOffer);
+            document.getElementById('addCandidateForm').addEventListener('submit', addCandidate);
+            
+            // Afficher un message de bienvenue
+            showNotification('SmartRecrute est prêt ! Chargez les données pour commencer.', 'success');
         });
-      }
-      
-      const message = `Salam :\n\nArrivée: ${record.date}\nAppartement: ${record.appart}\nImm: ${record.bat}\nNombre de personnes: ${totalPersons} personnes\n\nRéservation au nom de:\nNom et Prénom: ${record.nom}\nNuméro de ${record.typeDoc}: ${record.doc}\n\nAutres personnes:\n${autresPersonnes}\nNB : Svp pas d'autres personnes autorisées seul Les personnes figurent dans la réservation.\n\nMerci\n------------------------------------------\nالسلام عليكم:\n\nالوصول: ${record.date}\nالشقة: ${record.appart}\nرقم العمارة: ${record.bat}\nعدد الأشخاص: ${totalPersons} أشخاص\n\nالحجز باسم:\nالإسم و اللقب: ${record.nom}\nرقم ${record.typeDoc === 'Passeport' ? 'جواز السفر' : 'بطاقة الهوية'}: ${record.doc}\n\nأشخاص آخرون:\n${autresPersonnes}\nملاحظة: الرجاء عدم السماح لأي أشخاص آخرين، فقط الأشخاص المذكورين في الحجز.\n\nشكرًا.`;
-      
-      window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
-    } catch (error) {
-      console.error(error);
-      alert("Erreur lors de l'envoi WhatsApp");
-    }
-  }
 
-  async function envoyerWhatsAppUser(recordId) {
-    try {
-      const snapshot = await database.ref('records/' + recordId).once('value');
-      const record = snapshot.val();
-      
-      if (!record) {
-        alert("Enregistrement non trouvé");
-        return;
-      }
-      
-      const totalPersons = record.personnes ? Object.keys(record.personnes).length + 1 : 1;
-      let autresPersonnes = '';
-      
-      if (record.personnes) {
-        Object.values(record.personnes).forEach((p, index) => {
-          autresPersonnes += `${index + 1}. ${p.nom} - ${p.doc}\n`;
-        });
-      }
-      
-      const message = `Salam :\n\nArrivée: ${record.date}\nAppartement: ${record.appart}\nImm: ${record.bat}\nNombre de personnes: ${totalPersons} personnes\n\nRéservation au nom de:\nNom et Prénom: ${record.nom}\nNuméro de ${record.typeDoc}: ${record.doc}\n\nAutres personnes:\n${autresPersonnes}\nNB : Svp pas d'autres personnes autorisées seul Les personnes figurent dans la réservation.\n\nMerci\n------------------------------------------\nالسلام عليكم:\n\nالوصول: ${record.date}\nالشقة: ${record.appart}\nرقم العمارة: ${record.bat}\nعدد الأشخاص: ${totalPersons} أشخاص\n\nالحجز باسم:\nالإسم و اللقب: ${record.nom}\nرقم ${record.typeDoc === 'Passeport' ? 'جواز السفر' : 'بطاقة الهوية'}: ${record.doc}\n\nأشخاص آخرون:\n${autresPersonnes}\nملاحظة: الرجاء عدم السماح لأي أشخاص آخرين، فقط الأشخاص المذكورين في الحجز.\n\nشكرًا.`;
-      
-      window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
-    } catch (error) {
-      console.error(error);
-      alert("Erreur lors de l'envoi WhatsApp");
-    }
-  }
+        // Charger les offres depuis Firebase
+        function loadOffers() {
+            const btn = document.getElementById('loadOffersBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span class="loading"></span> Chargement...';
+            btn.disabled = true;
+            
+            // Dans une vraie application, on chargerait depuis Firebase
+            // Pour la démo, on utilise des données simulées
+            setTimeout(() => {
+                offers = [...sampleOffers];
+                renderOffersTable();
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                showNotification(`${offers.length} offres chargées avec succès`, 'success');
+            }, 800);
+        }
 
-  async function supprimerEnregistrement(id){
-    if(confirm("Supprimer cet enregistrement ?")) {
-      await database.ref('records/' + id).remove();
-      await database.ref('documents/' + id).remove();
-      if(currentUser.role === 'admin') refreshAdmin(); else refreshUser();
-    }
-  }
+        // Charger les candidats depuis Firebase
+        function loadCandidates() {
+            const btn = document.getElementById('loadCandidatesBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span class="loading"></span> Chargement...';
+            btn.disabled = true;
+            
+            // Dans une vraie application, on chargerait depuis Firebase
+            // Pour la démo, on utilise des données simulées
+            setTimeout(() => {
+                candidates = [...sampleCandidates];
+                renderCandidatesTable();
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                showNotification(`${candidates.length} candidats chargés avec succès`, 'success');
+            }, 800);
+        }
 
-  function genererLien(){
-    const url = window.location.origin + window.location.pathname + "?invite=" + currentUser.id;
-    const tempInput = document.createElement('input');
-    tempInput.value = url;
-    document.body.appendChild(tempInput);
-    tempInput.select();
-    document.execCommand('copy');
-    document.body.removeChild(tempInput);
-    showBanner('info', "Copiez/partagez ce lien avec vos invités.");
-  }
+        // Afficher les offres dans le tableau
+        function renderOffersTable() {
+            const tbody = document.getElementById('offersTableBody');
+            tbody.innerHTML = '';
+            
+            if (offers.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-4">
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                            Aucune offre disponible. Ajoutez-en une !
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            offers.forEach(offer => {
+                const remoteBadge = offer.remote === 'full' 
+                    ? '<span class="status-badge remote-badge">Télétravail complet</span>'
+                    : offer.remote === 'partial' 
+                    ? '<span class="status-badge remote-badge">Télétravail partiel</span>'
+                    : '<span class="status-badge onsite-badge">Sur site</span>';
+                
+                const matchClass = getMatchClass(offer.matchPercentage);
+                const matchBadge = offer.matchPercentage > 0 
+                    ? `<span class="${matchClass}">${offer.matchPercentage}%</span>`
+                    : '<span class="text-muted">Non calculé</span>';
+                
+                const techBadges = offer.technologies.map(tech => 
+                    `<span class="tech-badge">${tech}</span>`
+                ).join('');
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <strong>${offer.title}</strong>
+                        ${offer.company ? `<div class="small text-muted">${offer.company}</div>` : ''}
+                    </td>
+                    <td>${offer.location}</td>
+                    <td>${offer.salary}</td>
+                    <td>${techBadges}</td>
+                    <td>${remoteBadge}</td>
+                    <td>
+                        <span class="badge bg-primary rounded-pill">${offer.proposedProfiles}</span>
+                    </td>
+                    <td>${matchBadge}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="viewOfferDetails(${offer.id})" title="Voir détails">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <a href="${offer.link}" target="_blank" class="btn btn-sm btn-outline-info" title="Voir l'offre">
+                            <i class="fas fa-external-link-alt"></i>
+                        </a>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
 
-  const canvas = document.getElementById('signatureCanvas');
-  const clearBtn = document.getElementById('clearBtn');
-  const registerBtn = document.getElementById('registerBtn');
-  const acceptCheckbox = document.getElementById('acceptCheckbox');
-  const ctx = canvas.getContext('2d');
-  let isDrawing = false;
-  let lastX = 0;
-  let lastY = 0;
+        // Afficher les candidats dans le tableau
+        function renderCandidatesTable() {
+            const tbody = document.getElementById('candidatesTableBody');
+            tbody.innerHTML = '';
+            
+            if (candidates.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="9" class="text-center text-muted py-4">
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                            Aucun candidat disponible. Ajoutez-en un !
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            candidates.forEach(candidate => {
+                const matchClass = getMatchClass(candidate.matchPercentage);
+                const matchBadge = candidate.matchPercentage > 0 
+                    ? `<span class="${matchClass}">${candidate.matchPercentage}%</span>`
+                    : '<span class="text-muted">Non calculé</span>';
+                
+                const techBadges = candidate.technologies.map(tech => 
+                    `<span class="tech-badge">${tech}</span>`
+                ).join('');
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <strong>${candidate.firstName} ${candidate.lastName}</strong>
+                        <div class="small text-muted">${candidate.profile}</div>
+                    </td>
+                    <td>${candidate.phone}</td>
+                    <td>${candidate.email}</td>
+                    <td>${candidate.profile}</td>
+                    <td>${techBadges}</td>
+                    <td>
+                        <span class="badge bg-primary rounded-pill">${candidate.potentialOffers}</span>
+                    </td>
+                    <td>${matchBadge}</td>
+                    <td>
+                        <a href="${candidate.cv}" target="_blank" class="btn btn-sm btn-outline-success" title="Voir CV">
+                            <i class="fas fa-file-pdf"></i> CV
+                        </a>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="viewCandidateDetails(${candidate.id})" title="Voir détails">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
 
-  const { jsPDF } = window.jspdf;
+        // Exécuter l'algorithme de matching IA
+        function runMatching() {
+            if (offers.length === 0 || candidates.length === 0) {
+                showNotification('Veuillez charger à la fois des offres et des candidats', 'warning');
+                return;
+            }
+            
+            const btn = document.getElementById('runMatchingBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span class="loading"></span> Analyse IA en cours...';
+            btn.disabled = true;
+            
+            // Simuler un traitement IA
+            setTimeout(() => {
+                // Réinitialiser les compteurs
+                offers.forEach(offer => {
+                    offer.proposedProfiles = 0;
+                    offer.matchPercentage = 0;
+                });
+                
+                candidates.forEach(candidate => {
+                    candidate.potentialOffers = 0;
+                    candidate.matchPercentage = 0;
+                });
+                
+                // Calculer les matchings
+                currentMatchingResults = [];
+                
+                candidates.forEach(candidate => {
+                    let bestMatch = 0;
+                    let candidateOffers = 0;
+                    
+                    offers.forEach(offer => {
+                        const matchScore = calculateMatchScore(candidate, offer);
+                        
+                        if (matchScore > 40) { // Seuil de 40% pour considérer un matching
+                            candidateOffers++;
+                            offer.proposedProfiles++;
+                            
+                            // Enregistrer le matching pour affichage détaillé
+                            currentMatchingResults.push({
+                                candidateId: candidate.id,
+                                candidateName: `${candidate.firstName} ${candidate.lastName}`,
+                                offerId: offer.id,
+                                offerTitle: offer.title,
+                                matchScore: matchScore,
+                                matchingFactors: analyzeMatchingFactors(candidate, offer)
+                            });
+                        }
+                        
+                        if (matchScore > bestMatch) {
+                            bestMatch = matchScore;
+                        }
+                    });
+                    
+                    candidate.potentialOffers = candidateOffers;
+                    candidate.matchPercentage = bestMatch;
+                });
+                
+                // Calculer le meilleur match pour chaque offre
+                offers.forEach(offer => {
+                    let bestMatch = 0;
+                    
+                    candidates.forEach(candidate => {
+                        const matchScore = calculateMatchScore(candidate, offer);
+                        if (matchScore > bestMatch) {
+                            bestMatch = matchScore;
+                        }
+                    });
+                    
+                    offer.matchPercentage = bestMatch;
+                });
+                
+                // Mettre à jour les tableaux
+                renderOffersTable();
+                renderCandidatesTable();
+                
+                // Afficher les résultats
+                showMatchingResults();
+                
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                
+                showNotification(`Matching IA terminé : ${currentMatchingResults.length} correspondances trouvées`, 'success');
+            }, 1500);
+        }
 
-  function initCanvas() {
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width;
-    canvas.height = rect.height;
-    
-    ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 3;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    
-    clearCanvas();
-  }
+        // Calculer le score de matching entre un candidat et une offre
+        function calculateMatchScore(candidate, offer) {
+            let score = 0;
+            
+            // 1. Correspondance des technologies (50% du score)
+            const candidateTechs = candidate.technologies.map(t => t.toLowerCase());
+            const offerTechs = offer.technologies.map(t => t.toLowerCase());
+            
+            const commonTechs = offerTechs.filter(tech => 
+                candidateTechs.some(cTech => cTech.includes(tech) || tech.includes(cTech))
+            );
+            
+            const techMatch = offerTechs.length > 0 
+                ? (commonTechs.length / offerTechs.length) * 50 
+                : 0;
+            
+            score += techMatch;
+            
+            // 2. Correspondance du profil (20% du score)
+            const profileKeywords = {
+                "Cloud Engineer": ["cloud", "aws", "azure", "gcp", "devops"],
+                "DevOps": ["devops", "ci/cd", "docker", "kubernetes", "terraform"],
+                "Administrateur BDD": ["database", "sql", "postgresql", "mysql", "oracle", "mongodb"],
+                "SRE": ["sre", "reliability", "monitoring", "incident", "on-call"],
+                "Ingénieur Infrastructure": ["infrastructure", "network", "system", "linux", "windows server"]
+            };
+            
+            const candidateProfile = candidate.profile;
+            const offerTitle = offer.title.toLowerCase();
+            
+            let profileMatch = 0;
+            if (profileKeywords[candidateProfile]) {
+                const keywords = profileKeywords[candidateProfile];
+                const matches = keywords.filter(keyword => 
+                    offerTitle.includes(keyword.toLowerCase())
+                );
+                profileMatch = (matches.length / keywords.length) * 20;
+            }
+            
+            score += profileMatch;
+            
+            // 3. Correspondance télétravail (10% du score)
+            if (offer.remote === 'full') {
+                score += 10; // Le candidat peut toujours travailler à distance
+            } else if (offer.remote === 'partial') {
+                score += 5;
+            }
+            
+            // 4. Localisation (10% du score) - simplifiée pour la démo
+            const candidateDept = candidate.department.toLowerCase();
+            const offerLocation = offer.location.toLowerCase();
+            
+            // Si le candidat est dans la même région ou l'offre est en remote
+            if (offerLocation.includes('remote') || 
+                candidateDept.includes(offerLocation) || 
+                offerLocation.includes(candidateDept)) {
+                score += 10;
+            } else if (offer.remote !== 'none') {
+                score += 5; // Télétravail partiel
+            }
+            
+            // 5. Expérience (10% du score) - basée sur le nombre de technologies maîtrisées
+            const expFactor = Math.min(candidate.technologies.length / 10, 1) * 10;
+            score += expFactor;
+            
+            // S'assurer que le score est entre 0 et 100
+            return Math.min(Math.round(score), 100);
+        }
 
-  function clearCanvas() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    hasSignature = false;
-    updateRegisterButton();
-    document.getElementById('signaturePreview').classList.add('hidden');
-    hideError('signatureError');
-    canvas.classList.remove('error-border');
-  }
+        // Analyser les facteurs de matching
+        function analyzeMatchingFactors(candidate, offer) {
+            const factors = [];
+            
+            // Technologies communes
+            const candidateTechs = candidate.technologies.map(t => t.toLowerCase());
+            const offerTechs = offer.technologies.map(t => t.toLowerCase());
+            const commonTechs = offerTechs.filter(tech => 
+                candidateTechs.some(cTech => cTech.includes(tech) || tech.includes(cTech))
+            );
+            
+            if (commonTechs.length > 0) {
+                factors.push(`${commonTechs.length} technologie(s) correspondante(s) : ${commonTechs.join(', ')}`);
+            }
+            
+            // Profil correspondant
+            const offerTitle = offer.title.toLowerCase();
+            const candidateProfile = candidate.profile.toLowerCase();
+            
+            if (offerTitle.includes(candidateProfile) || candidateProfile.includes(offerTitle)) {
+                factors.push("Profil correspondant");
+            }
+            
+            // Télétravail
+            if (offer.remote === 'full') {
+                factors.push("Télétravail complet possible");
+            } else if (offer.remote === 'partial') {
+                factors.push("Télétravail partiel possible");
+            }
+            
+            return factors;
+        }
 
-  function getPos(e) {
-    const rect = canvas.getBoundingClientRect();
-    let x, y;
-    if (e.touches && e.touches[0]) {
-      x = e.touches[0].clientX - rect.left;
-      y = e.touches[0].clientY - rect.top;
-    } else {
-      x = e.clientX - rect.left;
-      y = e.clientY - rect.top;
-    }
-    return { x, y };
-  }
+        // Afficher les résultats du matching
+        function showMatchingResults() {
+            if (currentMatchingResults.length === 0) {
+                showNotification('Aucune correspondance trouvée', 'info');
+                return;
+            }
+            
+            const modalTitle = document.getElementById('matchingModalTitle');
+            const modalContent = document.getElementById('matchingDetailsContent');
+            
+            modalTitle.textContent = `Résultats du matching IA (${currentMatchingResults.length} correspondances)`;
+            
+            // Grouper par candidat
+            const byCandidate = {};
+            currentMatchingResults.forEach(result => {
+                if (!byCandidate[result.candidateId]) {
+                    byCandidate[result.candidateId] = {
+                        name: result.candidateName,
+                        matches: []
+                    };
+                }
+                byCandidate[result.candidateId].matches.push({
+                    offerTitle: result.offerTitle,
+                    score: result.matchScore,
+                    factors: result.matchingFactors
+                });
+            });
+            
+            // Grouper par offre
+            const byOffer = {};
+            currentMatchingResults.forEach(result => {
+                if (!byOffer[result.offerId]) {
+                    byOffer[result.offerId] = {
+                        title: result.offerTitle,
+                        matches: []
+                    };
+                }
+                byOffer[result.offerId].matches.push({
+                    candidateName: result.candidateName,
+                    score: result.matchScore
+                });
+            });
+            
+            // Construire le contenu HTML
+            let html = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card mb-3">
+                            <div class="card-header bg-primary text-white">
+                                <i class="fas fa-user-friends me-2"></i> Par candidat
+                            </div>
+                            <div class="card-body">
+            `;
+            
+            Object.values(byCandidate).forEach(candidate => {
+                html += `
+                    <div class="mb-3">
+                        <h6>${candidate.name}</h6>
+                        <ul class="list-group">
+                `;
+                
+                candidate.matches.sort((a, b) => b.score - a.score).forEach(match => {
+                    const matchClass = getMatchClass(match.score);
+                    html += `
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>${match.offerTitle}</strong>
+                                <div class="small text-muted">
+                                    ${match.factors.slice(0, 2).join(', ')}
+                                </div>
+                            </div>
+                            <span class="${matchClass}">${match.score}%</span>
+                        </li>
+                    `;
+                });
+                
+                html += `</ul></div>`;
+            });
+            
+            html += `
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-success text-white">
+                                <i class="fas fa-briefcase me-2"></i> Par offre
+                            </div>
+                            <div class="card-body">
+            `;
+            
+            Object.values(byOffer).forEach(offer => {
+                html += `
+                    <div class="mb-3">
+                        <h6>${offer.title}</h6>
+                        <ul class="list-group">
+                `;
+                
+                offer.matches.sort((a, b) => b.score - a.score).forEach(match => {
+                    const matchClass = getMatchClass(match.score);
+                    html += `
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>${match.candidateName}</span>
+                            <span class="${matchClass}">${match.score}%</span>
+                        </li>
+                    `;
+                });
+                
+                html += `</ul></div>`;
+            });
+            
+            html += `
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3 text-center">
+                    <p class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        L'algorithme IA analyse les technologies, le profil, la localisation et le télétravail.
+                    </p>
+                </div>
+            `;
+            
+            modalContent.innerHTML = html;
+            
+            // Afficher le modal
+            const modal = new bootstrap.Modal(document.getElementById('matchingDetailsModal'));
+            modal.show();
+        }
 
-  function startDraw(e) {
-    isDrawing = true;
-    const pos = getPos(e);
-    lastX = pos.x;
-    lastY = pos.y;
-  }
+        // Obtenir la classe CSS pour le pourcentage de matching
+        function getMatchClass(percentage) {
+            if (percentage >= 70) return 'match-high';
+            if (percentage >= 40) return 'match-medium';
+            return 'match-low';
+        }
 
-  function draw(e) {
-    if (!isDrawing) return;
-    e.preventDefault();
-    const pos = getPos(e);
-    ctx.beginPath();
-    ctx.moveTo(lastX, lastY);
-    ctx.lineTo(pos.x, pos.y);
-    ctx.stroke();
-    lastX = pos.x;
-    lastY = pos.y;
-    hasSignature = true;
-    updateRegisterButton();
-  }
+        // Ajouter une nouvelle offre
+        function addOffer(e) {
+            e.preventDefault();
+            
+            const title = document.getElementById('offerTitle').value;
+            const location = document.getElementById('offerLocation').value;
+            const salary = document.getElementById('offerSalary').value;
+            const technologies = document.getElementById('offerTechnologies').value
+                .split(',')
+                .map(t => t.trim())
+                .filter(t => t.length > 0);
+            const remote = document.getElementById('offerRemote').value;
+            const link = document.getElementById('offerLink').value;
+            const company = document.getElementById('offerCompany').value;
+            const description = document.getElementById('offerDescription').value;
+            
+            // Créer un nouvel ID
+            const newId = offers.length > 0 ? Math.max(...offers.map(o => o.id)) + 1 : 1;
+            
+            // Créer l'objet offre
+            const newOffer = {
+                id: newId,
+                title,
+                location,
+                salary,
+                technologies,
+                remote,
+                company,
+                link,
+                description,
+                proposedProfiles: 0,
+                matchPercentage: 0,
+                dateAdded: new Date().toISOString()
+            };
+            
+            // Ajouter à la liste
+            offers.push(newOffer);
+            
+            // Mettre à jour le tableau
+            renderOffersTable();
+            
+            // Fermer le modal
+            bootstrap.Modal.getInstance(document.getElementById('addOfferModal')).hide();
+            
+            // Réinitialiser le formulaire
+            document.getElementById('addOfferForm').reset();
+            
+            // Afficher une notification
+            showNotification(`Offre "${title}" ajoutée avec succès`, 'success');
+            
+            // Dans une vraie application, on enregistrerait dans Firebase
+            console.log('Offre à enregistrer dans Firebase:', newOffer);
+        }
 
-  function stopDraw() {
-    isDrawing = false;
-  }
+        // Ajouter un nouveau candidat
+        function addCandidate(e) {
+            e.preventDefault();
+            
+            const firstName = document.getElementById('candidateFirstName').value;
+            const lastName = document.getElementById('candidateLastName').value;
+            const phone = document.getElementById('candidatePhone').value;
+            const email = document.getElementById('candidateEmail').value;
+            const department = document.getElementById('candidateDepartment').value;
+            const profile = document.getElementById('candidateProfile').value;
+            const technologies = document.getElementById('candidateTechnologies').value
+                .split(',')
+                .map(t => t.trim())
+                .filter(t => t.length > 0);
+            const cv = document.getElementById('candidateCV').value;
+            const experience = document.getElementById('candidateExperience').value;
+            
+            // Créer un nouvel ID
+            const newId = candidates.length > 0 ? Math.max(...candidates.map(c => c.id)) + 1 : 1;
+            
+            // Créer l'objet candidat
+            const newCandidate = {
+                id: newId,
+                firstName,
+                lastName,
+                phone,
+                email,
+                department,
+                profile,
+                technologies,
+                cv,
+                experience,
+                potentialOffers: 0,
+                matchPercentage: 0,
+                dateAdded: new Date().toISOString()
+            };
+            
+            // Ajouter à la liste
+            candidates.push(newCandidate);
+            
+            // Mettre à jour le tableau
+            renderCandidatesTable();
+            
+            // Fermer le modal
+            bootstrap.Modal.getInstance(document.getElementById('addCandidateModal')).hide();
+            
+            // Réinitialiser le formulaire
+            document.getElementById('addCandidateForm').reset();
+            
+            // Afficher une notification
+            showNotification(`Candidat "${firstName} ${lastName}" ajouté avec succès`, 'success');
+            
+            // Dans une vraie application, on enregistrerait dans Firebase
+            console.log('Candidat à enregistrer dans Firebase:', newCandidate);
+        }
 
-  function showError(id, msg) {
-    const el = document.getElementById(id);
-    if(el) {
-      el.textContent = msg;
-      el.style.display = 'block';
-    }
-  }
+        // Voir les détails d'une offre
+        function viewOfferDetails(offerId) {
+            const offer = offers.find(o => o.id === offerId);
+            if (!offer) return;
+            
+            const modalTitle = document.getElementById('matchingModalTitle');
+            const modalContent = document.getElementById('matchingDetailsContent');
+            
+            modalTitle.textContent = `Détails de l'offre : ${offer.title}`;
+            
+            const remoteText = offer.remote === 'full' ? 'Télétravail complet' :
+                             offer.remote === 'partial' ? 'Télétravail partiel' : 'Sur site';
+            
+            const techBadges = offer.technologies.map(tech => 
+                `<span class="tech-badge">${tech}</span>`
+            ).join('');
+            
+            modalContent.innerHTML = `
+                <div class="row">
+                    <div class="col-md-8">
+                        <h5>${offer.title}</h5>
+                        <p><strong>Entreprise:</strong> ${offer.company || 'Non spécifié'}</p>
+                        <p><strong>Localisation:</strong> ${offer.location}</p>
+                        <p><strong>Salaire/TJM:</strong> ${offer.salary}</p>
+                        <p><strong>Télétravail:</strong> ${remoteText}</p>
+                        <p><strong>Description:</strong> ${offer.description || 'Non disponible'}</p>
+                        <p><strong>Technologies requises:</strong></p>
+                        <div class="mb-3">${techBadges}</div>
+                        <p><strong>Lien externe:</strong> <a href="${offer.link}" target="_blank">${offer.link}</a></p>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header bg-info text-white">
+                                <i class="fas fa-chart-line me-2"></i> Statistiques
+                            </div>
+                            <div class="card-body text-center">
+                                <h1 class="display-4 ${getMatchClass(offer.matchPercentage)}">${offer.matchPercentage}%</h1>
+                                <p class="text-muted">Score de matching</p>
+                                <div class="mt-3">
+                                    <span class="badge bg-primary rounded-pill p-2 fs-6">${offer.proposedProfiles} profils</span>
+                                    <p class="small mt-2">Candidats correspondants</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3 text-center">
+                    <button class="btn btn-primary" onclick="findCandidatesForOffer(${offerId})">
+                        <i class="fas fa-search me-2"></i> Trouver des candidats pour cette offre
+                    </button>
+                </div>
+            `;
+            
+            const modal = new bootstrap.Modal(document.getElementById('matchingDetailsModal'));
+            modal.show();
+        }
 
-  function hideError(id) {
-    const el = document.getElementById(id);
-    if(el) el.style.display = 'none';
-  }
+        // Voir les détails d'un candidat
+        function viewCandidateDetails(candidateId) {
+            const candidate = candidates.find(c => c.id === candidateId);
+            if (!candidate) return;
+            
+            const modalTitle = document.getElementById('matchingModalTitle');
+            const modalContent = document.getElementById('matchingDetailsContent');
+            
+            modalTitle.textContent = `Détails du candidat : ${candidate.firstName} ${candidate.lastName}`;
+            
+            const techBadges = candidate.technologies.map(tech => 
+                `<span class="tech-badge">${tech}</span>`
+            ).join('');
+            
+            modalContent.innerHTML = `
+                <div class="row">
+                    <div class="col-md-8">
+                        <h5>${candidate.firstName} ${candidate.lastName}</h5>
+                        <p><strong>Profil:</strong> ${candidate.profile}</p>
+                        <p><strong>Téléphone:</strong> ${candidate.phone}</p>
+                        <p><strong>Email:</strong> ${candidate.email}</p>
+                        <p><strong>Département/Région:</strong> ${candidate.department}</p>
+                        <p><strong>Expérience:</strong> ${candidate.experience} ans</p>
+                        <p><strong>CV:</strong> <a href="${candidate.cv}" target="_blank">${candidate.cv}</a></p>
+                        <p><strong>Technologies maîtrisées:</strong></p>
+                        <div class="mb-3">${techBadges}</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header bg-info text-white">
+                                <i class="fas fa-chart-line me-2"></i> Statistiques
+                            </div>
+                            <div class="card-body text-center">
+                                <h1 class="display-4 ${getMatchClass(candidate.matchPercentage)}">${candidate.matchPercentage}%</h1>
+                                <p class="text-muted">Score de matching</p>
+                                <div class="mt-3">
+                                    <span class="badge bg-primary rounded-pill p-2 fs-6">${candidate.potentialOffers} offres</span>
+                                    <p class="small mt-2">Offres correspondantes</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3 text-center">
+                    <button class="btn btn-primary" onclick="findOffersForCandidate(${candidateId})">
+                        <i class="fas fa-search me-2"></i> Trouver des offres pour ce candidat
+                    </button>
+                </div>
+            `;
+            
+            const modal = new bootstrap.Modal(document.getElementById('matchingDetailsModal'));
+            modal.show();
+        }
 
-  function validateForm() {
-    let isValid = true;
-    
-    const date = document.getElementById('dateArrivee').value;
-    if(!date) {
-      showError('dateArriveeError', 'Veuillez sélectionner une date d\'arrivée');
-      isValid = false;
-    } else {
-      hideError('dateArriveeError');
-    }
-    
-    const nbPers = document.getElementById('nbPers').value;
-    if(!nbPers || nbPers < 1) {
-      showError('nbPersError', 'Veuillez entrer le nombre d\'invités (minimum 1)');
-      isValid = false;
-    } else {
-      hideError('nbPersError');
-    }
-    
-    const nom = document.getElementById('nomPrincipal').value.trim();
-    if(!nom) {
-      showError('nomPrincipalError', 'Veuillez entrer le nom et prénom');
-      isValid = false;
-    } else {
-      hideError('nomPrincipalError');
-    }
-    
-    const typeDoc = document.getElementById('typeDocPrincipal').value;
-    if(!typeDoc) {
-      showError('typeDocPrincipalError', 'Veuillez sélectionner un type de document');
-      isValid = false;
-    } else {
-      hideError('typeDocPrincipalError');
-    }
-    
-    const doc = document.getElementById('docPrincipal').value.trim();
-    if(!doc) {
-      showError('docPrincipalError', 'Veuillez entrer le numéro de document');
-      isValid = false;
-    } else {
-      hideError('docPrincipalError');
-    }
-    
-    const nationalite = document.getElementById('nationalitePrincipal').value.trim();
-    if(!nationalite) {
-      showError('nationalitePrincipalError', 'Veuillez entrer la nationalité');
-      isValid = false;
-    } else {
-      hideError('nationalitePrincipalError');
-    }
-    
-    const nbPersInt = parseInt(nbPers || '1', 10);
-    for(let i=2; i<=nbPersInt; i++){
-      const nomVal = (document.getElementById(`pers${i}Nom`)?.value || '').trim();
-      const docVal = (document.getElementById(`pers${i}Doc`)?.value || '').trim();
-      const typeDocVal = (document.getElementById(`pers${i}TypeDoc`)?.value || '').trim();
-      const nationaliteVal = (document.getElementById(`pers${i}Nationalite`)?.value || '').trim();
-      
-      if(!nomVal){
-        showBanner('err', `Veuillez renseigner le nom pour la personne ${i}`);
-        isValid = false;
-      }
-      if(!docVal){
-        showBanner('err', `Veuillez renseigner le document pour la personne ${i}`);
-        isValid = false;
-      }
-      if(!typeDocVal){
-        showBanner('err', `Veuillez sélectionner le type de document pour la personne ${i}`);
-        isValid = false;
-      }
-      if(!nationaliteVal){
-        showBanner('err', `Veuillez renseigner la nationalité pour la personne ${i}`);
-        isValid = false;
-      }
-    }
-    
-    if(!hasSignature) {
-      showError('signatureError', 'Veuillez signer le document');
-      canvas.classList.add('error-border');
-      isValid = false;
-    } else {
-      hideError('signatureError');
-    }
-    
-    if(!acceptCheckbox.checked) {
-      showError('acceptCheckboxError', 'Veuillez accepter les conditions');
-      isValid = false;
-    } else {
-      hideError('acceptCheckboxError');
-    }
-    
-    return isValid;
-  }
+        // Trouver des candidats pour une offre spécifique
+        function findCandidatesForOffer(offerId) {
+            const offer = offers.find(o => o.id === offerId);
+            if (!offer) return;
+            
+            // Calculer les matchings pour cette offre spécifique
+            const candidateMatches = candidates.map(candidate => {
+                const score = calculateMatchScore(candidate, offer);
+                const factors = analyzeMatchingFactors(candidate, offer);
+                return { candidate, score, factors };
+            }).filter(match => match.score > 40) // Seuil de 40%
+              .sort((a, b) => b.score - a.score);
+            
+            // Afficher les résultats
+            const modalTitle = document.getElementById('matchingModalTitle');
+            const modalContent = document.getElementById('matchingDetailsContent');
+            
+            modalTitle.textContent = `Candidats pour : ${offer.title}`;
+            
+            if (candidateMatches.length === 0) {
+                modalContent.innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="fas fa-user-slash fa-3x text-muted mb-3"></i>
+                        <h5>Aucun candidat ne correspond à cette offre</h5>
+                        <p class="text-muted">Essayez d'ajouter plus de candidats ou de relancer le matching IA.</p>
+                    </div>
+                `;
+            } else {
+                let html = `
+                    <h5 class="mb-3">${candidateMatches.length} candidat(s) correspondant(s)</h5>
+                    <div class="list-group">
+                `;
+                
+                candidateMatches.forEach(match => {
+                    const matchClass = getMatchClass(match.score);
+                    html += `
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6>${match.candidate.firstName} ${match.candidate.lastName}</h6>
+                                    <p class="mb-1">${match.candidate.profile} - ${match.candidate.email}</p>
+                                    <p class="small text-muted mb-1">
+                                        <strong>Correspondances:</strong> ${match.factors.slice(0, 3).join(', ')}
+                                    </p>
+                                    <div>
+                                        ${match.candidate.technologies.map(tech => 
+                                            `<span class="tech-badge small">${tech}</span>`
+                                        ).join('')}
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <span class="${matchClass} fs-5">${match.score}%</span>
+                                    <div class="mt-2">
+                                        <a href="${match.candidate.cv}" target="_blank" class="btn btn-sm btn-outline-success">
+                                            <i class="fas fa-file-pdf"></i> CV
+                                        </a>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="viewCandidateDetails(${match.candidate.id})">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `</div>`;
+                modalContent.innerHTML = html;
+            }
+            
+            const modal = new bootstrap.Modal(document.getElementById('matchingDetailsModal'));
+            modal.show();
+        }
 
-  function updateRegisterButton() {
-    const isAccepted = acceptCheckbox.checked;
-    registerBtn.disabled = !(hasSignature && isAccepted);
-  }
+        // Trouver des offres pour un candidat spécifique
+        function findOffersForCandidate(candidateId) {
+            const candidate = candidates.find(c => c.id === candidateId);
+            if (!candidate) return;
+            
+            // Calculer les matchings pour ce candidat spécifique
+            const offerMatches = offers.map(offer => {
+                const score = calculateMatchScore(candidate, offer);
+                const factors = analyzeMatchingFactors(candidate, offer);
+                return { offer, score, factors };
+            }).filter(match => match.score > 40) // Seuil de 40%
+              .sort((a, b) => b.score - a.score);
+            
+            // Afficher les résultats
+            const modalTitle = document.getElementById('matchingModalTitle');
+            const modalContent = document.getElementById('matchingDetailsContent');
+            
+            modalTitle.textContent = `Offres pour : ${candidate.firstName} ${candidate.lastName}`;
+            
+            if (offerMatches.length === 0) {
+                modalContent.innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="fas fa-briefcase fa-3x text-muted mb-3"></i>
+                        <h5>Aucune offre ne correspond à ce candidat</h5>
+                        <p class="text-muted">Essayez d'ajouter plus d'offres ou de relancer le matching IA.</p>
+                    </div>
+                `;
+            } else {
+                let html = `
+                    <h5 class="mb-3">${offerMatches.length} offre(s) correspondante(s)</h5>
+                    <div class="list-group">
+                `;
+                
+                offerMatches.forEach(match => {
+                    const matchClass = getMatchClass(match.score);
+                    const remoteBadge = match.offer.remote === 'full' 
+                        ? '<span class="status-badge remote-badge small">Remote</span>'
+                        : match.offer.remote === 'partial' 
+                        ? '<span class="status-badge remote-badge small">Hybride</span>'
+                        : '<span class="status-badge onsite-badge small">Sur site</span>';
+                    
+                    html += `
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6>${match.offer.title}</h6>
+                                    <p class="mb-1">${match.offer.company || ''} - ${match.offer.location} - ${match.offer.salary} ${remoteBadge}</p>
+                                    <p class="small text-muted mb-1">
+                                        <strong>Correspondances:</strong> ${match.factors.slice(0, 3).join(', ')}
+                                    </p>
+                                    <div>
+                                        ${match.offer.technologies.map(tech => 
+                                            `<span class="tech-badge small">${tech}</span>`
+                                        ).join('')}
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <span class="${matchClass} fs-5">${match.score}%</span>
+                                    <div class="mt-2">
+                                        <a href="${match.offer.link}" target="_blank" class="btn btn-sm btn-outline-info">
+                                            <i class="fas fa-external-link-alt"></i> Offre
+                                        </a>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="viewOfferDetails(${match.offer.id})">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `</div>`;
+                modalContent.innerHTML = html;
+            }
+            
+            const modal = new bootstrap.Modal(document.getElementById('matchingDetailsModal'));
+            modal.show();
+        }
 
-  async function registerSignature() {
-    if(!validateForm()) {
-      return;
-    }
+        // Afficher une notification
+        function showNotification(message, type = 'info') {
+            // Créer une alerte Bootstrap
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+            alertDiv.style.cssText = `
+                top: 20px;
+                right: 20px;
+                z-index: 9999;
+                min-width: 300px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            `;
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            document.body.appendChild(alertDiv);
+            
+            // Supprimer automatiquement après 5 secondes
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 5000);
+        }
 
-    const nom = document.getElementById('nomPrincipal').value.trim();
-    const doc = document.getElementById('docPrincipal').value.trim();
-    const typeDoc = document.getElementById('typeDocPrincipal').value.trim();
-    const nationalite = document.getElementById('nationalitePrincipal').value.trim();
-    const nb = parseInt(document.getElementById('nbPers').value || '0', 10);
-    const date = document.getElementById('dateArrivee').value;
-
-    const personnes = {};
-    for(let i=2; i<=nb; i++){
-      const nomVal = document.getElementById(`pers${i}Nom`).value.trim();
-      const docVal = document.getElementById(`pers${i}Doc`).value.trim();
-      const typeDocVal = document.getElementById(`pers${i}TypeDoc`).value.trim();
-      const nationaliteVal = document.getElementById(`pers${i}Nationalite`).value.trim();
-      
-      personnes[`pers${i-1}`] = { nom: nomVal, doc: docVal, typeDoc: typeDocVal, nationalite: nationaliteVal };
-    }
-
-    const appart = document.getElementById('invAppart').value;
-    const bat = document.getElementById('invBat').value;
-
-    signatureData = canvas.toDataURL('image/png');
-
-    const rec = { 
-      appart, 
-      bat, 
-      nom, 
-      doc, 
-      typeDoc,
-      nationalite,
-      personnes, 
-      date, 
-      sent:false,
-      signature: signatureData,
-      timestamp: Date.now()
-    };
-
-    try {
-      registerBtn.disabled = true;
-      registerBtn.textContent = '⏳ Enregistrement...';
-
-      const newRecordRef = database.ref('records').push();
-      await newRecordRef.set(rec);
-      
-      const id = newRecordRef.key;
-      rec.id = id;
-      
-      const documentData = generateDocumentHTML(rec);
-      await database.ref('documents/' + id).set({
-        html: documentData,
-        recordId: id,
-        appart: appart,
-        bat: bat,
-        nom: nom,
-        date: rec.date,
-        signature: signatureData,
-        timestamp: Date.now()
-      });
-      
-      await sendAutomaticEmail(rec);
-      
-      document.getElementById('successMessage').classList.remove('hidden');
-      document.getElementById('guestForm').style.display = 'none';
-
-      generateAndOpenPDF(rec);
-      
-      registerBtn.textContent = 'Enregistrer et valider';
-      registerBtn.disabled = false;
-      
-    } catch (error) {
-      showBanner('err',"Erreur lors de l'enregistrement. Réessayez.");
-      registerBtn.textContent = 'Enregistrer et valider';
-      registerBtn.disabled = false;
-    }
-  }
-
-  function setupSignatureEvents() {
-    canvas.addEventListener('mousedown', startDraw);
-    canvas.addEventListener('mousemove', draw);
-    canvas.addEventListener('mouseup', stopDraw);
-    canvas.addEventListener('mouseout', stopDraw);
-    
-    canvas.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      startDraw(e);
-    }, { passive: false });
-    
-    canvas.addEventListener('touchmove', (e) => {
-      e.preventDefault();
-      draw(e);
-    }, { passive: false });
-    
-    canvas.addEventListener('touchend', (e) => {
-      e.preventDefault();
-      stopDraw();
-    });
-    
-    clearBtn.addEventListener('click', clearCanvas);
-    registerBtn.addEventListener('click', registerSignature);
-    acceptCheckbox.addEventListener('change', updateRegisterButton);
-    window.addEventListener('resize', initCanvas);
-  }
-
-  async function enterInviteMode(userId){
-    try {
-      try {
-        await firebase.auth().signInWithEmailAndPassword(AUTH_EMAIL, AUTH_PASS);
-      } catch (e) {
-        console.error("Firebase Auth failed for invite mode:", e);
-      }
-
-      const snapshot = await database.ref('users/' + userId).once('value');
-      const user = snapshot.val();
-      
-      if(!user){
-        showBanner('err',"Lien invalide ou utilisateur introuvable.");
-        return;
-      }
-      
-      const emailSnapshot = await database.ref('emailSettings/' + userId).once('value');
-      if(emailSnapshot.exists()){
-        emailSettings = emailSnapshot.val();
-      }
-
-      document.getElementById('loginCard').classList.add('hidden');
-      document.getElementById('invitePanel').classList.remove('hidden');
-      document.getElementById('invAppart').value = user.appart;
-      document.getElementById('invBat').value = user.bat;
-      genererChamps();
-      initCanvas();
-      setupSignatureEvents();
-      hideBanner();
-      
-    } catch (error) {
-      showBanner('err', "Erreur lors du chargement des données utilisateur.");
-    }
-  }
-
-  function genererChamps(){
-    const nb = Math.max(1, parseInt(document.getElementById('nbPers').value || '1', 10));
-    const cont = document.getElementById('personnes');
-    cont.innerHTML = '';
-    
-    for(let i=2; i<=nb; i++){
-      const group = document.createElement('div');
-      group.className = 'person-group';
-      
-      const title = document.createElement('h4');
-      title.textContent = `Personne ${i}`;
-      title.style.marginBottom = '10px';
-      title.style.fontWeight = 'bold';
-      group.appendChild(title);
-      
-      const nomLab = document.createElement('label');
-      nomLab.textContent = 'Nom & Prénom *';
-      group.appendChild(nomLab);
-      
-      const nomInp = document.createElement('input');
-      nomInp.type = 'text';
-      nomInp.id = `pers${i}Nom`;
-      nomInp.required = true;
-      nomInp.className = 'guest-input';
-      nomInp.placeholder = `Nom complet personne ${i}`;
-      group.appendChild(nomInp);
-      
-      const docTypeLab = document.createElement('label');
-      docTypeLab.textContent = 'Type de document *';
-      docTypeLab.style.marginTop = '10px';
-      group.appendChild(docTypeLab);
-      
-      const docTypeInp = document.createElement('select');
-      docTypeInp.id = `pers${i}TypeDoc`;
-      docTypeInp.required = true;
-      docTypeInp.className = 'guest-input';
-      docTypeInp.innerHTML = `
-        <option value="">Sélectionner</option>
-        <option value="Passeport">Passeport</option>
-        <option value="Carte d'identité">Carte d'identité</option>
-      `;
-      group.appendChild(docTypeInp);
-      
-      const docLab = document.createElement('label');
-      docLab.textContent = 'Numéro de document *';
-      docLab.style.marginTop = '10px';
-      group.appendChild(docLab);
-      
-      const docInp = document.createElement('input');
-      docInp.type = 'text';
-      docInp.id = `pers${i}Doc`;
-      docInp.required = true;
-      docInp.className = 'guest-input';
-      docInp.placeholder = `Document personne ${i}`;
-      group.appendChild(docInp);
-      
-      const nationaliteLab = document.createElement('label');
-      nationaliteLab.textContent = 'Nationalité *';
-      nationaliteLab.style.marginTop = '10px';
-      group.appendChild(nationaliteLab);
-      
-      const nationaliteInp = document.createElement('input');
-      nationaliteInp.type = 'text';
-      nationaliteInp.id = `pers${i}Nationalite`;
-      nationaliteInp.required = true;
-      nationaliteInp.className = 'guest-input';
-      nationaliteInp.placeholder = `Nationalité personne ${i}`;
-      group.appendChild(nationaliteInp);
-      
-      cont.appendChild(group);
-    }
-  }
-
-  function generateDocumentHTML(rec) {
-    const totalPersons = rec.personnes ? Object.keys(rec.personnes).length + 1 : 1;
-    const now = new Date();
-    
-    return `
-<div class="doc-title">Enregistrement des invités / Guest Registration</div>
-
-<div class="doc-info">
-  <p><strong>Date de réservation :</strong> ${now.toLocaleDateString('fr-FR')}</p>
-  <p><strong>Appartement :</strong> ${rec.appart} - Immeuble : ${rec.bat}</p>
-  <p><strong>Nom du réservateur :</strong> ${rec.nom}</p>
-  <p><strong>Type de document :</strong> ${rec.typeDoc}</p>
-  <p><strong>Numéro de document :</strong> ${rec.doc}</p>
-  <p><strong>Nombre de personnes :</strong> ${totalPersons}</p>
-  <p><strong>Date d'arrivée :</strong> ${rec.date}</p>
-</div>
-
-<div class="doc-section">
-  <div class="doc-section-title">Règlement intérieur accepté :</div>
-  <ul>
-    <li><strong>1. Si vous êtes des Couples marocains :</strong> selon la loi marocaine ce logement autorise que les couples mariés.</li>
-    <li><strong>2. Tranquillité et bruit :</strong> Silence total obligatoire après 23h00. Pas de musique forte, cris ou nuisances sonores à toute heure.</li>
-    <li><strong>3. Tabagisme :</strong> Fumer est strictement interdit à l'intérieur. Autorisé uniquement en extérieur (terrasse ou jardin), avec obligation de nettoyer les mégots et cendres.</li>
-    <li><strong>4. Nombre de personnes :</strong> Maximum 5 personnes autorisées dans l'appartement.</li>
-    <li><strong>5. Piscine :</strong> Douche obligatoire avant la baignade. Pas de verre ni objets fragiles autour de la piscine. Surveillance permanente des enfants par un adulte. Horaires : fermeture à 20h00. Pas de courses ni plongeons.</li>
-    <li><strong>6. Propreté et entretien :</strong> Maintenir les lieux propres en permanence. Vider régulièrement les poubelles. Respecter les sols et surfaces (pas de traces, pas de nourriture hors cuisine).</li>
-  </ul>
-</div>
-
-<div class="doc-signature">
-  <p><strong>${rec.nom}</strong></p>
-  <p>Date : ${now.toLocaleDateString('fr-FR')}</p>
-  <div class="doc-signature-box">
-    <img src="${rec.signature || ''}" alt="Signature" style="max-width: 100%; max-height: 100%; border: 2px solid #000;" />
-  </div>
-</div>
-`;
-  }
-
-  function generateAndOpenPDF(rec) {
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    let yPos = 20;
-    
-    pdf.setFontSize(20);
-    pdf.setTextColor(44, 62, 80);
-    pdf.text('Enregistrement des invités', 105, yPos, { align: 'center' });
-    yPos += 8;
-    pdf.setFontSize(16);
-    pdf.text('Guest Registration', 105, yPos, { align: 'center' });
-    yPos += 12;
-    
-    pdf.setFontSize(16);
-    pdf.text('RÈGLEMENT INTÉRIEUR ET INFORMATIONS DE RÉSERVATION', 105, yPos, { align: 'center' });
-    yPos += 15;
-    
-    pdf.setDrawColor(44, 62, 80);
-    pdf.setLineWidth(1);
-    pdf.line(20, yPos, 190, yPos);
-    yPos += 15;
-    
-    const totalPersons = rec.personnes ? Object.keys(rec.personnes).length + 1 : 1;
-    const now = new Date();
-    
-    pdf.setFontSize(12);
-    pdf.setTextColor(0, 0, 0);
-    
-    pdf.text(`Date de réservation : ${now.toLocaleDateString('fr-FR')}`, 20, yPos);
-    yPos += 8;
-    
-    pdf.text(`Appartement : ${rec.appart} - Immeuble : ${rec.bat}`, 20, yPos);
-    yPos += 8;
-    
-    pdf.text(`Nom du réservateur : ${rec.nom}`, 20, yPos);
-    yPos += 8;
-    
-    pdf.text(`Type de document : ${rec.typeDoc}`, 20, yPos);
-    yPos += 8;
-    
-    pdf.text(`Numéro de document : ${rec.doc}`, 20, yPos);
-    yPos += 8;
-    
-    pdf.text(`Nombre de personnes : ${totalPersons}`, 20, yPos);
-    yPos += 8;
-    
-    pdf.text(`Date d'arrivée : ${rec.date}`, 20, yPos);
-    yPos += 15;
-    
-    pdf.setFontSize(14);
-    pdf.setTextColor(44, 62, 80);
-    pdf.text('RÈGLEMENT INTÉRIEUR ACCEPTÉ :', 20, yPos);
-    yPos += 10;
-    
-    pdf.setFontSize(12);
-    const rules = [
-      '1. Si vous êtes des Couples marocains:',
-      'selon la loi marocaine ce logement autorise que les couples mariés.',
-      '',
-      '2. Tranquillité et bruit',
-      'Silence total obligatoire après 23h00. Pas de musique forte, cris ou',
-      'nuisances sonores à toute heure.',
-      '',
-      '3. Tabagisme',
-      'Fumer est strictement interdit à l\'intérieur. Autorisé uniquement en',
-      'extérieur (terrasse ou jardin), avec obligation de nettoyer les mégots',
-      'et cendres.',
-      '',
-      '4. Nombre de personnes',
-      'Maximum 5 personnes autorisées dans l\'appartement.',
-      '',
-      '5. Piscine',
-      'Douche obligatoire avant la baignade.',
-      'Pas de verre ni objets fragiles autour de la piscine.',
-      'Surveillance permanente des enfants par un adulte.',
-      'Horaires : fermeture à 20h00.',
-      'Pas de courses ni plongeons.',
-      '',
-      '6. Propreté et entretien',
-      'Maintenir les lieux propres en permanence.',
-      'Vider régulièrement les poubelles.',
-      'Respecter les sols et surfaces (pas de traces, pas de nourriture hors cuisine).'
-    ];
-
-    rules.forEach(line => {
-      if (yPos > 250) {
-        pdf.addPage();
-        yPos = 20;
-      }
-      pdf.text(line, 20, yPos);
-      yPos += line === '' ? 5 : 7;
-    });
-    
-    yPos += 10;
-    
-    pdf.text(`${rec.nom}`, 20, yPos);
-    yPos += 8;
-    
-    pdf.text(`Date : ${now.toLocaleDateString('fr-FR')}`, 20, yPos);
-    yPos += 15;
-    
-    try {
-      const imgWidth = 80;
-      const imgHeight = 40;
-      if (rec.signature && rec.signature.startsWith('data:image')) {
-        pdf.addImage(rec.signature, 'PNG', 20, yPos, imgWidth, imgHeight);
-        pdf.setDrawColor(0, 0, 0);
-        pdf.setLineWidth(2);
-        pdf.rect(20, yPos, imgWidth, imgHeight);
-      }
-    } catch (e) {
-      console.log('Erreur avec la signature:', e);
-    }
-    
-    const pdfBlob = pdf.output('blob');
-    const pdfUrl = URL.createObjectURL(pdfBlob);
-    
-    window.open(pdfUrl, '_blank');
-  }
-
-  async function afficherDocument(id) {
-    try {
-      const recordSnapshot = await database.ref('records/' + id).once('value');
-      const record = recordSnapshot.val();
-      
-      if (record) {
-        const html = generateDocumentHTML(record);
-        document.getElementById('documentPreview').innerHTML = html;
-        currentDocumentData = record;
-        currentDocumentData.id = id;
-        document.getElementById('docActions').classList.remove('hidden');
-        document.getElementById('documentColumn').classList.remove('hidden');
-      } else {
-        document.getElementById('documentPreview').innerHTML = '<p>Document non trouvé.</p>';
-        document.getElementById('docActions').classList.add('hidden');
-      }
-    } catch (error) {
-      document.getElementById('documentPreview').innerHTML = '<p>Erreur de chargement du document.</p>';
-      document.getElementById('docActions').classList.add('hidden');
-    }
-  }
-
-  function downloadCurrentDocument() {
-    if (!currentDocumentData) return;
-    generateAndOpenPDF(currentDocumentData);
-  }
-
-  function partagerWhatsApp() {
-    if (!currentDocumentData) return;
-    const totalPersons = currentDocumentData.personnes ? Object.keys(currentDocumentData.personnes).length + 1 : 1;
-    let autresPersonnes = '';
-    
-    if (currentDocumentData.personnes) {
-      Object.values(currentDocumentData.personnes).forEach((p, index) => {
-        autresPersonnes += `${index + 1}. ${p.nom} - ${p.doc}\n`;
-      });
-    }
-    
-    const message = `Salam :\n\nArrivée: ${currentDocumentData.date}\nAppartement: ${currentDocumentData.appart}\nImm: ${currentDocumentData.bat}\nNombre de personnes: ${totalPersons} personnes\n\nRéservation au nom de:\nNom et Prénom: ${currentDocumentData.nom}\nNuméro de ${currentDocumentData.typeDoc}: ${currentDocumentData.doc}\n\nAutres personnes:\n${autresPersonnes}\nNB : Svp pas d'autres personnes autorisées seul Les personnes figurent dans la réservation.\n\nMerci\n------------------------------------------\nالسلام عليكم:\n\nالوصول: ${currentDocumentData.date}\nالشقة: ${currentDocumentData.appart}\nرقم العمارة: ${currentDocumentData.bat}\nعدد الأشخاص: ${totalPersons} أشخاص\n\nالحجز باسم:\nالإسم و اللقب: ${currentDocumentData.nom}\nرقم ${currentDocumentData.typeDoc === 'Passeport' ? 'جواز السفر' : 'بطاقة الهوية'}: ${currentDocumentData.doc}\n\nأشخاص آخرون:\n${autresPersonnes}\nملاحظة: الرجاء عدم السماح لأي أشخاص آخرين، فقط الأشخاص المذكورين في الحجز.\n\nشكرًا.`;
-    
-    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
-  }
-
-  document.getElementById('btnLogin').disabled = false;
-  
-  const params = new URLSearchParams(location.search);
-  if(params.has("invite")) {
-    enterInviteMode(params.get("invite"));
-  }
-</script>
+        // Exposer les fonctions globalement pour les boutons onclick
+        window.viewOfferDetails = viewOfferDetails;
+        window.viewCandidateDetails = viewCandidateDetails;
+        window.findCandidatesForOffer = findCandidatesForOffer;
+        window.findOffersForCandidate = findOffersForCandidate;
+    </script>
 </body>
 </html>
-```
