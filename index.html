@@ -1,5 +1,3 @@
-Je viens de corriger le problème de connexion (il y avait une fonction refreshAdmin coupée) et supprimé tous les commentaires. Voici le code complet et fonctionnel :
-
 ```html
 <!DOCTYPE html>
 <html lang="fr">
@@ -12,14 +10,12 @@ Je viens de corriger le problème de connexion (il y avait une fonction refreshA
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
   <style>
-    :root{
-      --c1:#007bff; --bg:#f0f2f5; --ok:#0f9d58; --warn:#f4b400; --err:#d93025; --info:#4285f4;
-    }
+    :root { --c1:#007bff; --bg:#f0f2f5; --ok:#0f9d58; --warn:#f4b400; --err:#d93025; }
     body { font-family: Arial, sans-serif; margin: 16px; background: var(--bg); }
     .card { background:#fff; padding:16px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.12); margin-bottom:16px; }
     label { font-weight:600; display:block; margin-top:10px; }
     input, select, button { font-size:16px; }
-    input, select { width:100%; padding:10px; margin-top:6px; border:1px solid #ccc; border-radius:8px; }
+    input, select { width:100%; padding:10px; margin-top:6px; border:1px solid #ccc; border-radius:8px; box-sizing:border-box; }
     input[readonly]{ background:#e9ecef; }
     button { margin-top:14px; padding:10px 14px; border:none; border-radius:10px; background:var(--c1); color:#fff; cursor:pointer; }
     button:disabled{ opacity:.6; cursor:not-allowed; }
@@ -48,7 +44,6 @@ Je viens de corriger le problème de connexion (il y avait une fonction refreshA
     .document-column { border-left: 2px solid #007bff; padding-left: 20px; min-height: 100vh; background: #f9f9f9; }
     .document-preview { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-top: 20px; max-height: 500px; overflow-y: auto; }
     .doc-title { text-align: center; font-size: 24px; font-weight: bold; color: #2c3e50; margin-bottom: 30px; border-bottom: 2px solid #2c3e50; padding-bottom: 10px; }
-    .doc-signature-box { border: 1px solid #000; height: 100px; margin: 20px auto; width: 300px; position: relative; }
     .two-column-layout { display: flex; gap: 20px; flex-wrap: wrap; }
     .form-column { flex: 2; min-width: 300px; }
     .document-column { flex: 1; min-width: 300px; }
@@ -58,7 +53,8 @@ Je viens de corriger le problème de connexion (il y avait une fonction refreshA
     .error-message { color: #d93025; font-size: 14px; margin-top: 5px; display: none; }
     .error-border { border-color: #d93025 !important; }
     .smtp-info { background: #e8f4f8; padding: 12px; border-radius: 6px; margin-top: 10px; font-size: 13px; border-left: 4px solid #007bff; }
-    .guide-card { background: white; border-radius: 16px; padding: 20px; margin-top: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .email-settings { background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #dee2e6; margin-top: 15px; }
+    .user-settings { background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #dee2e6; margin-top: 15px; }
   </style>
 </head>
 <body>
@@ -77,7 +73,7 @@ Je viens de corriger le problème de connexion (il y avait une fonction refreshA
         <div><strong>Connexion</strong></div>
       </div>
       <label>Utilisateur</label>
-      <input type="text" id="loginUser" autocomplete="username" placeholder="Identifiant" />
+      <input type="text" id="loginUser" autocomplete="username" placeholder="Ex: 12A" />
       <label>Mot de passe</label>
       <input type="password" id="loginPass" autocomplete="current-password" placeholder="Mot de passe" />
       <button id="btnLogin" onclick="login()">Connexion</button>
@@ -103,8 +99,8 @@ Je viens de corriger le problème de connexion (il y avait une fonction refreshA
         <table id="tableUsers"><thead><tr><th>N°</th><th>Appartement</th><th>Immeuble</th><th>Mot de passe</th><th>Action</th></tr></thead><tbody></tbody></table>
       </div>
       <div class="card">
-        <div class="toolbar"><div><strong>Enregistrements</strong></div></div>
-        <table id="tableAdmin"><thead><tr><th>N°</th><th>Appart.</th><th>Immeuble</th><th>Nom</th><th>Document</th><th>Type</th><th>Nationalité</th><th>Nb Pers.</th><th>Personnes</th><th>Date</th><th>Action</th><th>Statut</th></tr></thead><tbody></tbody></table>
+        <div class="toolbar"><div><strong>Enregistrements des invités</strong></div></div>
+        <table id="tableAdmin"><thead><tr><th>N°</th><th>Appart.</th><th>Immeuble</th><th>Nom</th><th>Document</th><th>Type</th><th>Nationalité</th><th>Nb Pers.</th><th>Date</th><th>Actions</th><th>Statut</th></tr></thead><tbody></tbody></table>
       </div>
     </div>
 
@@ -114,49 +110,52 @@ Je viens de corriger le problème de connexion (il y avait une fonction refreshA
         <div><button onclick="logout()">Déconnexion</button></div>
       </div>
       <div class="card">
-        <div class="toolbar"><div><strong>Paramètres</strong></div></div>
-        <div class="row">
-          <div class="col"><label>Nombre max d'enregistrements</label><input type="number" id="maxRecords" min="1" value="10" /></div>
-          <div class="col"><label>Nouveau mot de passe</label><input type="password" id="newPassword" placeholder="Optionnel" /></div>
-        </div>
-        <button onclick="updateUserSettings()">Enregistrer</button>
-        <p id="settingsMsg" class="banner hidden"></p>
-        
-        <div class="email-settings" style="margin-top:15px; background:#fff; padding:15px; border-radius:8px;">
-          <h4>Notifications Email</h4>
-          <select id="enableEmail" onchange="toggleEmailFields()"><option value="non">Non</option><option value="oui">Oui</option></select>
-          <div id="emailFields" class="hidden" style="margin-top:10px;">
-            <input type="email" id="guardEmail" placeholder="Email destinataire" />
+        <div class="toolbar"><div><strong>Paramètres du compte</strong></div></div>
+        <div class="user-settings">
+          <div class="row">
+            <div class="col"><label>Nombre max d'enregistrements</label><input type="number" id="maxRecords" min="1" value="10" /></div>
+            <div class="col"><label>Nouveau mot de passe</label><input type="password" id="newPassword" placeholder="Optionnel" /></div>
           </div>
-          <button onclick="saveEmailSettings()">Enregistrer Email</button>
+          <button onclick="updateUserSettings()">Enregistrer</button>
+          <p id="settingsMsg" class="banner hidden"></p>
+        </div>
+        <div class="email-settings">
+          <h4>Notifications par Email</h4>
+          <label>Activer les notifications</label>
+          <select id="enableEmail" onchange="toggleEmailFields()"><option value="non">Non</option><option value="oui">Oui</option></select>
+          <div id="emailFields" class="hidden">
+            <label>Email du destinataire</label>
+            <input type="email" id="guardEmail" placeholder="securite@exemple.com" />
+          </div>
+          <div class="row" style="margin-top:15px;"><button onclick="saveEmailSettings()" style="flex:1;">Enregistrer</button><button onclick="testEmailSettings()" style="flex:1; background:var(--ok);">Tester</button></div>
           <p id="emailMsg" class="banner hidden"></p>
         </div>
       </div>
       <div class="card">
-        <div class="toolbar"><div><strong>Mes enregistrements</strong></div><button onclick="genererLien()" style="background: var(--ok);">Générer lien invité</button></div>
-        <table id="tableUser"><thead><tr><th>N°</th><th>Nom</th><th>Document</th><th>Type</th><th>Nationalité</th><th>Nb Pers.</th><th>Personnes</th><th>Date</th><th>Action</th><th>Statut</th></tr></thead><tbody></tbody></table>
+        <div class="toolbar"><div><strong>Mes enregistrements</strong></div><button onclick="genererLien()" style="background:var(--ok);">Générer lien invité</button></div>
+        <table id="tableUser"><thead><tr><th>N°</th><th>Nom</th><th>Document</th><th>Type</th><th>Nationalité</th><th>Nb Pers.</th><th>Date</th><th>Actions</th><th>Statut</th></tr></thead><tbody></tbody></table>
       </div>
     </div>
 
     <div id="invitePanel" class="hidden">
       <div class="card">
-        <h3>Enregistrement invité</h3>
+        <h3 style="margin-top:0;">Enregistrement invité</h3>
         <div class="row"><div class="col"><label>Appartement</label><input type="text" id="invAppart" readonly /></div><div class="col"><label>Immeuble</label><input type="text" id="invBat" readonly /></div></div>
-        <label>Date d'arrivée *</label><input type="date" id="dateArrivee" class="guest-input" />
+        <label>Date d'arrivée *</label><input type="date" id="dateArrivee" />
         <label>Nombre d'invités *</label><input type="number" id="nbPers" min="1" value="1" onchange="genererChamps()" />
-        <label>Nom et Prénom principal *</label><input type="text" id="nomPrincipal" placeholder="Nom complet" />
-        <div class="row"><div class="col"><label>Type document</label><select id="typeDocPrincipal"><option value="">Sélectionner</option><option value="Passeport">Passeport</option><option value="Carte d'identité">Carte d'identité</option></select></div><div class="col"><label>N° document</label><input type="text" id="docPrincipal" placeholder="N° document" /></div></div>
-        <div><label>Nationalité</label><input type="text" id="nationalitePrincipal" placeholder="Nationalité" /></div>
+        <label>Nom et prénom principal *</label><input type="text" id="nomPrincipal" placeholder="Nom complet" />
+        <div class="row"><div class="col"><label>Type de document</label><select id="typeDocPrincipal"><option value="">Sélectionner</option><option value="Passeport">Passeport</option><option value="Carte d'identité">Carte d'identité</option></select></div><div class="col"><label>Numéro de document</label><input type="text" id="docPrincipal" placeholder="N° document" /></div></div>
+        <label>Nationalité *</label><input type="text" id="nationalitePrincipal" placeholder="Nationalité" />
         <div id="personnes"></div>
-        <div class="rules-container"><h4>Règlement intérieur</h4><ul><li>Couples marocains: mariés uniquement</li><li>Silence après 23h00</li><li>Interdit de fumer à l'intérieur</li><li>Maximum 5 personnes</li><li>Piscine: douche obligatoire, fermeture 20h00</li><li>Propreté et entretien</li></ul></div>
+        <div class="rules-container"><h4>Règlement intérieur</h4><ul><li>Couples marocains: mariés uniquement</li><li>Silence total après 23h00</li><li>Fumer interdit à l'intérieur</li><li>Maximum 5 personnes</li><li>Piscine: douche obligatoire, fermeture 20h00</li><li>Propreté et entretien exigés</li></ul></div>
         <div class="signature-area"><div class="signature-title">Signature *</div><canvas id="signatureCanvas" class="signature-canvas"></canvas><div class="signature-controls"><button type="button" id="clearBtn" style="background:#e74c3c;">Effacer</button></div></div>
-        <div class="accept-signature-container"><label style="display:flex; align-items:center; justify-content:center;"><input type="checkbox" id="acceptCheckbox" style="margin-right:10px; width:auto;"> <span>J'accepte le règlement intérieur</span></label><div style="text-align:center; margin-top:15px;"><button id="registerBtn" style="background:#27ae60; padding:12px 30px;">Enregistrer</button></div></div>
+        <div class="accept-signature-container"><label style="display:flex; align-items:center; justify-content:center;"><input type="checkbox" id="acceptCheckbox" style="width:auto; margin-right:10px;"> <span>J'accepte le règlement intérieur</span></label><div style="text-align:center; margin-top:15px;"><button id="registerBtn" style="background:#27ae60; padding:12px 30px;">Enregistrer et valider</button></div></div>
         <div id="successMessage" class="banner ok hidden"></div>
       </div>
     </div>
   </div>
   <div id="documentColumn" class="document-column hidden">
-    <div class="card"><h3>Document signé</h3><div id="documentPreview" class="document-preview"><p style="text-align:center;">Sélectionnez un enregistrement</p></div><div id="docActions" class="doc-actions hidden"><button onclick="downloadCurrentDocument()">Télécharger PDF</button><button onclick="partagerWhatsApp()">Partager WhatsApp</button></div></div>
+    <div class="card"><h3>Document signé</h3><div id="documentPreview" class="document-preview"><p style="text-align:center; color:#666;">Sélectionnez un enregistrement</p></div><div id="docActions" class="doc-actions hidden"><button onclick="downloadCurrentDocument()" style="background:var(--ok);">Télécharger PDF</button><button onclick="partagerWhatsApp()" style="background:#25D366;">WhatsApp</button></div></div>
   </div>
 </div>
 
@@ -242,7 +241,7 @@ async function login() {
       document.getElementById('loginCard').classList.add('hidden');
       document.getElementById('adminPanel').classList.remove('hidden');
       document.getElementById('documentColumn').classList.remove('hidden');
-      showBanner('ok', 'Admin connecté.');
+      showBanner('ok', 'Administrateur connecté.');
       startSessionTimer();
       refreshAdmin();
       btn.disabled = false;
@@ -256,16 +255,19 @@ async function login() {
     
     if(user && user.pass === p) {
       currentUser = { role: 'user', id: u, appart: user.appart, bat: user.bat };
+      const settingsSnapshot = await database.ref('settings/' + u).once('value');
+      if(settingsSnapshot.exists()) document.getElementById('maxRecords').value = settingsSnapshot.val().maxRecords || 10;
       const emailSnapshot = await database.ref('emailSettings/' + u).once('value');
       if(emailSnapshot.exists()) {
         emailSettings = emailSnapshot.val();
         document.getElementById('enableEmail').value = emailSettings.enableEmail || 'non';
         toggleEmailFields();
+        if(emailSettings.enableEmail === 'oui') document.getElementById('guardEmail').value = decrypt(emailSettings.guardEmail || '');
       }
       document.getElementById('loginCard').classList.add('hidden');
       document.getElementById('userPanel').classList.remove('hidden');
       document.getElementById('documentColumn').classList.remove('hidden');
-      showBanner('ok', 'Connecté.');
+      showBanner('ok', `Connecté. Appartement ${user.appart} / Immeuble ${user.bat}.`);
       startSessionTimer();
       refreshUser();
     } else {
@@ -273,7 +275,7 @@ async function login() {
       await firebase.auth().signOut();
     }
   } catch(error) {
-    showInlineMsg('loginMsg','err', 'Erreur de connexion.');
+    showInlineMsg('loginMsg','err', 'Erreur de connexion: ' + (error.message || 'Vérifiez votre connexion internet.'));
   }
   btn.disabled = false;
   btn.textContent = 'Connexion';
@@ -289,32 +291,55 @@ async function saveEmailSettings() {
   const enableEmail = document.getElementById('enableEmail').value;
   if(enableEmail === 'oui') {
     const guardEmail = document.getElementById('guardEmail').value.trim();
-    if(!guardEmail || !guardEmail.includes('@')) { showInlineMsg('emailMsg','warn','Email valide requis.'); return; }
+    if(!guardEmail || !guardEmail.includes('@')) { showInlineMsg('emailMsg','warn', 'Email valide requis.'); return; }
     emailSettings = { enableEmail: 'oui', guardEmail: encrypt(guardEmail) };
   } else {
     emailSettings = { enableEmail: 'non' };
   }
   await database.ref('emailSettings/' + currentUser.id).set(emailSettings);
-  showInlineMsg('emailMsg','ok','Email enregistré.');
+  showInlineMsg('emailMsg','ok', 'Paramètres email enregistrés.');
+}
+
+async function testEmailSettings() {
+  if(emailSettings.enableEmail !== 'oui') { showInlineMsg('emailMsg','warn', 'Activez d\'abord.'); return; }
+  const guardEmail = decrypt(emailSettings.guardEmail || '');
+  if(!guardEmail) { showInlineMsg('emailMsg','warn', 'Configurez l\'email.'); return; }
+  try {
+    await emailjs.send("service_qnnmvxe", "template_4e2gb4n", { email: guardEmail, message: "Test de notification réussi." });
+    showInlineMsg('emailMsg','ok', 'Email test envoyé.');
+  } catch(error) {
+    showInlineMsg('emailMsg','err', 'Erreur envoi test.');
+  }
 }
 
 async function updateUserSettings() {
+  const maxRecords = parseInt(document.getElementById('maxRecords').value) || 10;
   const newPassword = document.getElementById('newPassword').value.trim();
+  if(maxRecords < 1) { showInlineMsg('settingsMsg','warn', 'Minimum 1.'); return; }
+  await database.ref('settings/' + currentUser.id).set({ maxRecords: maxRecords });
   if(newPassword) await database.ref('users/' + currentUser.id).update({ pass: newPassword });
-  showInlineMsg('settingsMsg','ok','Mis à jour.');
+  showInlineMsg('settingsMsg','ok', 'Paramètres mis à jour.');
+  document.getElementById('newPassword').value = '';
 }
 
 async function creerUtilisateur() {
   const app = document.getElementById('appartAdmin').value.trim();
   const bat = document.getElementById('batAdmin').value.trim();
   const pass = document.getElementById('passAdmin').value.trim();
-  if(!app || !bat || !pass) return;
-  await database.ref('users/' + app+bat).set({ appart:app, bat:bat, pass:pass });
+  if(!app || !bat || !pass) { alert('Remplissez tous les champs.'); return; }
+  const id = app + bat;
+  await database.ref('users/' + id).set({ appart: app, bat: bat, pass: pass });
+  document.getElementById('appartAdmin').value = '';
+  document.getElementById('batAdmin').value = '';
+  document.getElementById('passAdmin').value = '';
   refreshAdmin();
 }
 
 async function supprimerUtilisateur(id) {
-  if(confirm('Supprimer ?')) { await database.ref('users/' + id).remove(); refreshAdmin(); }
+  if(confirm('Supprimer cet utilisateur ?')) {
+    await database.ref('users/' + id).remove();
+    refreshAdmin();
+  }
 }
 
 async function refreshAdmin() {
@@ -322,20 +347,21 @@ async function refreshAdmin() {
   const users = usersSnap.val() || {};
   const tbody = document.querySelector('#tableUsers tbody');
   tbody.innerHTML = '';
-  let i=1;
+  let i = 1;
   for(let id in users) {
-    tbody.innerHTML += `<tr><td>${i++}</td><td>${users[id].appart}</td><td>${users[id].bat}</td><td>${users[id].pass}</td><td><button class="btn-delete" onclick="supprimerUtilisateur('${id}')">Suppr.</button></td></tr>`;
+    tbody.innerHTML += `<tr><td>${i++}</td><td>${users[id].appart}</td><td>${users[id].bat}</td><td>${users[id].pass}</td><td><button class="btn-delete" onclick="supprimerUtilisateur('${id}')">Supprimer</button></td></tr>`;
   }
   
   const recordsSnap = await database.ref('records').once('value');
   const records = recordsSnap.val() || {};
   const tbodyAdmin = document.querySelector('#tableAdmin tbody');
   tbodyAdmin.innerHTML = '';
-  let j=1;
-  for(let id in records) {
+  let j = 1;
+  const sortedKeys = Object.keys(records).sort((a,b) => records[b].timestamp - records[a].timestamp);
+  for(let id of sortedKeys) {
     const r = records[id];
-    const nbPers = r.personnes ? Object.keys(r.personnes).length+1 : 1;
-    tbodyAdmin.innerHTML += `<tr><td>${j++}</td><td>${r.appart}</td><td>${r.bat}</td><td>${r.nom}</td><td>${r.doc}</td><td>${r.typeDoc}</td><td>${r.nationalite}</td><td>${nbPers}</td><td>-</td><td>${r.date}</td><td><button onclick="afficherDocument('${id}')">Voir</button><button class="btn-delete" onclick="supprimerEnregistrement('${id}')">Suppr.</button></td><td>${r.sent ? '✅' : '⏳'}</td></tr>`;
+    const nbPers = r.personnes ? Object.keys(r.personnes).length + 1 : 1;
+    tbodyAdmin.innerHTML += `<tr><td>${j++}</td><td>${r.appart}</td><td>${r.bat}</td><td>${r.nom}</td><td>${r.doc}</td><td>${r.typeDoc}</td><td>${r.nationalite}</td><td>${nbPers}</td><td>${r.date}</td><td><button onclick="afficherDocument('${id}')">Voir</button><button class="btn-delete" onclick="supprimerEnregistrement('${id}')">Suppr.</button></td><td>${r.sent ? '✅' : '⏳'}</td></tr>`;
   }
 }
 
@@ -344,12 +370,13 @@ async function refreshUser() {
   const records = recordsSnap.val() || {};
   const tbody = document.querySelector('#tableUser tbody');
   tbody.innerHTML = '';
-  let i=1;
-  for(let id in records) {
+  let i = 1;
+  const sortedKeys = Object.keys(records).sort((a,b) => records[b].timestamp - records[a].timestamp);
+  for(let id of sortedKeys) {
     const r = records[id];
     if(r.appart === currentUser.appart && r.bat === currentUser.bat) {
-      const nbPers = r.personnes ? Object.keys(r.personnes).length+1 : 1;
-      tbody.innerHTML += `<tr><td>${i++}</td><td>${r.nom}</td><td>${r.doc}</td><td>${r.typeDoc}</td><td>${r.nationalite}</td><td>${nbPers}</td><td>-</td><td>${r.date}</td><td><button onclick="afficherDocument('${id}')">Voir</button><button class="btn-delete" onclick="supprimerEnregistrement('${id}')">Suppr.</button></td><td>${r.sent ? '✅' : '⏳'}</td></tr>`;
+      const nbPers = r.personnes ? Object.keys(r.personnes).length + 1 : 1;
+      tbody.innerHTML += `<tr><td>${i++}</td><td>${r.nom}</td><td>${r.doc}</td><td>${r.typeDoc}</td><td>${r.nationalite}</td><td>${nbPers}</td><td>${r.date}</td><td><button onclick="afficherDocument('${id}')">Voir</button><button class="btn-delete" onclick="supprimerEnregistrement('${id}')">Suppr.</button></td><td>${r.sent ? '✅' : '⏳'}</td></tr>`;
     }
   }
 }
@@ -364,7 +391,7 @@ async function supprimerEnregistrement(id) {
 function genererLien() {
   const url = window.location.origin + window.location.pathname + '?invite=' + currentUser.id;
   navigator.clipboard.writeText(url);
-  showBanner('info', 'Lien copié !');
+  showBanner('info', 'Lien copié dans le presse-papier.');
 }
 
 const canvas = document.getElementById('signatureCanvas');
@@ -416,6 +443,7 @@ function stopDraw() { isDrawing = false; }
 canvas.addEventListener('mousedown', startDraw);
 canvas.addEventListener('mousemove', draw);
 canvas.addEventListener('mouseup', stopDraw);
+canvas.addEventListener('mouseout', stopDraw);
 canvas.addEventListener('touchstart', startDraw);
 canvas.addEventListener('touchmove', draw);
 canvas.addEventListener('touchend', stopDraw);
@@ -426,144 +454,80 @@ function genererChamps() {
   const cont = document.getElementById('personnes');
   cont.innerHTML = '';
   for(let i=2; i<=nb; i++) {
-    cont.innerHTML += `<div class="person-group"><h4>Personne ${i}</h4><label>Nom</label><input type="text" id="pers${i}Nom" placeholder="Nom complet"><label>Type document</label><select id="pers${i}TypeDoc"><option value="Passeport">Passeport</option><option value="Carte d'identité">Carte d'identité</option></select><label>N° document</label><input type="text" id="pers${i}Doc" placeholder="N° document"><label>Nationalité</label><input type="text" id="pers${i}Nationalite" placeholder="Nationalité"></div>`;
+    cont.innerHTML += `<div class="person-group"><h4>Personne ${i}</h4><label>Nom et prénom *</label><input type="text" id="pers${i}Nom" placeholder="Nom complet"><label>Type de document *</label><select id="pers${i}TypeDoc"><option value="Passeport">Passeport</option><option value="Carte d'identité">Carte d'identité</option></select><label>Numéro de document *</label><input type="text" id="pers${i}Doc" placeholder="N° document"><label>Nationalité *</label><input type="text" id="pers${i}Nationalite" placeholder="Nationalité"></div>`;
   }
 }
 
-async function registerSignature() {
-  const nom = document.getElementById('nomPrincipal').value.trim();
-  const doc = document.getElementById('docPrincipal').value.trim();
-  const typeDoc = document.getElementById('typeDocPrincipal').value;
-  const nationalite = document.getElementById('nationalitePrincipal').value.trim();
-  const nb = parseInt(document.getElementById('nbPers').value) || 1;
-  const date = document.getElementById('dateArrivee').value;
-  const accept = document.getElementById('acceptCheckbox').checked;
-  
-  if(!nom || !doc || !typeDoc || !nationalite || !date || !accept || !hasSignature) {
-    showBanner('err', 'Veuillez remplir tous les champs et signer.');
-    return;
-  }
-  
-  const personnes = {};
-  for(let i=2; i<=nb; i++) {
-    const nomVal = document.getElementById(`pers${i}Nom`)?.value.trim();
-    if(nomVal) personnes[`pers${i-1}`] = { nom: nomVal, doc: document.getElementById(`pers${i}Doc`)?.value.trim(), typeDoc: document.getElementById(`pers${i}TypeDoc`)?.value, nationalite: document.getElementById(`pers${i}Nationalite`)?.value.trim() };
-  }
-  
-  const signature = canvas.toDataURL('image/png');
-  const rec = { appart: document.getElementById('invAppart').value, bat: document.getElementById('invBat').value, nom, doc, typeDoc, nationalite, personnes, date, signature, timestamp: Date.now(), sent: false };
-  
-  const btn = document.getElementById('registerBtn');
-  btn.disabled = true;
-  btn.textContent = 'Enregistrement...';
-  
-  try {
-    const newRef = database.ref('records').push();
-    await newRef.set(rec);
-    rec.id = newRef.key;
-    
-    if(emailSettings.enableEmail === 'oui') {
-      const guardEmail = decrypt(emailSettings.guardEmail || '');
-      if(guardEmail) await emailjs.send("service_qnnmvxe", "template_4e2gb4n", { email: guardEmail, message: `Nouvelle réservation: ${nom} - ${date}` });
-      await database.ref('records/' + newRef.key).update({ sent: true });
-    }
-    
-    document.getElementById('successMessage').innerHTML = 'Enregistrement réussi !<br><br><strong>Guide complet de votre séjour :</strong><br><br>Bonjour,<br><br>Je vous remercie de votre réservation et je vous souhaite la bienvenue. Voici un guide complet pour votre séjour :<br><br>Appartement se trouve dans l\'immeuble A6 au 2e étage sans ascenseur (ascenseur hors-service).<br><br>📌 INFORMATIONS CLÉS POUR VOTRE SÉJOUR<br><br>📝 ADMINISTRATIF<br><br>🔑 CHECK-IN / CHECK-OUT<br><br>- Contact sur place : WhatsApp Reda (+212 761704428) – Mentionnez "Marwan immeuble A6 appt 6".<br>- Arrivée (Check-In) : Dès 15h. Communiquez votre heure d\'arrivée à Reda via WhatsApp.<br>- Adresse : Premium Village, Andalucia Immeuble A6 Appt 6 (2ème étage), Marrakech 40000. Parking sous-sol : A6 I6<br>- Départ (Check-Out) : Avant 12h.<br><br>🏡 ÉQUIPEMENTS & CONSIGNES<br><br>- Serviettes dans la salle de bain.<br>- Piscine ouverte de 9h à 19h. Bracelets obligatoires disponibles dans l\'appartement.<br>- Climatisation : Fermez les fenêtres quand elle est allumée.<br>- Poubelles à jeter au sous-sol (-1).<br><br>📱 CONNEXION & SERVICES<br><br>- WiFi : PremiumConnect / Mot de passe : M@rrakech30<br>- Apps utiles : Careem, Indrive, Glovo.<br><br>🎥 VIDÉOS D\'AIDE (ouverture de la porte) :<br>Lien 1 : https://youtube.com/shorts/o0p_nN4U0Nw<br>Lien 2 : https://youtube.com/shorts/4hRoYJoFlcY<br>Lien 3 : https://youtube.com/shorts/tSzQ43udMuQ<br><br>Pour votre séjour un badge pour l\'appartement et des bracelets pour la piscine. En cas de perte, frais de remplacement : 20€ pour le badge, 50€ par bracelet.<br><br>Bon séjour !';
-    document.getElementById('successMessage').classList.remove('hidden');
-    
-    generateGuidePDF(rec, nom, date);
-  } catch(error) { showBanner('err', 'Erreur lors de l\'enregistrement.'); }
-  btn.disabled = false;
-  btn.textContent = 'Enregistrer';
-}
-
-function generateGuidePDF(rec, nom, date) {
+function generateRegistrationPDF(rec) {
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF('p', 'mm', 'a4');
   let y = 20;
   
-  pdf.setFontSize(18);
-  pdf.text('Guide complet de votre séjour', 105, y, { align: 'center' });
-  y += 15;
-  pdf.setFontSize(12);
-  pdf.text(`Bonjour ${nom},`, 20, y);
+  pdf.setFontSize(20);
+  pdf.text('Enregistrement des invités', 105, y, { align: 'center' });
   y += 10;
-  pdf.text('Je vous remercie de votre réservation et je vous souhaite la bienvenue. Voici un guide complet pour votre séjour :', 20, y);
+  pdf.setFontSize(12);
+  pdf.text(`Date de réservation: ${new Date().toLocaleDateString('fr-FR')}`, 20, y);
+  y += 8;
+  pdf.text(`Appartement: ${rec.appart} - Immeuble: ${rec.bat}`, 20, y);
+  y += 8;
+  pdf.text(`Nom du réservateur: ${rec.nom}`, 20, y);
+  y += 8;
+  pdf.text(`Type de document: ${rec.typeDoc}`, 20, y);
+  y += 8;
+  pdf.text(`Numéro de document: ${rec.doc}`, 20, y);
+  y += 8;
+  pdf.text(`Nationalité: ${rec.nationalite}`, 20, y);
+  y += 8;
+  const totalPersons = rec.personnes ? Object.keys(rec.personnes).length + 1 : 1;
+  pdf.text(`Nombre de personnes: ${totalPersons}`, 20, y);
+  y += 8;
+  pdf.text(`Date d'arrivée: ${rec.date}`, 20, y);
   y += 15;
-  pdf.text('Appartement se trouve dans l\'immeuble A6 au 2e étage sans ascenseur (ascenseur hors-service).', 20, y);
-  y += 15;
+  
   pdf.setFontSize(14);
-  pdf.text('INFORMATIONS CLÉS POUR VOTRE SÉJOUR', 20, y);
+  pdf.text('RÈGLEMENT INTÉRIEUR ACCEPTÉ:', 20, y);
   y += 10;
-  pdf.setFontSize(12);
-  pdf.text('CHECK-IN / CHECK-OUT :', 20, y);
-  y += 7;
-  pdf.text('- Contact sur place : WhatsApp Reda (+212 761704428) – Mentionnez "Marwan immeuble A6 appt 6"', 20, y);
-  y += 7;
-  pdf.text('- Arrivée (Check-In) : Dès 15h. Communiquez votre heure d\'arrivée à Reda.', 20, y);
-  y += 7;
-  pdf.text('- Adresse : Premium Village, Andalucia Immeuble A6 Appt 6 (2ème étage), Marrakech 40000', 20, y);
-  y += 7;
-  pdf.text('- Départ (Check-Out) : Avant 12h.', 20, y);
-  y += 12;
-  pdf.text('ÉQUIPEMENTS & CONSIGNES :', 20, y);
-  y += 7;
-  pdf.text('- Piscine ouverte de 9h à 19h. Bracelets obligatoires.', 20, y);
-  y += 7;
-  pdf.text('- WiFi : PremiumConnect / Mot de passe : M@rrakech30', 20, y);
-  y += 7;
-  pdf.text('- Apps utiles : Careem, Indrive, Glovo', 20, y);
-  y += 12;
-  pdf.text('Bon séjour !', 20, y);
+  pdf.setFontSize(11);
+  const rules = [
+    '1. Couples marocains: mariés uniquement',
+    '2. Tranquillité: silence après 23h00',
+    '3. Tabagisme: interdit à l\'intérieur',
+    '4. Nombre de personnes: maximum 5',
+    '5. Piscine: douche obligatoire, fermeture 20h00',
+    '6. Propreté: entretien des lieux exigé'
+  ];
+  rules.forEach(rule => { pdf.text(rule, 20, y); y += 7; });
+  y += 10;
+  
+  pdf.text(`${rec.nom}`, 20, y);
+  y += 8;
+  pdf.text(`Date: ${new Date().toLocaleDateString('fr-FR')}`, 20, y);
+  y += 15;
+  
+  if(rec.signature && rec.signature.startsWith('data:image')) {
+    try { pdf.addImage(rec.signature, 'PNG', 20, y, 80, 40); pdf.rect(20, y, 80, 40); } catch(e) {}
+  }
   
   window.open(pdf.output('bloburl'), '_blank');
 }
 
-async function afficherDocument(id) {
-  const recordSnap = await database.ref('records/' + id).once('value');
-  const record = recordSnap.val();
-  if(record) {
-    currentDocumentData = record;
-    document.getElementById('docActions').classList.remove('hidden');
-    document.getElementById('documentColumn').classList.remove('hidden');
-  }
-}
-
-function downloadCurrentDocument() {
-  if(!currentDocumentData) return;
-  generateGuidePDF(currentDocumentData, currentDocumentData.nom, currentDocumentData.date);
-}
-
-function partagerWhatsApp() {
-  if(!currentDocumentData) return;
-  const msg = `Réservation: ${currentDocumentData.nom} - ${currentDocumentData.date} - Appartement ${currentDocumentData.appart}`;
-  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
-}
-
-document.getElementById('registerBtn').addEventListener('click', registerSignature);
-document.getElementById('acceptCheckbox').addEventListener('change', (e) => { document.getElementById('registerBtn').disabled = !e.target.checked || !hasSignature; });
-document.getElementById('nbPers').addEventListener('change', genererChamps);
-
-const urlParams = new URLSearchParams(window.location.search);
-if(urlParams.has('invite')) {
-  const userId = urlParams.get('invite');
-  (async () => {
-    await firebase.auth().signInWithEmailAndPassword(AUTH_EMAIL, AUTH_PASS);
-    const userSnap = await database.ref('users/' + userId).once('value');
-    const user = userSnap.val();
-    if(user) {
-      document.getElementById('loginCard').classList.add('hidden');
-      document.getElementById('invitePanel').classList.remove('hidden');
-      document.getElementById('invAppart').value = user.appart;
-      document.getElementById('invBat').value = user.bat;
-      initCanvas();
-      genererChamps();
-    }
-  })();
-} else {
-  initCanvas();
-}
-</script>
-</body>
-</html>
-``
+function openGuidePage() {
+  const guideHTML = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>Guide complet de votre séjour</title><style>
+body{font-family:Arial,sans-serif;margin:0;padding:20px;background:#f0f2f5;line-height:1.6}
+.container{max-width:800px;margin:0 auto;background:#fff;border-radius:16px;padding:30px;box-shadow:0 4px 12px rgba(0,0,0,0.1)}
+h1{color:#2c3e50;border-bottom:3px solid #27ae60;padding-bottom:10px}
+h2{color:#2c3e50;margin-top:25px}
+.badge{background:#27ae60;color:#fff;padding:3px 8px;border-radius:12px;font-size:12px;display:inline-block}
+.button{display:inline-block;background:#27ae60;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;margin:20px 0;cursor:pointer}
+hr{margin:25px 0}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>📘 Guide complet de votre séjour</h1>
+<p>Bonjour,</p>
+<p>
