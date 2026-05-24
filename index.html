@@ -1,4 +1,6 @@
+Voici le code complet avec la note importante ajoutée dans la partie d'affichage du document (PDF et aperçu), sans commentaires pour faciliter le copier-coller.
 
+```html
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
@@ -189,6 +191,16 @@
       font-size: 13px;
       border-left: 4px solid #007bff;
     }
+    .guide-content { 
+      background: #f0f7ff; 
+      padding: 15px; 
+      border-radius: 8px; 
+      margin: 20px 0; 
+      border-left: 5px solid #2c3e50;
+      font-size: 14px;
+    }
+    .guide-content h3 { margin-top: 0; color: #2c3e50; }
+    .guide-content hr { margin: 15px 0; }
   </style>
 </head>
 <body>
@@ -442,77 +454,7 @@
         <div id="successMessage" class="banner ok hidden">
           Enregistrement réussi ! Un onglet s'ouvre avec votre document PDF.
           <br><br>
-          <strong>Note  :</strong> 
-          
-Bonjour
-
-Je vous remercie de votre réservation et je vous souhaite le bienvenue ,voici un guide complet pour votre séjour :
-
-appartement se trouve dans l'immeuble A6
-au 2e étage sans ascenseur (ascenseur hors-service) 
-
-
-📌   INFORMATIONS CLÉS POUR VOTRE SÉJOUR   
- 
-📝   ADMINISTRATIF   
-
-
-🔑   CHECK-IN / CHECK-OUT   
-
--   Contact sur place   : WhatsApp Reda (+212 761704428) – Mentionnez "Marwan immeuble A6 appt 6".  
-
--   Arrivée (Check-In)   :  
-
-  - Dès 15h (ou plus tôt si l’appartement est libre).  
-
-  - n'oubliez pas s'il vous plaît de communiquer votre heure d'arrivée à Reda via WhatsApp avant le check in. afin d'éviter d'attendre devant la résidence
-
-  - Adresse :  
-
-    Premium Village, Andalucia Immeuble A6 Appt 6 (2ème étage)  
-
-    Marrakech 40000  
-
-    Parking sous-sol : A6 I6  
-
--   Départ (Check-Out)   :  
-
-  - Avant 12h si réservation après vous, sinon horaire flexible.  
-
-  - Laissez le badge à sa place et prévenez Reda.  
-
-
-🏡   ÉQUIPEMENTS & CONSIGNES   
-
-- Serviettes dans la salle de bain ou l’armoire de la chambre.  
-
-- Piscine ouverte de 9h à 19h.   Il y a des bracelets obligatoires pour accéder à la piscine, disponibles dans l'appartement.    
-
-- Climatisation : Fermez les fenêtres quand elle est allumée, éteignez en partant.  
-
-- Poubelles à jeter au sous-sol (-1) (sac fourni dans la cuisine).  
-
-
-📱   CONNEXION & SERVICES 
-
--   WiFi   : `PremiumConnect` / Mot de passe : `M@rrakech30`  
-
--   Apps utiles   :  
-
-  - Transport : Careem ou Indrive • Taxi : +212 524 40 94 94.  
-  - Livraison : Glovo.  
-
-🎥   VIDÉOS D'AIDE   (ouverture de la porte) :
-
-[Lien 1](https://youtube.com/shorts/o0p_nN4U0Nw) • [Lien 2](https://youtube.com/shorts/4hRoYJoFlcY) • [Lien 3](https://youtube.com/shorts/tSzQ43udMuQ)  
-
-Pour votre séjour un badge pour l'appartement et des bracelets pour la piscine. En cas de perte, les frais de remplacement sont de 20€ pour le badge, 50€ par bracelet. Contactez-nous pour plus d'informations.
-
-Bon séjour 
-
-
-          
-       Nantes importante :   En cas de demande des agents de sécurité, présentez ce document signé.
+          <strong>Note importante :</strong> En cas de demande des agents de sécurité, présentez ce document signé.
           Seules les personnes enregistrées dans cette réservation sont autorisées à entrer.
         </div>
       </div>
@@ -1413,39 +1355,70 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     const totalPersons = rec.personnes ? Object.keys(rec.personnes).length + 1 : 1;
     const now = new Date();
     
+    const guideText = `
+      <div class="guide-content">
+        <h3>📌 INFORMATIONS CLÉS POUR VOTRE SÉJOUR</h3>
+        <p>Bonjour, je vous remercie de votre réservation et je vous souhaite la bienvenue. Voici un guide complet pour votre séjour :</p>
+        <p><strong>Appartement :</strong> immeuble A6 au 2e étage sans ascenseur (ascenseur hors-service)</p>
+        <p><strong>🔑 CHECK-IN / CHECK-OUT</strong><br>
+        - Contact sur place : WhatsApp Reda (+212 761704428) – Mentionnez "Marwan immeuble A6 appt 6".<br>
+        - Arrivée (Check-In) : Dès 15h (ou plus tôt si l’appartement est libre). Communiquez votre heure d'arrivée à Reda via WhatsApp avant le check-in afin d'éviter d'attendre devant la résidence.<br>
+        - Adresse : Premium Village, Andalucia Immeuble A6 Appt 6 (2ème étage), Marrakech 40000. Parking sous-sol : A6 I6<br>
+        - Départ (Check-Out) : Avant 12h si réservation après vous, sinon horaire flexible. Laissez le badge à sa place et prévenez Reda.</p>
+        
+        <p><strong>🏡 ÉQUIPEMENTS & CONSIGNES</strong><br>
+        - Serviettes dans la salle de bain ou l’armoire de la chambre.<br>
+        - Piscine ouverte de 9h à 19h. Bracelets obligatoires pour accéder à la piscine, disponibles dans l'appartement.<br>
+        - Climatisation : Fermez les fenêtres quand elle est allumée, éteignez en partant.<br>
+        - Poubelles à jeter au sous-sol (-1) (sac fourni dans la cuisine).</p>
+        
+        <p><strong>📱 CONNEXION & SERVICES</strong><br>
+        - WiFi : PremiumConnect / Mot de passe : M@rrakech30<br>
+        - Apps utiles : Transport : Careem ou Indrive • Taxi : +212 524 40 94 94. Livraison : Glovo.</p>
+        
+        <p><strong>🎥 VIDÉOS D'AIDE (ouverture de la porte) :</strong><br>
+        <a href="https://youtube.com/shorts/o0p_nN4U0Nw">Lien 1</a> • <a href="https://youtube.com/shorts/4hRoYJoFlcY">Lien 2</a> • <a href="https://youtube.com/shorts/tSzQ43udMuQ">Lien 3</a></p>
+        
+        <p><strong>⚠️ Important :</strong> Pour votre séjour, un badge pour l'appartement et des bracelets pour la piscine sont fournis. En cas de perte, les frais de remplacement sont de 20€ pour le badge, 50€ par bracelet. Contactez-nous pour plus d'informations.</p>
+        <p>Bon séjour !</p>
+      </div>
+    `;
+    
     return `
-<div class="doc-title">Enregistrement des invités / Guest Registration</div>
-
-<div class="doc-info">
-  <p><strong>Date de réservation :</strong> ${now.toLocaleDateString('fr-FR')}</p>
-  <p><strong>Appartement :</strong> ${rec.appart} - Immeuble : ${rec.bat}</p>
-  <p><strong>Nom du réservateur :</strong> ${rec.nom}</p>
-  <p><strong>Type de document :</strong> ${rec.typeDoc}</p>
-  <p><strong>Numéro de document :</strong> ${rec.doc}</p>
-  <p><strong>Nombre de personnes :</strong> ${totalPersons}</p>
-  <p><strong>Date d'arrivée :</strong> ${rec.date}</p>
-</div>
-
-<div class="doc-section">
-  <div class="doc-section-title">Règlement intérieur accepté :</div>
-  <ul>
-    <li><strong>1. Si vous êtes des Couples marocains :</strong> selon la loi marocaine ce logement autorise que les couples mariés.</li>
-    <li><strong>2. Tranquillité et bruit :</strong> Silence total obligatoire après 23h00. Pas de musique forte, cris ou nuisances sonores à toute heure.</li>
-    <li><strong>3. Tabagisme :</strong> Fumer est strictement interdit à l'intérieur. Autorisé uniquement en extérieur (terrasse ou jardin), avec obligation de nettoyer les mégots et cendres.</li>
-    <li><strong>4. Nombre de personnes :</strong> Maximum 5 personnes autorisées dans l'appartement.</li>
-    <li><strong>5. Piscine :</strong> Douche obligatoire avant la baignade. Pas de verre ni objets fragiles autour de la piscine. Surveillance permanente des enfants par un adulte. Horaires : fermeture à 20h00. Pas de courses ni plongeons.</li>
-    <li><strong>6. Propreté et entretien :</strong> Maintenir les lieux propres en permanence. Vider régulièrement les poubelles. Respecter les sols et surfaces (pas de traces, pas de nourriture hors cuisine).</li>
-  </ul>
-</div>
-
-<div class="doc-signature">
-  <p><strong>${rec.nom}</strong></p>
-  <p>Date : ${now.toLocaleDateString('fr-FR')}</p>
-  <div class="doc-signature-box">
-    <img src="${rec.signature || ''}" alt="Signature" style="max-width: 100%; max-height: 100%; border: 2px solid #000;" />
-  </div>
-</div>
-`;
+    <div class="doc-title">Enregistrement des invités / Guest Registration</div>
+    
+    <div class="doc-info">
+      <p><strong>Date de réservation :</strong> ${now.toLocaleDateString('fr-FR')}</p>
+      <p><strong>Appartement :</strong> ${rec.appart} - Immeuble : ${rec.bat}</p>
+      <p><strong>Nom du réservateur :</strong> ${rec.nom}</p>
+      <p><strong>Type de document :</strong> ${rec.typeDoc}</p>
+      <p><strong>Numéro de document :</strong> ${rec.doc}</p>
+      <p><strong>Nombre de personnes :</strong> ${totalPersons}</p>
+      <p><strong>Date d'arrivée :</strong> ${rec.date}</p>
+    </div>
+    
+    <div class="doc-section">
+      <div class="doc-section-title">Règlement intérieur accepté :</div>
+      <ul>
+        <li><strong>1. Si vous êtes des Couples marocains :</strong> selon la loi marocaine ce logement autorise que les couples mariés.</li>
+        <li><strong>2. Tranquillité et bruit :</strong> Silence total obligatoire après 23h00. Pas de musique forte, cris ou nuisances sonores à toute heure.</li>
+        <li><strong>3. Tabagisme :</strong> Fumer est strictement interdit à l'intérieur. Autorisé uniquement en extérieur (terrasse ou jardin), avec obligation de nettoyer les mégots et cendres.</li>
+        <li><strong>4. Nombre de personnes :</strong> Maximum 5 personnes autorisées dans l'appartement.</li>
+        <li><strong>5. Piscine :</strong> Douche obligatoire avant la baignade. Pas de verre ni objets fragiles autour de la piscine. Surveillance permanente des enfants par un adulte. Horaires : fermeture à 20h00. Pas de courses ni plongeons.</li>
+        <li><strong>6. Propreté et entretien :</strong> Maintenir les lieux propres en permanence. Vider régulièrement les poubelles. Respecter les sols et surfaces (pas de traces, pas de nourriture hors cuisine).</li>
+      </ul>
+    </div>
+    
+    ${guideText}
+    
+    <div class="doc-signature">
+      <p><strong>${rec.nom}</strong></p>
+      <p>Date : ${now.toLocaleDateString('fr-FR')}</p>
+      <div class="doc-signature-box">
+        <img src="${rec.signature || ''}" alt="Signature" style="max-width: 100%; max-height: 100%; border: 2px solid #000;" />
+      </div>
+    </div>
+    `;
   }
 
   function generateAndOpenPDF(rec) {
@@ -1542,9 +1515,60 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     
     yPos += 10;
     
+    pdf.setFontSize(14);
+    pdf.setTextColor(44, 62, 80);
+    pdf.text('INFORMATIONS CLÉS POUR VOTRE SÉJOUR', 20, yPos);
+    yPos += 10;
+    pdf.setFontSize(11);
+    pdf.setTextColor(0, 0, 0);
+    
+    const guideLines = [
+      'Bonjour, je vous remercie de votre réservation et je vous souhaite la bienvenue.',
+      'Voici un guide complet pour votre séjour :',
+      '',
+      'Appartement : immeuble A6 au 2e etage sans ascenseur (ascenseur hors-service).',
+      '',
+      'CHECK-IN / CHECK-OUT :',
+      '- Contact sur place : WhatsApp Reda (+212 761704428) – Mentionnez "Marwan immeuble A6 appt 6".',
+      '- Arrivee (Check-In) : Des 15h (ou plus tot si l’appartement est libre).',
+      '  Communiquez votre heure d\'arrivee a Reda via WhatsApp avant le check-in.',
+      '- Adresse : Premium Village, Andalucia Immeuble A6 Appt 6 (2eme etage), Marrakech 40000.',
+      '  Parking sous-sol : A6 I6',
+      '- Depart (Check-Out) : Avant 12h si reservation apres vous, sinon horaire flexible.',
+      '',
+      'EQUIPEMENTS & CONSIGNES :',
+      '- Serviettes dans la salle de bain ou l’armoire de la chambre.',
+      '- Piscine ouverte de 9h a 19h. Bracelets obligatoires pour acceder a la piscine.',
+      '- Climatisation : Fermez les fenetres quand elle est allumee, eteignez en partant.',
+      '- Poubelles a jeter au sous-sol (-1) (sac fourni dans la cuisine).',
+      '',
+      'CONNEXION & SERVICES :',
+      '- WiFi : PremiumConnect / Mot de passe : M@rrakech30',
+      '- Apps utiles : Transport : Careem ou Indrive • Taxi : +212 524 40 94 94. Livraison : Glovo.',
+      '',
+      'VIDEOS D\'AIDE (ouverture de la porte) :',
+      'https://youtube.com/shorts/o0p_nN4U0Nw',
+      'https://youtube.com/shorts/4hRoYJoFlcY',
+      'https://youtube.com/shorts/tSzQ43udMuQ',
+      '',
+      'Important : Pour votre sejour, un badge pour l\'appartement et des bracelets',
+      'pour la piscine sont fournis. En cas de perte, les frais de remplacement sont',
+      'de 20€ pour le badge, 50€ par bracelet. Contactez-nous pour plus d\'informations.',
+      'Bon sejour !'
+    ];
+
+    guideLines.forEach(line => {
+      if (yPos > 270) {
+        pdf.addPage();
+        yPos = 20;
+      }
+      pdf.text(line, 20, yPos);
+      yPos += 6;
+    });
+    
+    yPos += 15;
     pdf.text(`${rec.nom}`, 20, yPos);
     yPos += 8;
-    
     pdf.text(`Date : ${now.toLocaleDateString('fr-FR')}`, 20, yPos);
     yPos += 15;
     
