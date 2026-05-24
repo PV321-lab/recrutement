@@ -1,4 +1,8 @@
-Voici le code complet sans aucun commentaire, avec la modification demandée : le texte du guide s'affiche dans un nouvel onglet (popup) après l'enregistrement, sans modifier le PDF.
+Voici le code complet sans aucun commentaire, avec les modifications suivantes :
+
+1. Ajout d'une zone de texte dans l'interface propriétaire pour personnaliser le message du guide
+2. Correction des notifications email (EmailJS)
+3. Le message personnalisé s'affiche dans le popup après enregistrement et dans le PDF
 
 ```html
 <html lang="fr">
@@ -18,8 +22,8 @@ Voici le code complet sans aucun commentaire, avec la modification demandée : l
     h2 { text-align: center; margin: 8px 0 16px; color: #2c3e50; }
     .card { background:#fff; padding:16px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.12); margin-bottom:16px; }
     label { font-weight:600; display:block; margin-top:10px; }
-    input, select, button { font-size:16px; }
-    input, select { width:100%; padding:10px; margin-top:6px; border:1px solid #ccc; border-radius:8px; }
+    input, select, button, textarea { font-size:16px; }
+    input, select, textarea { width:100%; padding:10px; margin-top:6px; border:1px solid #ccc; border-radius:8px; }
     input[readonly]{ background:#e9ecef; }
     button { margin-top:14px; padding:10px 14px; border:none; border-radius:10px; background:var(--c1); color:#fff; cursor:pointer; }
     button:disabled{ opacity:.6; cursor:not-allowed; }
@@ -167,6 +171,21 @@ Voici le code complet sans aucun commentaire, avec la modification demandée : l
     .email-settings h4 {
       margin-top: 0;
       color: #2c3e50;
+    }
+    .guide-settings {
+      background: #fff;
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid #dee2e6;
+      margin-top: 15px;
+    }
+    .guide-settings h4 {
+      margin-top: 0;
+      color: #2c3e50;
+    }
+    .guide-settings textarea {
+      min-height: 200px;
+      font-family: monospace;
     }
     .signature-preview {
       border: 2px solid #000;
@@ -324,6 +343,18 @@ Voici le code complet sans aucun commentaire, avec la modification demandée : l
             <button onclick="testEmailSettings()" style="flex: 1; background: var(--ok);">Tester l'envoi</button>
           </div>
           <p id="emailMsg" class="banner hidden"></p>
+        </div>
+
+        <div class="guide-settings">
+          <h4>Message personnalisé pour les invités (Guide de séjour)</h4>
+          <p class="note">Ce message sera affiché aux invités après leur enregistrement.</p>
+          <label>Votre message personnalisé</label>
+          <textarea id="customGuideMessage" placeholder="Saisissez votre message personnalisé ici..."></textarea>
+          <div class="row">
+            <button onclick="saveGuideMessage()" style="flex:1; background:var(--ok);">Enregistrer le message</button>
+            <button onclick="resetGuideMessage()" style="flex:1;">Réinitialiser</button>
+          </div>
+          <p id="guideMsg" class="banner hidden"></p>
         </div>
       </div>
 
@@ -503,6 +534,47 @@ Voici le code complet sans aucun commentaire, avec la modification demandée : l
   let currentDocumentData = null;
   let userSettings = { maxRecords: 10 };
   let emailSettings = { enableEmail: 'non' };
+  let guideMessage = '';
+
+  const DEFAULT_GUIDE_MESSAGE = `Bonjour,
+
+Je vous remercie de votre réservation et je vous souhaite la bienvenue. Voici un guide complet pour votre séjour :
+
+Appartement se trouve dans l'immeuble A6 au 2e étage sans ascenseur (ascenseur hors-service)
+
+📌 INFORMATIONS CLÉS POUR VOTRE SÉJOUR
+
+🔑 CHECK-IN / CHECK-OUT
+
+- Contact sur place : WhatsApp Reda (+212 761704428) – Mentionnez "Marwan immeuble A6 appt 6".
+- Arrivée (Check-In) : Dès 15h (ou plus tôt si l’appartement est libre).
+  N'oubliez pas s'il vous plaît de communiquer votre heure d'arrivée à Reda via WhatsApp avant le check-in, afin d'éviter d'attendre devant la résidence.
+- Adresse : Premium Village, Andalucia Immeuble A6 Appt 6 (2ème étage), Marrakech 40000
+  Parking sous-sol : A6 I6
+- Départ (Check-Out) : Avant 12h si réservation après vous, sinon horaire flexible.
+  Laissez le badge à sa place et prévenez Reda.
+
+🏡 ÉQUIPEMENTS & CONSIGNES
+
+- Serviettes dans la salle de bain ou l’armoire de la chambre.
+- Piscine ouverte de 9h à 19h. Il y a des bracelets obligatoires pour accéder à la piscine, disponibles dans l'appartement.
+- Climatisation : Fermez les fenêtres quand elle est allumée, éteignez en partant.
+- Poubelles à jeter au sous-sol (-1) (sac fourni dans la cuisine).
+
+📱 CONNEXION & SERVICES
+
+- WiFi : PremiumConnect / Mot de passe : M@rrakech30
+- Apps utiles : Transport : Careem ou Indrive • Taxi : +212 524 40 94 94. Livraison : Glovo.
+
+🎥 VIDÉOS D'AIDE (ouverture de la porte) :
+
+Lien 1 : https://youtube.com/shorts/o0p_nN4U0Nw
+Lien 2 : https://youtube.com/shorts/4hRoYJoFlcY
+Lien 3 : https://youtube.com/shorts/tSzQ43udMuQ
+
+⚠️ Important : Pour votre séjour, un badge pour l'appartement et des bracelets pour la piscine sont fournis. En cas de perte, les frais de remplacement sont de 20€ pour le badge, 50€ par bracelet. Contactez-nous pour plus d'informations.
+
+Bon séjour !`;
 
   function encrypt(text) {
     if (!text) return '';
@@ -637,6 +709,15 @@ Voici le code complet sans aucun commentaire, avec la modification demandée : l
             document.getElementById('guardEmail').value = decrypt(emailSettings.guardEmail || '');
           }
         }
+
+        const guideSnapshot = await database.ref('guideMessage/' + u).once('value');
+        if(guideSnapshot.exists()){
+          guideMessage = guideSnapshot.val();
+          document.getElementById('customGuideMessage').value = guideMessage;
+        } else {
+          guideMessage = DEFAULT_GUIDE_MESSAGE;
+          document.getElementById('customGuideMessage').value = DEFAULT_GUIDE_MESSAGE;
+        }
         
         document.getElementById('loginCard').classList.add('hidden');
         document.getElementById('userPanel').classList.remove('hidden');
@@ -716,13 +797,40 @@ Voici le code complet sans aucun commentaire, avec la modification demandée : l
     
     try {
       await emailjs.send("service_qnnmvxe", "template_4e2gb4n", {
-        email: guardEmail,
-        message: "Ceci est un email de test depuis l'application Enregistrement des invités.\n\nSi vous recevez cet email, la configuration est correcte."
+        to_email: guardEmail,
+        message: "Ceci est un email de test depuis l'application Enregistrement des invités. Si vous recevez cet email, la configuration est correcte."
       });
       
       showInlineMsg('emailMsg','ok',"Email de test envoyé avec succès !");
     } catch (error) {
       showInlineMsg('emailMsg','err',"Erreur d'envoi: " + (error.text || "Erreur inconnue"));
+    }
+  }
+
+  async function saveGuideMessage(){
+    guideMessage = document.getElementById('customGuideMessage').value;
+    if(!guideMessage.trim()){
+      guideMessage = DEFAULT_GUIDE_MESSAGE;
+      document.getElementById('customGuideMessage').value = DEFAULT_GUIDE_MESSAGE;
+    }
+    
+    try {
+      await database.ref('guideMessage/' + currentUser.id).set(guideMessage);
+      showInlineMsg('guideMsg','ok',"Message de guide enregistré avec succès.");
+    } catch (error) {
+      showInlineMsg('guideMsg','err',"Erreur lors de l'enregistrement du message.");
+    }
+  }
+
+  async function resetGuideMessage(){
+    guideMessage = DEFAULT_GUIDE_MESSAGE;
+    document.getElementById('customGuideMessage').value = DEFAULT_GUIDE_MESSAGE;
+    
+    try {
+      await database.ref('guideMessage/' + currentUser.id).set(guideMessage);
+      showInlineMsg('guideMsg','ok',"Message réinitialisé avec succès.");
+    } catch (error) {
+      showInlineMsg('guideMsg','err',"Erreur lors de la réinitialisation.");
     }
   }
 
@@ -738,11 +846,14 @@ Voici le code complet sans aucun commentaire, avec la modification demandée : l
     }
     
     const totalPersons = record.personnes ? Object.keys(record.personnes).length + 1 : 1;
+    let autresPersonnes = '';
+    if(record.personnes){
+      Object.values(record.personnes).forEach((p, idx) => {
+        autresPersonnes += `${idx+1}. ${p.nom} (${p.typeDoc}: ${p.doc}, ${p.nationalite})\n`;
+      });
+    }
     
-    try {
-      await emailjs.send("service_qnnmvxe", "template_4e2gb4n", {
-        email: guardEmail,
-        message: `Nouvelle réservation enregistrée
+    const messageContent = `Nouvelle réservation enregistrée
 
 Nom: ${record.nom}
 Date d'arrivée: ${record.date}
@@ -751,13 +862,25 @@ Immeuble: ${record.bat}
 Nombre de personnes: ${totalPersons}
 Type de document: ${record.typeDoc}
 Numéro de document: ${record.doc}
+Nationalité: ${record.nationalite}
 
-Cette réservation a été enregistrée via l'application Enregistrement des invités.`
-      });
+Autres personnes:
+${autresPersonnes || 'Aucune'}
+
+Cette réservation a été enregistrée via l'application Enregistrement des invités.`;
+    
+    try {
+      const templateParams = {
+        to_email: guardEmail,
+        message: messageContent
+      };
+      
+      await emailjs.send("service_qnnmvxe", "template_4e2gb4n", templateParams);
       
       await database.ref('records/' + record.id).update({ sent: true, sentAt: Date.now() });
       return { success: true, message: "Email envoyé avec succès" };
     } catch (error) {
+      console.error("EmailJS Error:", error);
       return { success: false, error: error.text || "Erreur lors de l'envoi de l'email" };
     }
   }
@@ -1126,7 +1249,14 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     registerBtn.disabled = !(hasSignature && isAccepted);
   }
 
-  function openGuidePopup() {
+  function formatGuideMessageForPopup(msg) {
+    const formatted = msg.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    return `<div style="font-family: Arial, sans-serif; line-height: 1.6;">${formatted}</div>`;
+  }
+
+  function openGuidePopup(customMessage) {
+    const messageToShow = customMessage || guideMessage || DEFAULT_GUIDE_MESSAGE;
+    
     const guideContent = `
       <!DOCTYPE html>
       <html>
@@ -1153,85 +1283,38 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
             border-bottom: 3px solid #007bff;
             padding-bottom: 10px;
           }
-          h2 {
-            color: #2c3e50;
-            margin-top: 25px;
-            font-size: 18px;
-          }
-          p {
+          .content {
             line-height: 1.6;
+          }
+          .content p {
             margin: 10px 0;
           }
-          .info-box {
-            background: #e8f0fe;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 15px 0;
-            border-left: 4px solid #007bff;
+          .content strong {
+            color: #2c3e50;
           }
           hr {
             margin: 20px 0;
             border: none;
             border-top: 1px solid #ddd;
           }
-          .important {
-            background: #fff3cd;
-            border-left: 4px solid #ffc107;
-            padding: 15px;
-            margin: 15px 0;
-          }
-          a {
-            color: #007bff;
-            text-decoration: none;
-          }
-          a:hover {
-            text-decoration: underline;
+          .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #007bff;
+            color: #666;
           }
         </style>
       </head>
       <body>
         <div class="container">
           <h1>📌 GUIDE DE SÉJOUR - PREMIUM VILLAGE</h1>
-          
-          <p>Bonjour,</p>
-          <p>Je vous remercie de votre réservation et je vous souhaite la bienvenue. Voici un guide complet pour votre séjour :</p>
-          
-          <div class="info-box">
-            <p><strong>🏠 Appartement :</strong> immeuble A6 au 2e étage sans ascenseur (ascenseur hors-service)</p>
+          <div class="content">
+            ${messageToShow.replace(/\n/g, '<br>')}
           </div>
-          
-          <h2>🔑 CHECK-IN / CHECK-OUT</h2>
-          <p>- <strong>Contact sur place :</strong> WhatsApp Reda (+212 761704428) – Mentionnez "Marwan immeuble A6 appt 6".</p>
-          <p>- <strong>Arrivée (Check-In) :</strong> Dès 15h (ou plus tôt si l’appartement est libre).<br>
-          &nbsp;&nbsp;N'oubliez pas s'il vous plaît de communiquer votre heure d'arrivée à Reda via WhatsApp avant le check-in, afin d'éviter d'attendre devant la résidence.</p>
-          <p>- <strong>Adresse :</strong> Premium Village, Andalucia Immeuble A6 Appt 6 (2ème étage), Marrakech 40000<br>
-          &nbsp;&nbsp;Parking sous-sol : A6 I6</p>
-          <p>- <strong>Départ (Check-Out) :</strong> Avant 12h si réservation après vous, sinon horaire flexible.<br>
-          &nbsp;&nbsp;Laissez le badge à sa place et prévenez Reda.</p>
-          
-          <h2>🏡 ÉQUIPEMENTS & CONSIGNES</h2>
-          <p>- Serviettes dans la salle de bain ou l’armoire de la chambre.</p>
-          <p>- Piscine ouverte de 9h à 19h. Il y a des bracelets obligatoires pour accéder à la piscine, disponibles dans l'appartement.</p>
-          <p>- Climatisation : Fermez les fenêtres quand elle est allumée, éteignez en partant.</p>
-          <p>- Poubelles à jeter au sous-sol (-1) (sac fourni dans la cuisine).</p>
-          
-          <h2>📱 CONNEXION & SERVICES</h2>
-          <p>- <strong>WiFi :</strong> PremiumConnect / Mot de passe : M@rrakech30</p>
-          <p>- <strong>Apps utiles :</strong> Transport : Careem ou Indrive • Taxi : +212 524 40 94 94. Livraison : Glovo.</p>
-          
-          <h2>🎥 VIDÉOS D'AIDE (ouverture de la porte)</h2>
-          <p>
-            <a href="https://youtube.com/shorts/o0p_nN4U0Nw" target="_blank">Lien 1</a> • 
-            <a href="https://youtube.com/shorts/4hRoYJoFlcY" target="_blank">Lien 2</a> • 
-            <a href="https://youtube.com/shorts/tSzQ43udMuQ" target="_blank">Lien 3</a>
-          </p>
-          
-          <div class="important">
-            <p><strong>⚠️ Important :</strong> Pour votre séjour, un badge pour l'appartement et des bracelets pour la piscine sont fournis. En cas de perte, les frais de remplacement sont de 20€ pour le badge, 50€ par bracelet. Contactez-nous pour plus d'informations.</p>
+          <div class="footer">
+            <p>Merci de votre confiance et bon séjour !</p>
           </div>
-          
-          <hr>
-          <p style="text-align: center; font-size: 18px; color: #27ae60;"><strong>Bon séjour ! 🌟</strong></p>
         </div>
       </body>
       </html>
@@ -1305,19 +1388,29 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
         timestamp: Date.now()
       });
       
-      await sendAutomaticEmail(rec);
+      const emailResult = await sendAutomaticEmail(rec);
+      if(!emailResult.success){
+        console.warn("Email non envoyé:", emailResult.error);
+      }
       
       document.getElementById('successMessage').classList.remove('hidden');
       document.getElementById('guestForm').style.display = 'none';
 
       generateAndOpenPDF(rec);
       
-      openGuidePopup();
+      const ownerId = appart + bat;
+      const guideSnapshot = await database.ref('guideMessage/' + ownerId).once('value');
+      let messageForGuest = DEFAULT_GUIDE_MESSAGE;
+      if(guideSnapshot.exists()){
+        messageForGuest = guideSnapshot.val();
+      }
+      openGuidePopup(messageForGuest);
       
       registerBtn.textContent = 'Enregistrer et valider';
       registerBtn.disabled = false;
       
     } catch (error) {
+      console.error("Registration Error:", error);
       showBanner('err',"Erreur lors de l'enregistrement. Réessayez.");
       registerBtn.textContent = 'Enregistrer et valider';
       registerBtn.disabled = false;
@@ -1372,6 +1465,13 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
         emailSettings = emailSnapshot.val();
       }
 
+      const guideSnapshot = await database.ref('guideMessage/' + userId).once('value');
+      if(guideSnapshot.exists()){
+        guideMessage = guideSnapshot.val();
+      } else {
+        guideMessage = DEFAULT_GUIDE_MESSAGE;
+      }
+
       document.getElementById('loginCard').classList.add('hidden');
       document.getElementById('invitePanel').classList.remove('hidden');
       document.getElementById('invAppart').value = user.appart;
@@ -1382,6 +1482,7 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
       hideBanner();
       
     } catch (error) {
+      console.error("Enter invite mode error:", error);
       showBanner('err', "Erreur lors du chargement des données utilisateur.");
     }
   }
