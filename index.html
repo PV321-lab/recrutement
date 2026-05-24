@@ -1,5 +1,3 @@
-Voici le code complet avec uniquement la modification demandée (affichage du guide complet et téléchargement PDF dans un nouvel onglet après l'enregistrement), sans aucune altération du mécanisme de connexion ou autre partie du code original :
-
 ```html
 <!DOCTYPE html>
 <html lang="fr">
@@ -221,58 +219,25 @@ Voici le code complet avec uniquement la modification demandée (affichage du gu
     <div id="adminPanel" class="hidden">
       <div class="toolbar card">
         <div><strong>Panneau administrateur - Enregistrement des invités</strong></div>
-        <div>
-          <button onclick="logout()">Déconnexion</button>
-        </div>
+        <div><button onclick="logout()">Déconnexion</button></div>
       </div>
-
       <div class="card">
-        <div class="toolbar">
-          <div><strong>Gestion des utilisateurs</strong></div>
-        </div>
+        <div class="toolbar"><div><strong>Gestion des utilisateurs</strong></div></div>
         <div class="row">
-          <div class="col">
-            <label>Appartement</label>
-            <input type="text" id="appartAdmin" placeholder="Ex: 12" />
-          </div>
-          <div class="col">
-            <label>Immeuble</label>
-            <input type="text" id="batAdmin" placeholder="Ex: A" />
-          </div>
-          <div class="col">
-            <label>Mot de passe</label>
-            <input type="text" id="passAdmin" placeholder="Choisir un mot de passe" />
-          </div>
+          <div class="col"><label>Appartement</label><input type="text" id="appartAdmin" placeholder="Ex: 12" /></div>
+          <div class="col"><label>Immeuble</label><input type="text" id="batAdmin" placeholder="Ex: A" /></div>
+          <div class="col"><label>Mot de passe</label><input type="text" id="passAdmin" placeholder="Choisir un mot de passe" /></div>
         </div>
         <button onclick="creerUtilisateur()">Créer utilisateur</button>
         <p id="userWarn" class="banner warn hidden"></p>
       </div>
-
       <div class="card">
-        <div class="toolbar">
-          <div><strong>Utilisateurs existants</strong></div>
-        </div>
-        <table id="tableUsers">
-          <thead>
-            <tr><th>N°</th><th>Appartement</th><th>Immeuble</th><th>Mot de passe</th><th>Action</th></tr>
-          </thead>
-          <tbody></tbody>
-        </table>
+        <div class="toolbar"><div><strong>Utilisateurs existants</strong></div></div>
+        <table id="tableUsers"><thead><tr><th>N°</th><th>Appartement</th><th>Immeuble</th><th>Mot de passe</th><th>Action</th></tr></thead><tbody></tbody></table>
       </div>
-
       <div class="card">
-        <div class="toolbar">
-          <div><strong>Enregistrements des invités</strong></div>
-        </div>
-        <table id="tableAdmin">
-          <thead>
-            <tr>
-              <th>N°</th><th>Appart.</th><th>Immeuble</th><th>Nom</th><th>Document</th><th>Type Doc</th><th>Nationalité</th>
-              <th>Nb Pers.</th><th>Personnes</th><th>Date</th><th>Document</th><th>Action</th><th>Statut</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
+        <div class="toolbar"><div><strong>Enregistrements des invités</strong></div></div>
+        <table id="tableAdmin"><thead><tr><th>N°</th><th>Appart.</th><th>Immeuble</th><th>Nom</th><th>Document</th><th>Type Doc</th><th>Nationalité</th><th>Nb Pers.</th><th>Personnes</th><th>Date</th><th>Document</th><th>Action</th><th>Statut</th></tr></thead><tbody></tbody></table>
       </div>
     </div>
 
@@ -281,188 +246,59 @@ Voici le code complet avec uniquement la modification demandée (affichage du gu
         <div><strong>Mon espace - Enregistrement des invités</strong></div>
         <div><button onclick="logout()">Déconnexion</button></div>
       </div>
-
       <div class="card">
-        <div class="toolbar">
-          <div><strong>Paramètres de mon compte</strong></div>
-        </div>
+        <div class="toolbar"><div><strong>Paramètres de mon compte</strong></div></div>
         <div class="user-settings">
           <div class="row">
-            <div class="col">
-              <label>Nombre maximum d'enregistrements</label>
-              <input type="number" id="maxRecords" min="1" value="10" />
-            </div>
-            <div class="col">
-              <label>Nouveau mot de passe (optionnel)</label>
-              <input type="password" id="newPassword" placeholder="Laisser vide pour ne pas changer" />
-            </div>
+            <div class="col"><label>Nombre maximum d'enregistrements</label><input type="number" id="maxRecords" min="1" value="10" /></div>
+            <div class="col"><label>Nouveau mot de passe (optionnel)</label><input type="password" id="newPassword" placeholder="Laisser vide pour ne pas changer" /></div>
           </div>
           <button onclick="updateUserSettings()">Enregistrer les paramètres</button>
           <p id="settingsMsg" class="banner hidden"></p>
         </div>
-        
         <div class="email-settings">
           <h4>Notifications par Email</h4>
           <p class="note">Recevez une notification quand un invité s'enregistre.</p>
-          
           <label>Activer les notifications</label>
-          <select id="enableEmail" onchange="toggleEmailFields()">
-            <option value="non">Non</option>
-            <option value="oui">Oui</option>
-          </select>
-          
+          <select id="enableEmail" onchange="toggleEmailFields()"><option value="non">Non</option><option value="oui">Oui</option></select>
           <div id="emailFields" class="hidden">
-            <div class="smtp-info">
-              <strong>Configuration EmailJS :</strong> Utilise le service EmailJS pour envoyer les notifications.
-            </div>
-            
+            <div class="smtp-info"><strong>Configuration EmailJS :</strong> Utilise le service EmailJS pour envoyer les notifications.</div>
             <label>Email du destinataire (ex: Sécurité)</label>
             <input type="email" id="guardEmail" placeholder="securite@exemple.com" />
           </div>
-          
-          <div class="row" style="margin-top: 15px;">
-            <button onclick="saveEmailSettings()" style="flex: 1;">Enregistrer Email</button>
-            <button onclick="testEmailSettings()" style="flex: 1; background: var(--ok);">Tester l'envoi</button>
-          </div>
+          <div class="row" style="margin-top: 15px;"><button onclick="saveEmailSettings()" style="flex: 1;">Enregistrer Email</button><button onclick="testEmailSettings()" style="flex: 1; background: var(--ok);">Tester l'envoi</button></div>
           <p id="emailMsg" class="banner hidden"></p>
         </div>
       </div>
-
       <div class="card">
-        <div class="toolbar">
-          <div><strong>Mes enregistrements</strong></div>
-          <button onclick="genererLien()" style="background: var(--ok);">Générer lien invité</button>
-        </div>
-        <table id="tableUser">
-          <thead>
-            <tr>
-              <th>N°</th><th>Nom</th><th>Document</th><th>Type Doc</th><th>Nationalité</th><th>Nb Pers.</th><th>Personnes</th><th>Date</th><th>Document</th><th>Statut</th><th>Action</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
+        <div class="toolbar"><div><strong>Mes enregistrements</strong></div><button onclick="genererLien()" style="background: var(--ok);">Générer lien invité</button></div>
+        <table id="tableUser"><thead><tr><th>N°</th><th>Nom</th><th>Document</th><th>Type Doc</th><th>Nationalité</th><th>Nb Pers.</th><th>Personnes</th><th>Date</th><th>Document</th><th>Statut</th><th>Action</th></tr></thead><tbody></tbody></table>
       </div>
     </div>
 
     <div id="invitePanel" class="hidden">
       <div class="guest-form-container">
-        <div class="toolbar" style="margin-bottom: 20px;">
-          <h3 style="margin: 0; flex-grow: 1;">Enregistrement Invité - Enregistrement des invités</h3>
-        </div>
-
+        <div class="toolbar" style="margin-bottom: 20px;"><h3 style="margin: 0; flex-grow: 1;">Enregistrement Invité - Enregistrement des invités</h3></div>
         <div class="card">
           <form id="guestForm">
-            <div class="row">
-              <div class="col">
-                <label>Appartement</label>
-                <input type="text" id="invAppart" readonly />
-              </div>
-              <div class="col">
-                <label>Immeuble</label>
-                <input type="text" id="invBat" readonly />
-              </div>
-            </div>
-
-            <label>Date d'arrivée *</label>
-            <input type="date" id="dateArrivee" required class="guest-input" />
-            <div class="error-message" id="dateArriveeError">Veuillez sélectionner une date d'arrivée</div>
-
-            <label>Nombre des invités *</label>
-            <input type="number" id="nbPers" min="1" value="1" onchange="genererChamps()" required class="guest-input" />
-            <div class="error-message" id="nbPersError">Veuillez entrer le nombre d'invités (minimum 1)</div>
-
-            <label>Nom et Prénom de la personne principale *</label>
-            <input type="text" id="nomPrincipal" required placeholder="Nom complet" class="guest-input" />
-            <div class="error-message" id="nomPrincipalError">Veuillez entrer le nom et prénom</div>
-
-            <div class="row doc-type-row">
-              <div class="col">
-                <label>Type de document *</label>
-                <select id="typeDocPrincipal" required class="guest-input">
-                  <option value="">Sélectionner</option>
-                  <option value="Passeport">Passeport</option>
-                  <option value="Carte d'identité">Carte d'identité</option>
-                </select>
-                <div class="error-message" id="typeDocPrincipalError">Veuillez sélectionner un type de document</div>
-              </div>
-              <div class="col">
-                <label>Numéro de document *</label>
-                <input type="text" id="docPrincipal" required placeholder="N° de document" class="guest-input" />
-                <div class="error-message" id="docPrincipalError">Veuillez entrer le numéro de document</div>
-              </div>
-            </div>
-
-            <div class="nationality-row">
-              <div class="col">
-                <label>Nationalité *</label>
-                <input type="text" id="nationalitePrincipal" required placeholder="Nationalité" class="guest-input" />
-                <div class="error-message" id="nationalitePrincipalError">Veuillez entrer la nationalité</div>
-              </div>
-            </div>
-
+            <div class="row"><div class="col"><label>Appartement</label><input type="text" id="invAppart" readonly /></div><div class="col"><label>Immeuble</label><input type="text" id="invBat" readonly /></div></div>
+            <label>Date d'arrivée *</label><input type="date" id="dateArrivee" required class="guest-input" /><div class="error-message" id="dateArriveeError">Veuillez sélectionner une date d'arrivée</div>
+            <label>Nombre des invités *</label><input type="number" id="nbPers" min="1" value="1" onchange="genererChamps()" required class="guest-input" /><div class="error-message" id="nbPersError">Veuillez entrer le nombre d'invités (minimum 1)</div>
+            <label>Nom et Prénom de la personne principale *</label><input type="text" id="nomPrincipal" required placeholder="Nom complet" class="guest-input" /><div class="error-message" id="nomPrincipalError">Veuillez entrer le nom et prénom</div>
+            <div class="row doc-type-row"><div class="col"><label>Type de document *</label><select id="typeDocPrincipal" required class="guest-input"><option value="">Sélectionner</option><option value="Passeport">Passeport</option><option value="Carte d'identité">Carte d'identité</option></select><div class="error-message" id="typeDocPrincipalError">Veuillez sélectionner un type de document</div></div><div class="col"><label>Numéro de document *</label><input type="text" id="docPrincipal" required placeholder="N° de document" class="guest-input" /><div class="error-message" id="docPrincipalError">Veuillez entrer le numéro de document</div></div></div>
+            <div class="nationality-row"><div class="col"><label>Nationalité *</label><input type="text" id="nationalitePrincipal" required placeholder="Nationalité" class="guest-input" /><div class="error-message" id="nationalitePrincipalError">Veuillez entrer la nationalité</div></div></div>
             <div id="personnes"></div>
-
-            <div class="rules-container">
-              <h4>Règlement intérieur à respecter :</h4>
-              <ul>
-                <li><strong>1. Si vous êtes des Couples marocains: :</strong> selon la loi marocaine Ce logement autorise que les couples mariés . </li>
-                <li><strong>2. Tranquillité et bruit :</strong> Silence total obligatoire après 23h00. Pas de musique forte, cris ou nuisances sonores à toute heure.</li>
-                <li><strong>3. Tabagisme :</strong> Fumer est strictement interdit à l'intérieur. Autorisé uniquement en extérieur (terrasse ou jardin), avec obligation de nettoyer les mégots et cendres.</li>
-                <li><strong>4. Nombre de personnes :</strong> Maximum 5 personnes autorisées dans l'appartement.</li>
-                <li><strong>5. Piscine :</strong> Douche obligatoire avant la baignade. Pas de verre ni objets fragiles autour de la piscine. Surveillance permanente des enfants par un adulte. Horaires : fermeture à 20h00. Pas de courses ni plongeons.</li>
-                <li><strong>6. Propreté et entretien :</strong> Maintenir les lieux propres en permanence. Vider régulièrement les poubelles. Respecter les sols et surfaces (pas de traces, pas de nourriture hors cuisine).</li>
-              </ul>
-            </div>
-
-            <div class="signature-area">
-              <div class="signature-title">Signature *</div>
-              <canvas id="signatureCanvas" class="signature-canvas">
-                Votre navigateur ne supporte pas la signature.
-              </canvas>
-              <div class="error-message" id="signatureError">Veuillez signer le document</div>
-              <div class="signature-controls">
-                <button type="button" id="clearBtn" class="btn" style="background: #e74c3c;">Effacer la signature</button>
-              </div>
-              <div id="signaturePreview" class="signature-preview hidden"></div>
-              <p style="margin-top: 15px; font-size: 14px; color: #666;">
-                En signant, vous acceptez le règlement intérieur et consentez au traitement de vos données personnelles.
-              </p>
-            </div>
-
-            <div class="accept-signature-container">
-              <label style="display: flex; align-items: center; justify-content: center; margin-bottom: 15px;">
-                <input type="checkbox" id="acceptCheckbox" required style="margin-right: 10px; width: auto;">
-                <span style="font-size: 16px; font-weight: bold;">Je confirme avoir lu et j'accepte le règlement intérieur ainsi queJe déclare accepter, conformément à la loi marocaine, la protection et la confidentialité de mes données personnelles..</span>
-              </label>
-              <div class="error-message" id="acceptCheckboxError" style="text-align: center;">Veuillez accepter les conditions</div>
-              <div style="text-align: center;">
-                <button type="button" id="registerBtn" class="btn" style="background: #27ae60; padding: 12px 30px; font-size: 18px;">Enregistrer et valider</button>
-              </div>
-            </div>
+            <div class="rules-container"><h4>Règlement intérieur à respecter :</h4><ul><li><strong>1. Si vous êtes des Couples marocains: :</strong> selon la loi marocaine Ce logement autorise que les couples mariés . </li><li><strong>2. Tranquillité et bruit :</strong> Silence total obligatoire après 23h00. Pas de musique forte, cris ou nuisances sonores à toute heure.</li><li><strong>3. Tabagisme :</strong> Fumer est strictement interdit à l'intérieur. Autorisé uniquement en extérieur (terrasse ou jardin), avec obligation de nettoyer les mégots et cendres.</li><li><strong>4. Nombre de personnes :</strong> Maximum 5 personnes autorisées dans l'appartement.</li><li><strong>5. Piscine :</strong> Douche obligatoire avant la baignade. Pas de verre ni objets fragiles autour de la piscine. Surveillance permanente des enfants par un adulte. Horaires : fermeture à 20h00. Pas de courses ni plongeons.</li><li><strong>6. Propreté et entretien :</strong> Maintenir les lieux propres en permanence. Vider régulièrement les poubelles. Respecter les sols et surfaces (pas de traces, pas de nourriture hors cuisine).</li></ul></div>
+            <div class="signature-area"><div class="signature-title">Signature *</div><canvas id="signatureCanvas" class="signature-canvas"></canvas><div class="error-message" id="signatureError">Veuillez signer le document</div><div class="signature-controls"><button type="button" id="clearBtn" class="btn" style="background: #e74c3c;">Effacer la signature</button></div><div id="signaturePreview" class="signature-preview hidden"></div><p style="margin-top: 15px; font-size: 14px; color: #666;">En signant, vous acceptez le règlement intérieur et consentez au traitement de vos données personnelles.</p></div>
+            <div class="accept-signature-container"><label style="display: flex; align-items: center; justify-content: center; margin-bottom: 15px;"><input type="checkbox" id="acceptCheckbox" required style="margin-right: 10px; width: auto;"><span style="font-size: 16px; font-weight: bold;">Je confirme avoir lu et j'accepte le règlement intérieur ainsi queJe déclare accepter, conformément à la loi marocaine, la protection et la confidentialité de mes données personnelles..</span></label><div class="error-message" id="acceptCheckboxError" style="text-align: center;">Veuillez accepter les conditions</div><div style="text-align: center;"><button type="button" id="registerBtn" class="btn" style="background: #27ae60; padding: 12px 30px; font-size: 18px;">Enregistrer et valider</button></div></div>
           </form>
         </div>
-
-        <div id="successMessage" class="banner ok hidden">
-          Enregistrement réussi ! Un onglet s'ouvre avec votre document PDF.
-          <br><br>
-          <strong>Note importante :</strong> En cas de demande des agents de sécurité, présentez ce document signé.
-          Seules les personnes enregistrées dans cette réservation sont autorisées à entrer.
-        </div>
+        <div id="successMessage" class="banner ok hidden">Enregistrement réussi ! Un onglet s'ouvre avec votre document PDF.<br><br><strong>Note importante :</strong> En cas de demande des agents de sécurité, présentez ce document signé. Seules les personnes enregistrées dans cette réservation sont autorisées à entrer.</div>
       </div>
     </div>
   </div>
-
   <div id="documentColumn" class="document-column hidden">
-    <div class="card">
-      <h3>Document Signé - Enregistrement des invités</h3>
-      <div id="documentPreview" class="document-preview">
-        <p style="text-align: center; color: #666;">Sélectionnez un enregistrement pour voir le document.</p>
-      </div>
-      <div id="docActions" class="doc-actions hidden">
-        <button onclick="downloadCurrentDocument()" style="background: var(--ok);">Télécharger PDF</button>
-        <button onclick="partagerWhatsApp()" style="background: #25D366;">Partager WhatsApp</button>
-      </div>
-    </div>
+    <div class="card"><h3>Document Signé - Enregistrement des invités</h3><div id="documentPreview" class="document-preview"><p style="text-align: center; color: #666;">Sélectionnez un enregistrement pour voir le document.</p></div><div id="docActions" class="doc-actions hidden"><button onclick="downloadCurrentDocument()" style="background: var(--ok);">Télécharger PDF</button><button onclick="partagerWhatsApp()" style="background: #25D366;">Partager WhatsApp</button></div></div>
   </div>
 </div>
 
@@ -485,12 +321,8 @@ Voici le code complet avec uniquement la modification demandée (affichage du gu
     measurementId: "G-BS2EBMM7T3"
   };
   
-  try {
-    if (!firebase.apps.length) {
-      firebase.initializeApp(firebaseConfig);
-    }
-  } catch (e) {
-    console.error("Firebase Init Error:", e);
+  if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
   }
   const database = firebase.database();
   const AUTH_EMAIL = "maraminho10@gmail.com";
@@ -510,7 +342,6 @@ Voici le code complet avec uniquement la modification demandée (affichage du gu
     try {
       return CryptoJS.AES.encrypt(text, 'PremiumVillage2024Key').toString();
     } catch (e) {
-      console.error("Encryption error:", e);
       return text;
     }
   }
@@ -521,7 +352,6 @@ Voici le code complet avec uniquement la modification demandée (affichage du gu
       const bytes = CryptoJS.AES.decrypt(text, 'PremiumVillage2024Key');
       return bytes.toString(CryptoJS.enc.Utf8);
     } catch (e) {
-      console.error("Decryption error:", e);
       return text;
     }
   }
@@ -568,9 +398,9 @@ Voici le code complet avec uniquement la modification demandée (affichage du gu
     if(currentUser) startSessionTimer();
   }
   
-  ['click','keydown','touchstart'].forEach(evt=>{
-    document.addEventListener(evt, resetSessionTimer, {passive:true});
-  });
+  document.addEventListener('click', resetSessionTimer);
+  document.addEventListener('keydown', resetSessionTimer);
+  document.addEventListener('touchstart', resetSessionTimer);
 
   function logout(expired=false){
     currentUser = null;
@@ -602,7 +432,7 @@ Voici le code complet avec uniquement la modification demandée (affichage du gu
         try {
           await firebase.auth().signInWithEmailAndPassword(AUTH_EMAIL, AUTH_PASS);
         } catch (e) {
-          console.error("Firebase Auth failed for admin:", e);
+          console.error(e);
         }
         
         currentUser = { role:'admin' };
@@ -650,7 +480,6 @@ Voici le code complet avec uniquement la modification demandée (affichage du gu
         await firebase.auth().signOut();
       }
     } catch (error) {
-      console.error("Login Error:", error);
       showInlineMsg('loginMsg','err', "Erreur: " + (error.message || "Accès refusé"));
     } finally {
       btn.disabled = false;
@@ -729,13 +558,13 @@ Voici le code complet avec uniquement la modification demandée (affichage du gu
 
   async function sendAutomaticEmail(record) {
     if(emailSettings.enableEmail !== 'oui'){
-      return { success: true, message: "Emails désactivés" };
+      return { success: true };
     }
     
     const guardEmail = decrypt(emailSettings.guardEmail || '');
     
     if(!guardEmail){
-      return { success: false, error: "Email du destinataire non configuré" };
+      return { success: false };
     }
     
     const totalPersons = record.personnes ? Object.keys(record.personnes).length + 1 : 1;
@@ -743,20 +572,65 @@ Voici le code complet avec uniquement la modification demandée (affichage du gu
     try {
       await emailjs.send("service_qnnmvxe", "template_4e2gb4n", {
         email: guardEmail,
-        message: `Nouvelle réservation enregistrée
-
-Nom: ${record.nom}
-Date d'arrivée: ${record.date}
-Appartement: ${record.appart}
-Immeuble: ${record.bat}
-Nombre de personnes: ${totalPersons}
-Type de document: ${record.typeDoc}
-Numéro de document: ${record.doc}
-
-Cette réservation a été enregistrée via l'application Enregistrement des invités.`
+        message: `Nouvelle réservation enregistrée\n\nNom: ${record.nom}\nDate d'arrivée: ${record.date}\nAppartement: ${record.appart}\nImmeuble: ${record.bat}\nNombre de personnes: ${totalPersons}\nType de document: ${record.typeDoc}\nNuméro de document: ${record.doc}\n\nCette réservation a été enregistrée via l'application Enregistrement des invités.`
       });
       
       await database.ref('records/' + record.id).update({ sent: true, sentAt: Date.now() });
-      return { success: true, message: "Email envoyé avec succès" };
+      return { success: true };
     } catch (error) {
-      return { success: false, error: error.text ||
+      return { success: false };
+    }
+  }
+
+  async function updateUserSettings(){
+    const maxRecords = parseInt(document.getElementById('maxRecords').value) || 10;
+    const newPassword = document.getElementById('newPassword').value.trim();
+    
+    if(maxRecords < 1){
+      showInlineMsg('settingsMsg','warn',"Le nombre d'enregistrements doit être supérieur à 0.");
+      return;
+    }
+    
+    try {
+      userSettings.maxRecords = maxRecords;
+      await database.ref('settings/' + currentUser.id).set(userSettings);
+      
+      if(newPassword){
+        await database.ref('users/' + currentUser.id).update({ pass: newPassword });
+        document.getElementById('newPassword').value = '';
+        showInlineMsg('settingsMsg','ok',"Paramètres et mot de passe mis à jour avec succès.");
+      } else {
+        showInlineMsg('settingsMsg','ok',"Paramètres mis à jour avec succès.");
+      }
+      
+      refreshUser();
+    } catch (error) {
+      showInlineMsg('settingsMsg','err',"Erreur lors de la mise à jour.");
+    }
+  }
+
+  async function creerUtilisateur(){
+    const app = document.getElementById('appartAdmin').value.trim();
+    const bat = document.getElementById('batAdmin').value.trim();
+    const pass = document.getElementById('passAdmin').value.trim();
+    if(!app || !bat || !pass) return;
+    
+    const id = app + bat;
+    try {
+      await database.ref('users/' + id).set({ appart:app, bat:bat, pass:pass });
+      document.getElementById('appartAdmin').value = '';
+      document.getElementById('batAdmin').value = '';
+      document.getElementById('passAdmin').value = '';
+      refreshAdmin();
+    } catch (e) {}
+  }
+
+  async function supprimerUtilisateur(id){
+    if(confirm("Supprimer cet utilisateur ?")) {
+      await database.ref('users/' + id).remove();
+      refreshAdmin();
+    }
+  }
+
+  async function refreshAdmin(){
+    const snap = await database
