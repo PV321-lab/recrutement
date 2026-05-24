@@ -1,4 +1,4 @@
-Voici le code complet avec la note importante ajoutée dans la partie d'affichage du document (PDF et aperçu), sans commentaires pour faciliter le copier-coller.
+Voici le code complet sans aucun commentaire, avec la modification demandée : le texte du guide s'affiche dans un nouvel onglet (popup) après l'enregistrement, sans modifier le PDF.
 
 ```html
 <html lang="fr">
@@ -191,16 +191,6 @@ Voici le code complet avec la note importante ajoutée dans la partie d'affichag
       font-size: 13px;
       border-left: 4px solid #007bff;
     }
-    .guide-content { 
-      background: #f0f7ff; 
-      padding: 15px; 
-      border-radius: 8px; 
-      margin: 20px 0; 
-      border-left: 5px solid #2c3e50;
-      font-size: 14px;
-    }
-    .guide-content h3 { margin-top: 0; color: #2c3e50; }
-    .guide-content hr { margin: 15px 0; }
   </style>
 </head>
 <body>
@@ -1136,6 +1126,122 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     registerBtn.disabled = !(hasSignature && isAccepted);
   }
 
+  function openGuidePopup() {
+    const guideContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Guide de séjour - Premium Village</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f0f2f5;
+          }
+          .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+          }
+          h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #007bff;
+            padding-bottom: 10px;
+          }
+          h2 {
+            color: #2c3e50;
+            margin-top: 25px;
+            font-size: 18px;
+          }
+          p {
+            line-height: 1.6;
+            margin: 10px 0;
+          }
+          .info-box {
+            background: #e8f0fe;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #007bff;
+          }
+          hr {
+            margin: 20px 0;
+            border: none;
+            border-top: 1px solid #ddd;
+          }
+          .important {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+          }
+          a {
+            color: #007bff;
+            text-decoration: none;
+          }
+          a:hover {
+            text-decoration: underline;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1>📌 GUIDE DE SÉJOUR - PREMIUM VILLAGE</h1>
+          
+          <p>Bonjour,</p>
+          <p>Je vous remercie de votre réservation et je vous souhaite la bienvenue. Voici un guide complet pour votre séjour :</p>
+          
+          <div class="info-box">
+            <p><strong>🏠 Appartement :</strong> immeuble A6 au 2e étage sans ascenseur (ascenseur hors-service)</p>
+          </div>
+          
+          <h2>🔑 CHECK-IN / CHECK-OUT</h2>
+          <p>- <strong>Contact sur place :</strong> WhatsApp Reda (+212 761704428) – Mentionnez "Marwan immeuble A6 appt 6".</p>
+          <p>- <strong>Arrivée (Check-In) :</strong> Dès 15h (ou plus tôt si l’appartement est libre).<br>
+          &nbsp;&nbsp;N'oubliez pas s'il vous plaît de communiquer votre heure d'arrivée à Reda via WhatsApp avant le check-in, afin d'éviter d'attendre devant la résidence.</p>
+          <p>- <strong>Adresse :</strong> Premium Village, Andalucia Immeuble A6 Appt 6 (2ème étage), Marrakech 40000<br>
+          &nbsp;&nbsp;Parking sous-sol : A6 I6</p>
+          <p>- <strong>Départ (Check-Out) :</strong> Avant 12h si réservation après vous, sinon horaire flexible.<br>
+          &nbsp;&nbsp;Laissez le badge à sa place et prévenez Reda.</p>
+          
+          <h2>🏡 ÉQUIPEMENTS & CONSIGNES</h2>
+          <p>- Serviettes dans la salle de bain ou l’armoire de la chambre.</p>
+          <p>- Piscine ouverte de 9h à 19h. Il y a des bracelets obligatoires pour accéder à la piscine, disponibles dans l'appartement.</p>
+          <p>- Climatisation : Fermez les fenêtres quand elle est allumée, éteignez en partant.</p>
+          <p>- Poubelles à jeter au sous-sol (-1) (sac fourni dans la cuisine).</p>
+          
+          <h2>📱 CONNEXION & SERVICES</h2>
+          <p>- <strong>WiFi :</strong> PremiumConnect / Mot de passe : M@rrakech30</p>
+          <p>- <strong>Apps utiles :</strong> Transport : Careem ou Indrive • Taxi : +212 524 40 94 94. Livraison : Glovo.</p>
+          
+          <h2>🎥 VIDÉOS D'AIDE (ouverture de la porte)</h2>
+          <p>
+            <a href="https://youtube.com/shorts/o0p_nN4U0Nw" target="_blank">Lien 1</a> • 
+            <a href="https://youtube.com/shorts/4hRoYJoFlcY" target="_blank">Lien 2</a> • 
+            <a href="https://youtube.com/shorts/tSzQ43udMuQ" target="_blank">Lien 3</a>
+          </p>
+          
+          <div class="important">
+            <p><strong>⚠️ Important :</strong> Pour votre séjour, un badge pour l'appartement et des bracelets pour la piscine sont fournis. En cas de perte, les frais de remplacement sont de 20€ pour le badge, 50€ par bracelet. Contactez-nous pour plus d'informations.</p>
+          </div>
+          
+          <hr>
+          <p style="text-align: center; font-size: 18px; color: #27ae60;"><strong>Bon séjour ! 🌟</strong></p>
+        </div>
+      </body>
+      </html>
+    `;
+    
+    const guideWindow = window.open();
+    guideWindow.document.write(guideContent);
+    guideWindow.document.close();
+  }
+
   async function registerSignature() {
     if(!validateForm()) {
       return;
@@ -1205,6 +1311,8 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
       document.getElementById('guestForm').style.display = 'none';
 
       generateAndOpenPDF(rec);
+      
+      openGuidePopup();
       
       registerBtn.textContent = 'Enregistrer et valider';
       registerBtn.disabled = false;
@@ -1355,35 +1463,6 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     const totalPersons = rec.personnes ? Object.keys(rec.personnes).length + 1 : 1;
     const now = new Date();
     
-    const guideText = `
-      <div class="guide-content">
-        <h3>📌 INFORMATIONS CLÉS POUR VOTRE SÉJOUR</h3>
-        <p>Bonjour, je vous remercie de votre réservation et je vous souhaite la bienvenue. Voici un guide complet pour votre séjour :</p>
-        <p><strong>Appartement :</strong> immeuble A6 au 2e étage sans ascenseur (ascenseur hors-service)</p>
-        <p><strong>🔑 CHECK-IN / CHECK-OUT</strong><br>
-        - Contact sur place : WhatsApp Reda (+212 761704428) – Mentionnez "Marwan immeuble A6 appt 6".<br>
-        - Arrivée (Check-In) : Dès 15h (ou plus tôt si l’appartement est libre). Communiquez votre heure d'arrivée à Reda via WhatsApp avant le check-in afin d'éviter d'attendre devant la résidence.<br>
-        - Adresse : Premium Village, Andalucia Immeuble A6 Appt 6 (2ème étage), Marrakech 40000. Parking sous-sol : A6 I6<br>
-        - Départ (Check-Out) : Avant 12h si réservation après vous, sinon horaire flexible. Laissez le badge à sa place et prévenez Reda.</p>
-        
-        <p><strong>🏡 ÉQUIPEMENTS & CONSIGNES</strong><br>
-        - Serviettes dans la salle de bain ou l’armoire de la chambre.<br>
-        - Piscine ouverte de 9h à 19h. Bracelets obligatoires pour accéder à la piscine, disponibles dans l'appartement.<br>
-        - Climatisation : Fermez les fenêtres quand elle est allumée, éteignez en partant.<br>
-        - Poubelles à jeter au sous-sol (-1) (sac fourni dans la cuisine).</p>
-        
-        <p><strong>📱 CONNEXION & SERVICES</strong><br>
-        - WiFi : PremiumConnect / Mot de passe : M@rrakech30<br>
-        - Apps utiles : Transport : Careem ou Indrive • Taxi : +212 524 40 94 94. Livraison : Glovo.</p>
-        
-        <p><strong>🎥 VIDÉOS D'AIDE (ouverture de la porte) :</strong><br>
-        <a href="https://youtube.com/shorts/o0p_nN4U0Nw">Lien 1</a> • <a href="https://youtube.com/shorts/4hRoYJoFlcY">Lien 2</a> • <a href="https://youtube.com/shorts/tSzQ43udMuQ">Lien 3</a></p>
-        
-        <p><strong>⚠️ Important :</strong> Pour votre séjour, un badge pour l'appartement et des bracelets pour la piscine sont fournis. En cas de perte, les frais de remplacement sont de 20€ pour le badge, 50€ par bracelet. Contactez-nous pour plus d'informations.</p>
-        <p>Bon séjour !</p>
-      </div>
-    `;
-    
     return `
     <div class="doc-title">Enregistrement des invités / Guest Registration</div>
     
@@ -1408,8 +1487,6 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
         <li><strong>6. Propreté et entretien :</strong> Maintenir les lieux propres en permanence. Vider régulièrement les poubelles. Respecter les sols et surfaces (pas de traces, pas de nourriture hors cuisine).</li>
       </ul>
     </div>
-    
-    ${guideText}
     
     <div class="doc-signature">
       <p><strong>${rec.nom}</strong></p>
@@ -1513,62 +1590,11 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
       yPos += line === '' ? 5 : 7;
     });
     
-    yPos += 10;
-    
-    pdf.setFontSize(14);
-    pdf.setTextColor(44, 62, 80);
-    pdf.text('INFORMATIONS CLÉS POUR VOTRE SÉJOUR', 20, yPos);
-    yPos += 10;
-    pdf.setFontSize(11);
-    pdf.setTextColor(0, 0, 0);
-    
-    const guideLines = [
-      'Bonjour, je vous remercie de votre réservation et je vous souhaite la bienvenue.',
-      'Voici un guide complet pour votre séjour :',
-      '',
-      'Appartement : immeuble A6 au 2e etage sans ascenseur (ascenseur hors-service).',
-      '',
-      'CHECK-IN / CHECK-OUT :',
-      '- Contact sur place : WhatsApp Reda (+212 761704428) – Mentionnez "Marwan immeuble A6 appt 6".',
-      '- Arrivee (Check-In) : Des 15h (ou plus tot si l’appartement est libre).',
-      '  Communiquez votre heure d\'arrivee a Reda via WhatsApp avant le check-in.',
-      '- Adresse : Premium Village, Andalucia Immeuble A6 Appt 6 (2eme etage), Marrakech 40000.',
-      '  Parking sous-sol : A6 I6',
-      '- Depart (Check-Out) : Avant 12h si reservation apres vous, sinon horaire flexible.',
-      '',
-      'EQUIPEMENTS & CONSIGNES :',
-      '- Serviettes dans la salle de bain ou l’armoire de la chambre.',
-      '- Piscine ouverte de 9h a 19h. Bracelets obligatoires pour acceder a la piscine.',
-      '- Climatisation : Fermez les fenetres quand elle est allumee, eteignez en partant.',
-      '- Poubelles a jeter au sous-sol (-1) (sac fourni dans la cuisine).',
-      '',
-      'CONNEXION & SERVICES :',
-      '- WiFi : PremiumConnect / Mot de passe : M@rrakech30',
-      '- Apps utiles : Transport : Careem ou Indrive • Taxi : +212 524 40 94 94. Livraison : Glovo.',
-      '',
-      'VIDEOS D\'AIDE (ouverture de la porte) :',
-      'https://youtube.com/shorts/o0p_nN4U0Nw',
-      'https://youtube.com/shorts/4hRoYJoFlcY',
-      'https://youtube.com/shorts/tSzQ43udMuQ',
-      '',
-      'Important : Pour votre sejour, un badge pour l\'appartement et des bracelets',
-      'pour la piscine sont fournis. En cas de perte, les frais de remplacement sont',
-      'de 20€ pour le badge, 50€ par bracelet. Contactez-nous pour plus d\'informations.',
-      'Bon sejour !'
-    ];
-
-    guideLines.forEach(line => {
-      if (yPos > 270) {
-        pdf.addPage();
-        yPos = 20;
-      }
-      pdf.text(line, 20, yPos);
-      yPos += 6;
-    });
-    
     yPos += 15;
+    
     pdf.text(`${rec.nom}`, 20, yPos);
     yPos += 8;
+    
     pdf.text(`Date : ${now.toLocaleDateString('fr-FR')}`, 20, yPos);
     yPos += 15;
     
