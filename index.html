@@ -790,14 +790,19 @@ Bon séjour !`;
     }
     
     try {
-      await emailjs.send("service_qnnmvxe", "template_4e2gb4n", {
+      const templateParams = {
         to_email: guardEmail,
-        message: "Ceci est un email de test depuis l'application Enregistrement des invités. Si vous recevez cet email, la configuration est correcte."
-      });
+        message: "Ceci est un email de test depuis l'application Enregistrement des invités. Si vous recevez cet email, la configuration est correcte.",
+        from_name: "Enregistrement Invités",
+        reply_to: guardEmail
+      };
       
+      const result = await emailjs.send("service_qnnmvxe", "template_4e2gb4n", templateParams);
+      console.log("Test email result:", result);
       showInlineMsg('emailMsg','ok',"Email de test envoyé avec succès !");
     } catch (error) {
-      showInlineMsg('emailMsg','err',"Erreur d'envoi: " + (error.text || "Erreur inconnue"));
+      console.error("EmailJS test error:", error);
+      showInlineMsg('emailMsg','err',"Erreur d'envoi: " + (error.text || JSON.stringify(error) || "Erreur inconnue"));
     }
   }
 
@@ -871,13 +876,14 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
         reply_to: guardEmail
       };
       
-      await emailjs.send("service_qnnmvxe", "template_4e2gb4n", templateParams);
+      const result = await emailjs.send("service_qnnmvxe", "template_4e2gb4n", templateParams);
+      console.log("Email send result:", result);
       
       await database.ref('records/' + record.id).update({ sent: true, sentAt: Date.now() });
       return { success: true, message: "Email envoyé avec succès" };
     } catch (error) {
       console.error("EmailJS Error:", error);
-      return { success: false, error: error.text || "Erreur lors de l'envoi de l'email" };
+      return { success: false, error: error.text || JSON.stringify(error) || "Erreur lors de l'envoi de l'email" };
     }
   }
 
@@ -921,8 +927,12 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
       document.getElementById('batAdmin').value = '';
       document.getElementById('passAdmin').value = '';
       refreshAdmin();
+      showInlineMsg('userWarn','ok',"Utilisateur créé avec succès.");
+      setTimeout(() => hideInlineMsg('userWarn'), 3000);
     } catch (e) {
       console.error(e);
+      showInlineMsg('userWarn','err',"Erreur lors de la création.");
+      setTimeout(() => hideInlineMsg('userWarn'), 3000);
     }
   }
 
@@ -1245,11 +1255,6 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     registerBtn.disabled = !(hasSignature && isAccepted);
   }
 
-  function formatGuideMessageForPopup(msg) {
-    const formatted = msg.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    return `<div style="font-family: Arial, sans-serif; line-height: 1.6;">${formatted}</div>`;
-  }
-
   function openGuidePopup(customMessage) {
     const messageToShow = customMessage || guideMessage || DEFAULT_GUIDE_MESSAGE;
     
@@ -1258,7 +1263,7 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
       <html>
       <head>
         <meta charset="UTF-8">
-        <title>Guide de séjour -  </title>
+        <title>Guide de séjour</title>
         <style>
           body {
             font-family: Arial, sans-serif;
@@ -1304,7 +1309,7 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
       </head>
       <body>
         <div class="container">
-          <h1>📌 GUIDE DE SÉJOUR - // </h1>
+          <h1>📌 GUIDE DE SÉJOUR</h1>
           <div class="content">
             ${messageToShow.replace(/\n/g, '<br>')}
           </div>
@@ -1372,9 +1377,7 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
       const id = newRecordRef.key;
       rec.id = id;
       
-      const documentData = generateDocumentHTML(rec);
       await database.ref('documents/' + id).set({
-        html: documentData,
         recordId: id,
         appart: appart,
         bat: bat,
@@ -1387,6 +1390,11 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
       const emailResult = await sendAutomaticEmail(rec);
       if(!emailResult.success){
         console.warn("Email non envoyé:", emailResult.error);
+        showBanner('warn', "Enregistrement réussi mais l'email n'a pas pu être envoyé: " + emailResult.error);
+      } else if(emailResult.success && emailResult.message !== "Emails désactivés"){
+        showBanner('ok', "Enregistrement réussi ! Email envoyé.");
+      } else {
+        showBanner('ok', "Enregistrement réussi !");
       }
       
       document.getElementById('successMessage').classList.remove('hidden');
@@ -1407,7 +1415,7 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
       
     } catch (error) {
       console.error("Registration Error:", error);
-      showBanner('err',"Erreur lors de l'enregistrement. Réessayez.");
+      showBanner('err', "Erreur lors de l'enregistrement: " + (error.message || "Veuillez réessayer."));
       registerBtn.textContent = 'Enregistrer et valider';
       registerBtn.disabled = false;
     }
@@ -1473,13 +1481,15 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
       document.getElementById('invAppart').value = user.appart;
       document.getElementById('invBat').value = user.bat;
       genererChamps();
-      initCanvas();
-      setupSignatureEvents();
+      setTimeout(() => {
+        initCanvas();
+        setupSignatureEvents();
+      }, 100);
       hideBanner();
       
     } catch (error) {
       console.error("Enter invite mode error:", error);
-      showBanner('err', "Erreur lors du chargement des données utilisateur.");
+      showBanner('err', "Erreur lors du chargement des données utilisateur: " + (error.message || "Veuillez réessayer."));
     }
   }
 
