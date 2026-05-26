@@ -1,4 +1,4 @@
-
+```html
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
@@ -16,8 +16,8 @@
     h2 { text-align: center; margin: 8px 0 16px; color: #2c3e50; }
     .card { background:#fff; padding:16px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.12); margin-bottom:16px; }
     label { font-weight:600; display:block; margin-top:10px; }
-    input, select, button, textarea { font-size:16px; }
-    input, select, textarea { width:100%; padding:10px; margin-top:6px; border:1px solid #ccc; border-radius:8px; }
+    input, select, button { font-size:16px; }
+    input, select { width:100%; padding:10px; margin-top:6px; border:1px solid #ccc; border-radius:8px; }
     input[readonly]{ background:#e9ecef; }
     button { margin-top:14px; padding:10px 14px; border:none; border-radius:10px; background:var(--c1); color:#fff; cursor:pointer; }
     button:disabled{ opacity:.6; cursor:not-allowed; }
@@ -166,21 +166,6 @@
       margin-top: 0;
       color: #2c3e50;
     }
-    .guide-settings {
-      background: #fff;
-      padding: 15px;
-      border-radius: 8px;
-      border: 1px solid #dee2e6;
-      margin-top: 15px;
-    }
-    .guide-settings h4 {
-      margin-top: 0;
-      color: #2c3e50;
-    }
-    .guide-settings textarea {
-      min-height: 200px;
-      font-family: monospace;
-    }
     .signature-preview {
       border: 2px solid #000;
       background: white;
@@ -203,6 +188,26 @@
       margin-top: 10px;
       font-size: 13px;
       border-left: 4px solid #007bff;
+    }
+    .custom-message-area {
+      margin-top: 20px;
+      margin-bottom: 20px;
+      padding: 15px;
+      background: #fff3e0;
+      border-radius: 8px;
+      border: 1px solid #ffcc80;
+    }
+    .custom-message-area label {
+      margin-top: 0;
+      color: #e67e22;
+    }
+    .custom-message-area textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ffcc80;
+      border-radius: 8px;
+      font-family: Arial, sans-serif;
+      resize: vertical;
     }
   </style>
 </head>
@@ -339,16 +344,11 @@
           <p id="emailMsg" class="banner hidden"></p>
         </div>
 
-        <div class="guide-settings">
-          <h4>Message personnalisé pour les invités (Guide de séjour)</h4>
-          <p class="note">Ce message sera affiché aux invités après leur enregistrement.</p>
-          <label>Votre message personnalisé</label>
-          <textarea id="customGuideMessage" placeholder="Saisissez votre message personnalisé ici..."></textarea>
-          <div class="row">
-            <button onclick="saveGuideMessage()" style="flex:1; background:var(--ok);">Enregistrer le message</button>
-            <button onclick="resetGuideMessage()" style="flex:1;">Réinitialiser</button>
-          </div>
-          <p id="guideMsg" class="banner hidden"></p>
+        <div class="custom-message-area">
+          <label>Message personnalisé pour les invités (affiché après enregistrement)</label>
+          <textarea id="customSuccessMessage" rows="3" placeholder="Saisissez votre message personnalisé ici... Par exemple : Merci de votre confiance, n'oubliez pas de présenter ce document à l'entrée."></textarea>
+          <button onclick="saveCustomMessage()" style="margin-top: 10px; background: var(--info);">Enregistrer le message</button>
+          <p id="customMsgStatus" class="banner hidden" style="margin-top: 10px;"></p>
         </div>
       </div>
 
@@ -467,8 +467,8 @@
         </div>
 
         <div id="successMessage" class="banner ok hidden">
-          Enregistrement réussi ! Un onglet s'ouvre avec votre document PDF.
-          <br><br>
+          <div id="customSuccessMessageDisplay"></div>
+          <br>
           <strong>Note importante :</strong> En cas de demande des agents de sécurité, présentez ce document signé.
           Seules les personnes enregistrées dans cette réservation sont autorisées à entrer.
         </div>
@@ -528,47 +528,7 @@
   let currentDocumentData = null;
   let userSettings = { maxRecords: 10 };
   let emailSettings = { enableEmail: 'non' };
-  let guideMessage = '';
-
-  const DEFAULT_GUIDE_MESSAGE = `Bonjour,
-
-Je vous remercie de votre réservation et je vous souhaite la bienvenue. Voici un guide complet pour votre séjour :
-
-Appartement se trouve dans l'immeuble A6 au 2e étage sans ascenseur (ascenseur hors-service)
-
-📌 INFORMATIONS CLÉS POUR VOTRE SÉJOUR
-
-🔑 CHECK-IN / CHECK-OUT
-
-- Contact sur place : WhatsApp Reda (+212 761704428) – Mentionnez "Marwan immeuble A6 appt 6".
-- Arrivée (Check-In) : Dès 15h (ou plus tôt si l’appartement est libre).
-  N'oubliez pas s'il vous plaît de communiquer votre heure d'arrivée à Reda via WhatsApp avant le check-in, afin d'éviter d'attendre devant la résidence.
-- Adresse : Premium Village, Andalucia Immeuble A6 Appt 6 (2ème étage), Marrakech 40000
-  Parking sous-sol : A6 I6
-- Départ (Check-Out) : Avant 12h si réservation après vous, sinon horaire flexible.
-  Laissez le badge à sa place et prévenez Reda.
-
-🏡 ÉQUIPEMENTS & CONSIGNES
-
-- Serviettes dans la salle de bain ou l’armoire de la chambre.
-- Piscine ouverte de 9h à 19h. Il y a des bracelets obligatoires pour accéder à la piscine, disponibles dans l'appartement.
-- Climatisation : Fermez les fenêtres quand elle est allumée, éteignez en partant.
-- Poubelles à jeter au sous-sol (-1) (sac fourni dans la cuisine).
-
-📱 CONNEXION & SERVICES
-
-- WiFi : PremiumConnect / Mot de passe : M@rrakech30
-- Apps utiles : Transport : Careem ou Indrive • Taxi : +212 524 40 94 94. Livraison : Glovo.
-
-🎥 VIDÉOS D'AIDE (ouverture de la porte) :
-
-Lien 1 : https://youtube.com/shorts/o0p_nN4U0Nw
-Lien 2 : https://youtube.com/shorts/4hRoYJoFlcY
-Lien 3 : https://youtube.com/shorts/tSzQ43udMuQ
-
-⚠️ Important : Pour votre séjour, un badge pour l'appartement et des bracelets pour la piscine sont fournis. En cas de perte, les frais de remplacement sont de 20€ pour le badge, 50€ par bracelet. Contactez-nous pour plus d'informations.
-
-Bon séjour !`;
+  let customMessage = '';
 
   function encrypt(text) {
     if (!text) return '';
@@ -703,14 +663,11 @@ Bon séjour !`;
             document.getElementById('guardEmail').value = decrypt(emailSettings.guardEmail || '');
           }
         }
-
-        const guideSnapshot = await database.ref('guideMessage/' + u).once('value');
-        if(guideSnapshot.exists()){
-          guideMessage = guideSnapshot.val();
-          document.getElementById('customGuideMessage').value = guideMessage;
-        } else {
-          guideMessage = DEFAULT_GUIDE_MESSAGE;
-          document.getElementById('customGuideMessage').value = DEFAULT_GUIDE_MESSAGE;
+        
+        const customMsgSnapshot = await database.ref('customMessages/' + u).once('value');
+        if(customMsgSnapshot.exists()){
+          customMessage = customMsgSnapshot.val();
+          document.getElementById('customSuccessMessage').value = customMessage;
         }
         
         document.getElementById('loginCard').classList.add('hidden');
@@ -729,6 +686,20 @@ Bon séjour !`;
     } finally {
       btn.disabled = false;
       btn.textContent = "Connexion";
+    }
+  }
+
+  async function saveCustomMessage(){
+    const msg = document.getElementById('customSuccessMessage').value;
+    try {
+      await database.ref('customMessages/' + currentUser.id).set(msg);
+      customMessage = msg;
+      showInlineMsg('customMsgStatus', 'ok', 'Message personnalisé enregistré avec succès.');
+      setTimeout(() => {
+        hideInlineMsg('customMsgStatus');
+      }, 3000);
+    } catch (error) {
+      showInlineMsg('customMsgStatus', 'err', 'Erreur lors de l\'enregistrement du message.');
     }
   }
 
@@ -791,40 +762,13 @@ Bon séjour !`;
     
     try {
       await emailjs.send("service_qnnmvxe", "template_4e2gb4n", {
-        to_email: guardEmail,
-        message: "Ceci est un email de test depuis l'application Enregistrement des invités. Si vous recevez cet email, la configuration est correcte."
+        email: guardEmail,
+        message: "Ceci est un email de test depuis l'application Enregistrement des invités.\n\nSi vous recevez cet email, la configuration est correcte."
       });
       
       showInlineMsg('emailMsg','ok',"Email de test envoyé avec succès !");
     } catch (error) {
       showInlineMsg('emailMsg','err',"Erreur d'envoi: " + (error.text || "Erreur inconnue"));
-    }
-  }
-
-  async function saveGuideMessage(){
-    guideMessage = document.getElementById('customGuideMessage').value;
-    if(!guideMessage.trim()){
-      guideMessage = DEFAULT_GUIDE_MESSAGE;
-      document.getElementById('customGuideMessage').value = DEFAULT_GUIDE_MESSAGE;
-    }
-    
-    try {
-      await database.ref('guideMessage/' + currentUser.id).set(guideMessage);
-      showInlineMsg('guideMsg','ok',"Message de guide enregistré avec succès.");
-    } catch (error) {
-      showInlineMsg('guideMsg','err',"Erreur lors de l'enregistrement du message.");
-    }
-  }
-
-  async function resetGuideMessage(){
-    guideMessage = DEFAULT_GUIDE_MESSAGE;
-    document.getElementById('customGuideMessage').value = DEFAULT_GUIDE_MESSAGE;
-    
-    try {
-      await database.ref('guideMessage/' + currentUser.id).set(guideMessage);
-      showInlineMsg('guideMsg','ok',"Message réinitialisé avec succès.");
-    } catch (error) {
-      showInlineMsg('guideMsg','err',"Erreur lors de la réinitialisation.");
     }
   }
 
@@ -840,14 +784,11 @@ Bon séjour !`;
     }
     
     const totalPersons = record.personnes ? Object.keys(record.personnes).length + 1 : 1;
-    let autresPersonnes = '';
-    if(record.personnes){
-      Object.values(record.personnes).forEach((p, idx) => {
-        autresPersonnes += `${idx+1}. ${p.nom} (${p.typeDoc}: ${p.doc}, ${p.nationalite})\n`;
-      });
-    }
     
-    const messageContent = `Nouvelle réservation enregistrée
+    try {
+      await emailjs.send("service_qnnmvxe", "template_4e2gb4n", {
+        email: guardEmail,
+        message: `Nouvelle réservation enregistrée
 
 Nom: ${record.nom}
 Date d'arrivée: ${record.date}
@@ -856,25 +797,13 @@ Immeuble: ${record.bat}
 Nombre de personnes: ${totalPersons}
 Type de document: ${record.typeDoc}
 Numéro de document: ${record.doc}
-Nationalité: ${record.nationalite}
 
-Autres personnes:
-${autresPersonnes || 'Aucune'}
-
-Cette réservation a été enregistrée via l'application Enregistrement des invités.`;
-    
-    try {
-      const templateParams = {
-        to_email: guardEmail,
-        message: messageContent
-      };
-      
-      await emailjs.send("service_qnnmvxe", "template_4e2gb4n", templateParams);
+Cette réservation a été enregistrée via l'application Enregistrement des invités.`
+      });
       
       await database.ref('records/' + record.id).update({ sent: true, sentAt: Date.now() });
       return { success: true, message: "Email envoyé avec succès" };
     } catch (error) {
-      console.error("EmailJS Error:", error);
       return { success: false, error: error.text || "Erreur lors de l'envoi de l'email" };
     }
   }
@@ -1243,82 +1172,6 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     registerBtn.disabled = !(hasSignature && isAccepted);
   }
 
-  function formatGuideMessageForPopup(msg) {
-    const formatted = msg.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    return `<div style="font-family: Arial, sans-serif; line-height: 1.6;">${formatted}</div>`;
-  }
-
-  function openGuidePopup(customMessage) {
-    const messageToShow = customMessage || guideMessage || DEFAULT_GUIDE_MESSAGE;
-    
-    const guideContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <title>Guide de séjour -  </title>
-        <style>
-          body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background: #f0f2f5;
-          }
-          .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-          }
-          h1 {
-            color: #2c3e50;
-            border-bottom: 3px solid #007bff;
-            padding-bottom: 10px;
-          }
-          .content {
-            line-height: 1.6;
-          }
-          .content p {
-            margin: 10px 0;
-          }
-          .content strong {
-            color: #2c3e50;
-          }
-          hr {
-            margin: 20px 0;
-            border: none;
-            border-top: 1px solid #ddd;
-          }
-          .footer {
-            text-align: center;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 2px solid #007bff;
-            color: #666;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <h1>📌 GUIDE DE SÉJOUR - // </h1>
-          <div class="content">
-            ${messageToShow.replace(/\n/g, '<br>')}
-          </div>
-          <div class="footer">
-            <p>Merci de votre confiance et bon séjour !</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-    
-    const guideWindow = window.open();
-    guideWindow.document.write(guideContent);
-    guideWindow.document.close();
-  }
-
   async function registerSignature() {
     if(!validateForm()) {
       return;
@@ -1382,29 +1235,26 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
         timestamp: Date.now()
       });
       
-      const emailResult = await sendAutomaticEmail(rec);
-      if(!emailResult.success){
-        console.warn("Email non envoyé:", emailResult.error);
+      await sendAutomaticEmail(rec);
+      
+      const successDiv = document.getElementById('successMessage');
+      const customMsgDiv = document.getElementById('customSuccessMessageDisplay');
+      
+      if(customMessage && customMessage.trim() !== ''){
+        customMsgDiv.innerHTML = `<div style="font-size: 16px; margin-bottom: 15px; padding: 10px; background: #fff3e0; border-radius: 8px; border-left: 4px solid #e67e22;">${customMessage.replace(/\n/g, '<br>')}</div>`;
+      } else {
+        customMsgDiv.innerHTML = '';
       }
       
-      document.getElementById('successMessage').classList.remove('hidden');
+      successDiv.classList.remove('hidden');
       document.getElementById('guestForm').style.display = 'none';
 
       generateAndOpenPDF(rec);
-      
-      const ownerId = appart + bat;
-      const guideSnapshot = await database.ref('guideMessage/' + ownerId).once('value');
-      let messageForGuest = DEFAULT_GUIDE_MESSAGE;
-      if(guideSnapshot.exists()){
-        messageForGuest = guideSnapshot.val();
-      }
-      openGuidePopup(messageForGuest);
       
       registerBtn.textContent = 'Enregistrer et valider';
       registerBtn.disabled = false;
       
     } catch (error) {
-      console.error("Registration Error:", error);
       showBanner('err',"Erreur lors de l'enregistrement. Réessayez.");
       registerBtn.textContent = 'Enregistrer et valider';
       registerBtn.disabled = false;
@@ -1458,12 +1308,10 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
       if(emailSnapshot.exists()){
         emailSettings = emailSnapshot.val();
       }
-
-      const guideSnapshot = await database.ref('guideMessage/' + userId).once('value');
-      if(guideSnapshot.exists()){
-        guideMessage = guideSnapshot.val();
-      } else {
-        guideMessage = DEFAULT_GUIDE_MESSAGE;
+      
+      const customMsgSnapshot = await database.ref('customMessages/' + userId).once('value');
+      if(customMsgSnapshot.exists()){
+        customMessage = customMsgSnapshot.val();
       }
 
       document.getElementById('loginCard').classList.add('hidden');
@@ -1476,7 +1324,6 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
       hideBanner();
       
     } catch (error) {
-      console.error("Enter invite mode error:", error);
       showBanner('err', "Erreur lors du chargement des données utilisateur.");
     }
   }
@@ -1559,38 +1406,38 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     const now = new Date();
     
     return `
-    <div class="doc-title">Enregistrement des invités / Guest Registration</div>
-    
-    <div class="doc-info">
-      <p><strong>Date de réservation :</strong> ${now.toLocaleDateString('fr-FR')}</p>
-      <p><strong>Appartement :</strong> ${rec.appart} - Immeuble : ${rec.bat}</p>
-      <p><strong>Nom du réservateur :</strong> ${rec.nom}</p>
-      <p><strong>Type de document :</strong> ${rec.typeDoc}</p>
-      <p><strong>Numéro de document :</strong> ${rec.doc}</p>
-      <p><strong>Nombre de personnes :</strong> ${totalPersons}</p>
-      <p><strong>Date d'arrivée :</strong> ${rec.date}</p>
-    </div>
-    
-    <div class="doc-section">
-      <div class="doc-section-title">Règlement intérieur accepté :</div>
-      <ul>
-        <li><strong>1. Si vous êtes des Couples marocains :</strong> selon la loi marocaine ce logement autorise que les couples mariés.</li>
-        <li><strong>2. Tranquillité et bruit :</strong> Silence total obligatoire après 23h00. Pas de musique forte, cris ou nuisances sonores à toute heure.</li>
-        <li><strong>3. Tabagisme :</strong> Fumer est strictement interdit à l'intérieur. Autorisé uniquement en extérieur (terrasse ou jardin), avec obligation de nettoyer les mégots et cendres.</li>
-        <li><strong>4. Nombre de personnes :</strong> Maximum 5 personnes autorisées dans l'appartement.</li>
-        <li><strong>5. Piscine :</strong> Douche obligatoire avant la baignade. Pas de verre ni objets fragiles autour de la piscine. Surveillance permanente des enfants par un adulte. Horaires : fermeture à 20h00. Pas de courses ni plongeons.</li>
-        <li><strong>6. Propreté et entretien :</strong> Maintenir les lieux propres en permanence. Vider régulièrement les poubelles. Respecter les sols et surfaces (pas de traces, pas de nourriture hors cuisine).</li>
-      </ul>
-    </div>
-    
-    <div class="doc-signature">
-      <p><strong>${rec.nom}</strong></p>
-      <p>Date : ${now.toLocaleDateString('fr-FR')}</p>
-      <div class="doc-signature-box">
-        <img src="${rec.signature || ''}" alt="Signature" style="max-width: 100%; max-height: 100%; border: 2px solid #000;" />
-      </div>
-    </div>
-    `;
+<div class="doc-title">Enregistrement des invités / Guest Registration</div>
+
+<div class="doc-info">
+  <p><strong>Date de réservation :</strong> ${now.toLocaleDateString('fr-FR')}</p>
+  <p><strong>Appartement :</strong> ${rec.appart} - Immeuble : ${rec.bat}</p>
+  <p><strong>Nom du réservateur :</strong> ${rec.nom}</p>
+  <p><strong>Type de document :</strong> ${rec.typeDoc}</p>
+  <p><strong>Numéro de document :</strong> ${rec.doc}</p>
+  <p><strong>Nombre de personnes :</strong> ${totalPersons}</p>
+  <p><strong>Date d'arrivée :</strong> ${rec.date}</p>
+</div>
+
+<div class="doc-section">
+  <div class="doc-section-title">Règlement intérieur accepté :</div>
+  <ul>
+    <li><strong>1. Si vous êtes des Couples marocains :</strong> selon la loi marocaine ce logement autorise que les couples mariés.</li>
+    <li><strong>2. Tranquillité et bruit :</strong> Silence total obligatoire après 23h00. Pas de musique forte, cris ou nuisances sonores à toute heure.</li>
+    <li><strong>3. Tabagisme :</strong> Fumer est strictement interdit à l'intérieur. Autorisé uniquement en extérieur (terrasse ou jardin), avec obligation de nettoyer les mégots et cendres.</li>
+    <li><strong>4. Nombre de personnes :</strong> Maximum 5 personnes autorisées dans l'appartement.</li>
+    <li><strong>5. Piscine :</strong> Douche obligatoire avant la baignade. Pas de verre ni objets fragiles autour de la piscine. Surveillance permanente des enfants par un adulte. Horaires : fermeture à 20h00. Pas de courses ni plongeons.</li>
+    <li><strong>6. Propreté et entretien :</strong> Maintenir les lieux propres en permanence. Vider régulièrement les poubelles. Respecter les sols et surfaces (pas de traces, pas de nourriture hors cuisine).</li>
+  </ul>
+</div>
+
+<div class="doc-signature">
+  <p><strong>${rec.nom}</strong></p>
+  <p>Date : ${now.toLocaleDateString('fr-FR')}</p>
+  <div class="doc-signature-box">
+    <img src="${rec.signature || ''}" alt="Signature" style="max-width: 100%; max-height: 100%; border: 2px solid #000;" />
+  </div>
+</div>
+`;
   }
 
   function generateAndOpenPDF(rec) {
@@ -1685,7 +1532,7 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
       yPos += line === '' ? 5 : 7;
     });
     
-    yPos += 15;
+    yPos += 10;
     
     pdf.text(`${rec.nom}`, 20, yPos);
     yPos += 8;
@@ -1765,4 +1612,3 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
 </body>
 </html>
 ```
-
