@@ -1,4 +1,4 @@
-
+```html
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
@@ -866,7 +866,9 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     try {
       const templateParams = {
         to_email: guardEmail,
-        message: messageContent
+        message: messageContent,
+        from_name: "Enregistrement Invités",
+        reply_to: guardEmail
       };
       
       await emailjs.send("service_qnnmvxe", "template_4e2gb4n", templateParams);
