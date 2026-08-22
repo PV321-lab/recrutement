@@ -221,6 +221,7 @@
     }
     .statut-ok { color: #0f9d58; font-weight: bold; }
     .statut-attente { color: #f4b400; font-weight: bold; }
+    .consult-btn { background: var(--info); margin-left: 10px; }
   </style>
 </head>
 <body>
@@ -374,8 +375,10 @@
       <div class="card">
         <div class="toolbar">
           <div><strong>Mes enregistrements</strong></div>
-          <button onclick="genererLien()" style="background: var(--ok);">Générer lien invité</button>
-          <button onclick="genererLienConsultation()" style="background: var(--info);">Lien consultation (semaine)</button>
+          <div>
+            <button onclick="genererLien()" style="background: var(--ok);">Lien invité</button>
+            <button onclick="genererLienConsultation()" class="consult-btn">Visualiser liste</button>
+          </div>
         </div>
         <table id="tableUser">
           <thead>
@@ -1612,6 +1615,7 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
 
       document.getElementById('loginCard').classList.add('hidden');
       document.getElementById('consultationPanel').classList.remove('hidden');
+      document.getElementById('documentColumn').classList.add('hidden');
       
       const snapRecords = await database.ref('records').once('value');
       const records = snapRecords.val() || {};
@@ -1659,6 +1663,7 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
 
   function fermerConsultation(){
     document.getElementById('consultationPanel').classList.add('hidden');
+    document.getElementById('documentColumn').classList.remove('hidden');
     document.getElementById('loginCard').classList.remove('hidden');
     showBanner('info', "Vous pouvez vous connecter.");
   }
