@@ -1,4 +1,11 @@
-  
+Voici le code complet corrigé :
+
+1. Suppression de tous les commentaires (début et fin)
+2. Tableaux admin/user : retour au bouton "Suppr." (suppression réelle de la base)
+3. Liste de visualisation : suppression carrément de la colonne "Action" (plus de bouton traiter/supprimer)
+4. Changement de langue : les règles intérieures par défaut changent aussi selon la langue choisie (les règles personnalisées restent prioritaires)
+
+```html
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
@@ -40,7 +47,6 @@
     .consent-container { margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6; }
     .consent-text { max-height: 150px; overflow-y: auto; padding: 10px; background: white; border-radius: 5px; border: 1px solid #ced4da; margin: 10px 0; }
     .btn-delete { background: var(--err) !important; margin-left: 5px; }
-    .btn-treat { background: var(--ok) !important; }
     .signature-area { margin: 40px 0; padding: 20px; border: 2px solid #ddd; border-radius: 8px; text-align: center; }
     .signature-title { font-size: 18px; margin-bottom: 20px; color: #2c3e50; }
     .signature-canvas { width: 100%; height: 200px; border: 1px solid #ccc; border-radius: 5px; background: white; cursor: crosshair; margin-bottom: 20px; }
@@ -242,7 +248,6 @@
     }
     .statut-ok { color: #0f9d58; font-weight: bold; }
     .statut-attente { color: #f4b400; font-weight: bold; }
-    .statut-supprime { color: #d93025; font-weight: bold; }
     .consult-btn { background: var(--info); margin-left: 10px; }
     .lang-selector {
       background: #fff;
@@ -349,7 +354,7 @@
           <thead>
             <tr>
               <th>N°</th><th>Appart.</th><th>Immeuble</th><th>Nom</th><th>Document</th><th>Type Doc</th><th>Nationalité</th>
-              <th>Nb Pers.</th><th>Personnes</th><th>Date</th><th>Document</th><th>Action</th><th>Statut</th>
+              <th>Nb Pers.</th><th>Personnes</th><th>Date</th><th>Document</th><th>Action</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -391,7 +396,7 @@
 
         <div class="rules-settings">
           <label>Règlement intérieur de l'appartement (configurable)</label>
-          <p class="note" style="margin: 8px 0;">Ce texte sera affiché à l'invité dans le formulaire d'enregistrement.</p>
+          <p class="note" style="margin: 8px 0;">Ce texte sera affiché à l'invité dans le formulaire d'enregistrement. Si vide, les règles par défaut (dans la langue choisie) seront utilisées.</p>
           <textarea id="rulesInput" rows="10" placeholder="Saisissez ici les règles de votre appartement..."></textarea>
           <button onclick="saveRules()" style="margin-top: 10px; background: #1565c0;">Enregistrer le règlement</button>
           <p id="rulesMsg" class="banner hidden" style="margin-top: 10px;"></p>
@@ -442,7 +447,7 @@
         <table id="tableUser">
           <thead>
             <tr>
-              <th>N°</th><th>Nom</th><th>Document</th><th>Type Doc</th><th>Nationalité</th><th>Nb Pers.</th><th>Personnes</th><th>Date</th><th>Document</th><th>Statut</th><th>Action</th>
+              <th>N°</th><th>Nom</th><th>Document</th><th>Type Doc</th><th>Nationalité</th><th>Nb Pers.</th><th>Personnes</th><th>Date</th><th>Document</th><th>Action</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -572,7 +577,7 @@
           <table id="tableConsultation">
             <thead>
               <tr>
-                <th>N°</th><th>Appart.</th><th>Imm.</th><th>Nom</th><th>Nb Pers.</th><th>Date</th><th>Statut</th><th>Action</th>
+                <th>N°</th><th>Appart.</th><th>Imm.</th><th>Nom</th><th>Nb Pers.</th><th>Date</th><th>Statut</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -600,14 +605,48 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 
 <script>
-  const DEFAULT_RULES = [
-    "<strong>1. Si vous êtes des Couples marocains :</strong> selon la loi marocaine ce logement autorise que les couples mariés.",
-    "<strong>2. Tranquillité et bruit :</strong> Silence total obligatoire après 23h00. Pas de musique forte, cris ou nuisances sonores à toute heure.",
-    "<strong>3. Tabagisme :</strong> Fumer est strictement interdit à l'intérieur. Autorisé uniquement en extérieur (terrasse ou jardin), avec obligation de nettoyer les mégots et cendres.",
-    "<strong>4. Nombre de personnes :</strong> Maximum 5 personnes autorisées dans l'appartement.",
-    "<strong>5. Piscine :</strong> Douche obligatoire avant la baignade. Pas de verre ni objets fragiles autour de la piscine. Surveillance permanente des enfants par un adulte. Horaires : fermeture à 20h00. Pas de courses ni plongeons.",
-    "<strong>6. Propreté et entretien :</strong> Maintenir les lieux propres en permanence. Vider régulièrement les poubelles. Respecter les sols et surfaces (pas de traces, pas de nourriture hors cuisine)."
-  ];
+  const DEFAULT_RULES = {
+    fr: [
+      "<strong>1. Si vous êtes des Couples marocains :</strong> selon la loi marocaine ce logement autorise que les couples mariés.",
+      "<strong>2. Tranquillité et bruit :</strong> Silence total obligatoire après 23h00. Pas de musique forte, cris ou nuisances sonores à toute heure.",
+      "<strong>3. Tabagisme :</strong> Fumer est strictement interdit à l'intérieur. Autorisé uniquement en extérieur (terrasse ou jardin), avec obligation de nettoyer les mégots et cendres.",
+      "<strong>4. Nombre de personnes :</strong> Maximum 5 personnes autorisées dans l'appartement.",
+      "<strong>5. Piscine :</strong> Douche obligatoire avant la baignade. Pas de verre ni objets fragiles autour de la piscine. Surveillance permanente des enfants par un adulte. Horaires : fermeture à 20h00. Pas de courses ni plongeons.",
+      "<strong>6. Propreté et entretien :</strong> Maintenir les lieux propres en permanence. Vider régulièrement les poubelles. Respecter les sols et surfaces (pas de traces, pas de nourriture hors cuisine)."
+    ],
+    en: [
+      "<strong>1. Moroccan couples:</strong> according to Moroccan law, this accommodation only allows married couples.",
+      "<strong>2. Quiet and noise:</strong> Total silence mandatory after 11:00 PM. No loud music, shouting or noise nuisance at any time.",
+      "<strong>3. Smoking:</strong> Smoking is strictly forbidden inside. Allowed only outside (terrace or garden), with obligation to clean cigarette butts and ashes.",
+      "<strong>4. Number of people:</strong> Maximum 5 people allowed in the apartment.",
+      "<strong>5. Swimming pool:</strong> Shower required before swimming. No glass or fragile objects around the pool. Permanent adult supervision of children. Hours: closes at 8:00 PM. No running or diving.",
+      "<strong>6. Cleanliness and maintenance:</strong> Keep the premises clean at all times. Empty trash regularly. Respect floors and surfaces (no marks, no food outside the kitchen)."
+    ],
+    es: [
+      "<strong>1. Parejas marroquíes:</strong> según la ley marroquí, este alojamiento solo permite parejas casadas.",
+      "<strong>2. Tranquilidad y ruido:</strong> Silencio total obligatorio después de las 23:00. Sin música alta, gritos ni ruidos molestos a ninguna hora.",
+      "<strong>3. Tabaco:</strong> Fumar está estrictamente prohibido en el interior. Permitido solo en el exterior (terraza o jardín), con obligación de limpiar colillas y cenizas.",
+      "<strong>4. Número de personas:</strong> Máximo 5 personas permitidas en el apartamento.",
+      "<strong>5. Piscina:</strong> Ducha obligatoria antes del baño. Sin vasos ni objetos frágiles alrededor de la piscina. Vigilancia permanente de los niños por un adulto. Horario: cierre a las 20:00. Sin carreras ni saltos.",
+      "<strong>6. Limpieza y mantenimiento:</strong> Mantener las instalaciones limpias en todo momento. Vaciar la basura regularmente. Respetar suelos y superficies (sin marcas, sin comida fuera de la cocina)."
+    ],
+    de: [
+      "<strong>1. Marokkanische Paare:</strong> Gemäß marokkanischem Recht sind in dieser Unterkunft nur verheiratete Paare erlaubt.",
+      "<strong>2. Ruhe und Lärm:</strong> Ab 23:00 Uhr absolute Ruhe. Keine laute Musik, kein Schreien oder Lärmbelästigung zu jeder Zeit.",
+      "<strong>3. Rauchen:</strong> Rauchen ist im Inneren streng verboten. Nur draußen (Terrasse oder Garten) erlaubt, mit der Pflicht, Zigarettenstummel und Asche zu reinigen.",
+      "<strong>4. Anzahl der Personen:</strong> Maximal 5 Personen in der Wohnung erlaubt.",
+      "<strong>5. Schwimmbad:</strong> Duschen vor dem Baden obligatorisch. Kein Glas oder zerbrechliche Gegenstände am Pool. Ständige Aufsicht der Kinder durch einen Erwachsenen. Öffnungszeiten: Schließung um 20:00 Uhr. Kein Rennen oder Springen.",
+      "<strong>6. Sauberkeit und Pflege:</strong> Die Räumlichkeiten stets sauber halten. Müll regelmäßig leeren. Böden und Oberflächen respektieren (keine Spuren, kein Essen außerhalb der Küche)."
+    ],
+    ar: [
+      "<strong>1. الأزواج المغاربة:</strong> وفقًا للقانون المغربي، هذا السكن يسمح فقط بالأزواج المتزوجين.",
+      "<strong>2. الهدوء والضوضاء:</strong> الصمت التام إلزامي بعد الساعة 23:00. ممنوع الموسيقى العالية أو الصراخ أو الضوضاء في أي وقت.",
+      "<strong>3. التدخين:</strong> التدخين ممنوع منعًا باتًا في الداخل. مسموح فقط في الخارج (الشرفة أو الحديقة)، مع الالتزام بتنظيف أعقاب السجائر والرماد.",
+      "<strong>4. عدد الأشخاص:</strong> الحد الأقصى 5 أشخاص مسموح بهم في الشقة.",
+      "<strong>5. المسبح:</strong> الاستحمام إلزامي قبل السباحة. ممنوع الزجاج أو الأشياء القابلة للكسر حول المسبح. الإشراف الدائم على الأطفال من قبل شخص بالغ. التوقيت: الإغلاق الساعة 20:00. ممنوع الجري أو الغطس.",
+      "<strong>6. النظافة والصيانة:</strong> الحفاظ على نظافة المكان باستمرار. إفراغ القمامة بانتظام. احترام الأرضيات والأسطح (بدون آثار، بدون طعام خارج المطبخ)."
+    ]
+  };
 
   const TRANSLATIONS = {
     fr: {
@@ -634,7 +673,6 @@
       optPasseport: "Passeport",
       optCIN: "Carte d'identité",
       rulesTitle: "Règlement intérieur à respecter :",
-      rules: DEFAULT_RULES,
       lblSignature: "Signature *",
       signatureCanvasMsg: "Votre navigateur ne supporte pas la signature.",
       errSignature: "Veuillez signer le document",
@@ -660,10 +698,7 @@
       statutNonTraite: "⏳ Non traité",
       noRecords: "Aucun enregistrement pour la période.",
       deleteBtn: "Suppr.",
-      treatBtn: "Traiter",
-      confirmDelete: "Marquer cet enregistrement comme traité ?",
-      colStatut: "Statut",
-      colAction: "Action"
+      colStatut: "Statut"
     },
     en: {
       langLabel: "🌐 Language / Langue :",
@@ -689,14 +724,6 @@
       optPasseport: "Passport",
       optCIN: "ID Card",
       rulesTitle: "Internal rules to be respected:",
-      rules: [
-        "<strong>1. Moroccan couples:</strong> according to Moroccan law, this accommodation only allows married couples.",
-        "<strong>2. Quiet and noise:</strong> Total silence mandatory after 11:00 PM. No loud music, shouting or noise nuisance at any time.",
-        "<strong>3. Smoking:</strong> Smoking is strictly forbidden inside. Allowed only outside (terrace or garden), with obligation to clean cigarette butts and ashes.",
-        "<strong>4. Number of people:</strong> Maximum 5 people allowed in the apartment.",
-        "<strong>5. Swimming pool:</strong> Shower required before swimming. No glass or fragile objects around the pool. Permanent adult supervision of children. Hours: closes at 8:00 PM. No running or diving.",
-        "<strong>6. Cleanliness and maintenance:</strong> Keep the premises clean at all times. Empty trash regularly. Respect floors and surfaces (no marks, no food outside the kitchen)."
-      ],
       lblSignature: "Signature *",
       signatureCanvasMsg: "Your browser does not support signature.",
       errSignature: "Please sign the document",
@@ -722,10 +749,7 @@
       statutNonTraite: "⏳ Not processed",
       noRecords: "No records for the period.",
       deleteBtn: "Del.",
-      treatBtn: "Process",
-      confirmDelete: "Mark this record as processed?",
-      colStatut: "Status",
-      colAction: "Action"
+      colStatut: "Status"
     },
     es: {
       langLabel: "🌐 Idioma / Language :",
@@ -751,14 +775,6 @@
       optPasseport: "Pasaporte",
       optCIN: "Documento de identidad",
       rulesTitle: "Normas internas a respetar:",
-      rules: [
-        "<strong>1. Parejas marroquíes:</strong> según la ley marroquí, este alojamiento solo permite parejas casadas.",
-        "<strong>2. Tranquilidad y ruido:</strong> Silencio total obligatorio después de las 23:00. Sin música alta, gritos ni ruidos molestos a ninguna hora.",
-        "<strong>3. Tabaco:</strong> Fumar está estrictamente prohibido en el interior. Permitido solo en el exterior (terraza o jardín), con obligación de limpiar colillas y cenizas.",
-        "<strong>4. Número de personas:</strong> Máximo 5 personas permitidas en el apartamento.",
-        "<strong>5. Piscina:</strong> Ducha obligatoria antes del baño. Sin vasos ni objetos frágiles alrededor de la piscina. Vigilancia permanente de los niños por un adulto. Horario: cierre a las 20:00. Sin carreras ni saltos.",
-        "<strong>6. Limpieza y mantenimiento:</strong> Mantener las instalaciones limpias en todo momento. Vaciar la basura regularmente. Respetar suelos y superficies (sin marcas, sin comida fuera de la cocina)."
-      ],
       lblSignature: "Firma *",
       signatureCanvasMsg: "Su navegador no admite firma.",
       errSignature: "Por favor firme el documento",
@@ -784,10 +800,7 @@
       statutNonTraite: "⏳ No procesado",
       noRecords: "Ningún registro para el período.",
       deleteBtn: "Elim.",
-      treatBtn: "Procesar",
-      confirmDelete: "¿Marcar este registro como procesado?",
-      colStatut: "Estado",
-      colAction: "Acción"
+      colStatut: "Estado"
     },
     de: {
       langLabel: "🌐 Sprache / Language :",
@@ -813,14 +826,6 @@
       optPasseport: "Reisepass",
       optCIN: "Personalausweis",
       rulesTitle: "Zu beachtende Hausordnung:",
-      rules: [
-        "<strong>1. Marokkanische Paare:</strong> Gemäß marokkanischem Recht sind in dieser Unterkunft nur verheiratete Paare erlaubt.",
-        "<strong>2. Ruhe und Lärm:</strong> Ab 23:00 Uhr absolute Ruhe. Keine laute Musik, kein Schreien oder Lärmbelästigung zu jeder Zeit.",
-        "<strong>3. Rauchen:</strong> Rauchen ist im Inneren streng verboten. Nur draußen (Terrasse oder Garten) erlaubt, mit der Pflicht, Zigarettenstummel und Asche zu reinigen.",
-        "<strong>4. Anzahl der Personen:</strong> Maximal 5 Personen in der Wohnung erlaubt.",
-        "<strong>5. Schwimmbad:</strong> Duschen vor dem Baden obligatorisch. Kein Glas oder zerbrechliche Gegenstände am Pool. Ständige Aufsicht der Kinder durch einen Erwachsenen. Öffnungszeiten: Schließung um 20:00 Uhr. Kein Rennen oder Springen.",
-        "<strong>6. Sauberkeit und Pflege:</strong> Die Räumlichkeiten stets sauber halten. Müll regelmäßig leeren. Böden und Oberflächen respektieren (keine Spuren, kein Essen außerhalb der Küche)."
-      ],
       lblSignature: "Unterschrift *",
       signatureCanvasMsg: "Ihr Browser unterstützt keine Unterschrift.",
       errSignature: "Bitte unterschreiben Sie das Dokument",
@@ -846,10 +851,7 @@
       statutNonTraite: "⏳ Nicht bearbeitet",
       noRecords: "Keine Registrierungen für den Zeitraum.",
       deleteBtn: "Löschen",
-      treatBtn: "Bearbeiten",
-      confirmDelete: "Diese Registrierung als bearbeitet markieren?",
-      colStatut: "Status",
-      colAction: "Aktion"
+      colStatut: "Status"
     },
     ar: {
       langLabel: "🌐 اللغة / Language :",
@@ -875,14 +877,6 @@
       optPasseport: "جواز السفر",
       optCIN: "بطاقة الهوية",
       rulesTitle: "النظام الداخلي الواجب احترامه:",
-      rules: [
-        "<strong>1. الأزواج المغاربة:</strong> وفقًا للقانون المغربي، هذا السكن يسمح فقط بالأزواج المتزوجين.",
-        "<strong>2. الهدوء والضوضاء:</strong> الصمت التام إلزامي بعد الساعة 23:00. ممنوع الموسيقى العالية أو الصراخ أو الضوضاء في أي وقت.",
-        "<strong>3. التدخين:</strong> التدخين ممنوع منعًا باتًا في الداخل. مسموح فقط في الخارج (الشرفة أو الحديقة)، مع الالتزام بتنظيف أعقاب السجائر والرماد.",
-        "<strong>4. عدد الأشخاص:</strong> الحد الأقصى 5 أشخاص مسموح بهم في الشقة.",
-        "<strong>5. المسبح:</strong> الاستحمام إلزامي قبل السباحة. ممنوع الزجاج أو الأشياء القابلة للكسر حول المسبح. الإشراف الدائم على الأطفال من قبل شخص بالغ. التوقيت: الإغلاق الساعة 20:00. ممنوع الجري أو الغطس.",
-        "<strong>6. النظافة والصيانة:</strong> الحفاظ على نظافة المكان باستمرار. إفراغ القمامة بانتظام. احترام الأرضيات والأسطح (بدون آثار، بدون طعام خارج المطبخ)."
-      ],
       lblSignature: "التوقيع *",
       signatureCanvasMsg: "متصفحك لا يدعم التوقيع.",
       errSignature: "الرجاء التوقيع على الوثيقة",
@@ -908,16 +902,12 @@
       statutNonTraite: "⏳ غير معالج",
       noRecords: "لا توجد تسجيلات للفترة.",
       deleteBtn: "حذف",
-      treatBtn: "معالجة",
-      confirmDelete: "وضع علامة على هذا التسجيل كمعالج؟",
-      colStatut: "الحالة",
-      colAction: "إجراء"
+      colStatut: "الحالة"
     }
   };
 
   let currentLang = 'fr';
-  let currentRules = DEFAULT_RULES.slice();
-  let currentRulesUser = null;
+  let customRulesText = null;
 
   (function(){
     emailjs.init("IWJc8rbQr6EMWWQbs");
@@ -956,7 +946,6 @@
   let customMessage = '';
   let residenceName = '';
   let currentConsultUser = null;
-  let customRulesText = null;
 
   function encrypt(text) {
     if (!text) return '';
@@ -984,10 +973,10 @@
   }
 
   function getRulesForDisplay() {
-    if (currentRulesUser && currentRulesUser.trim() !== '') {
-      return currentRulesUser.split('\n').filter(l => l.trim() !== '').map(l => l);
+    if (customRulesText && customRulesText.trim() !== '') {
+      return customRulesText.split('\n').filter(l => l.trim() !== '');
     }
-    return t('rules');
+    return DEFAULT_RULES[currentLang] || DEFAULT_RULES.fr;
   }
 
   function changeLanguage(lang) {
@@ -1003,10 +992,6 @@
     const setText = (id, text) => {
       const el = document.getElementById(id);
       if (el) el.textContent = text;
-    };
-    const setHtml = (id, html) => {
-      const el = document.getElementById(id);
-      if (el) el.innerHTML = html;
     };
     const setPh = (id, ph) => {
       const el = document.getElementById(id);
@@ -1071,9 +1056,8 @@
     document.documentElement.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
 
     const ths = document.querySelectorAll('#tableConsultation thead th');
-    if (ths.length === 8) {
+    if (ths.length === 7) {
       ths[6].textContent = tr.colStatut;
-      ths[7].textContent = tr.colAction;
     }
   }
 
@@ -1450,18 +1434,13 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     const sortedKeys = Object.keys(records).sort((a,b) => records[b].timestamp - records[a].timestamp);
     for(let id of sortedKeys){
       const r = records[id];
-      if(r.deleted) continue;
       const persStr = r.personnes ? Object.values(r.personnes).map(p => p.nom).join(', ') : '-';
       const nbPers = r.personnes ? Object.keys(r.personnes).length + 1 : 1;
-      const isTreated = r.treated === true;
-      const statut = isTreated ? '✅ Traité' : '⏳ Non traité';
-      const statutClass = isTreated ? 'statut-ok' : 'statut-attente';
       tbodyAdmin.innerHTML += `<tr>
         <td>${j++}</td><td>${r.appart}</td><td>${r.bat}</td><td>${r.nom}</td><td>${r.doc}</td><td>${r.typeDoc}</td><td>${r.nationalite}</td>
         <td>${nbPers}</td><td>${persStr}</td><td>${r.date}</td>
         <td><button onclick="afficherDocument('${id}')">Voir</button></td>
-        <td><button onclick="envoyerWhatsAppAdmin('${id}')" style="background:#25D366;">WhatsApp</button></td>
-        <td class="${statutClass}">${statut}${isTreated ? '' : `<br><button class="btn-treat" onclick="marquerTraite('${id}')">Traiter</button>`}</td>
+        <td><button onclick="envoyerWhatsAppAdmin('${id}')" style="background:#25D366;">WhatsApp</button><button class="btn-delete" onclick="supprimerEnregistrement('${id}')">Suppr.</button></td>
       </tr>`;
     }
   }
@@ -1475,62 +1454,16 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     const sortedKeys = Object.keys(records).sort((a,b) => records[b].timestamp - records[a].timestamp);
     for(let id of sortedKeys){
       const r = records[id];
-      if(r.deleted) continue;
       if(r.appart === currentUser.appart && r.bat === currentUser.bat){
         const persStr = r.personnes ? Object.values(r.personnes).map(p => p.nom).join(', ') : '-';
         const nbPers = r.personnes ? Object.keys(r.personnes).length + 1 : 1;
-        const isTreated = r.treated === true;
-        const statut = isTreated ? '✅ Traité' : '⏳ Non traité';
-        const statutClass = isTreated ? 'statut-ok' : 'statut-attente';
         tbody.innerHTML += `<tr>
           <td>${i++}</td><td>${r.nom}</td><td>${r.doc}</td><td>${r.typeDoc}</td><td>${r.nationalite}</td>
           <td>${nbPers}</td><td>${persStr}</td><td>${r.date}</td>
           <td><button onclick="afficherDocument('${id}')">Voir</button></td>
-          <td class="${statutClass}">${statut}</td>
-          <td><button onclick="envoyerWhatsAppUser('${id}')" style="background:#25D366;">WhatsApp</button>${isTreated ? '' : `<button class="btn-treat" onclick="marquerTraite('${id}')">Traiter</button>`}</td>
+          <td><button onclick="envoyerWhatsAppUser('${id}')" style="background:#25D366;">WhatsApp</button><button class="btn-delete" onclick="supprimerEnregistrement('${id}')">Suppr.</button></td>
         </tr>`;
       }
-    }
-  }
-
-  async function marquerTraite(id){
-    try {
-      const snap = await database.ref('records/' + id).once('value');
-      const rec = snap.val();
-      if(!rec) return;
-      await database.ref('records/' + id).update({
-        treated: true,
-        treatedAt: Date.now(),
-        treatedNom: rec.nom
-      });
-      showBanner('ok', `Enregistrement de ${rec.nom} marqué comme traité.`);
-      setTimeout(() => hideBanner(), 4000);
-      if(currentUser && currentUser.role === 'admin') refreshAdmin();
-      else if(currentUser) refreshUser();
-      if(currentConsultUser) refreshConsultation();
-    } catch(e){
-      console.error(e);
-    }
-  }
-
-  async function marquerSupprime(id){
-    try {
-      const snap = await database.ref('records/' + id).once('value');
-      const rec = snap.val();
-      if(!rec) return;
-      await database.ref('records/' + id).update({
-        deleted: true,
-        deletedAt: Date.now(),
-        deletedNom: rec.nom
-      });
-      await database.ref('documents/' + id).remove();
-      showBanner('ok', `Enregistrement de ${rec.nom} supprimé.`);
-      setTimeout(() => hideBanner(), 4000);
-      if(currentUser && currentUser.role === 'admin') refreshAdmin();
-      else if(currentUser) refreshUser();
-      if(currentConsultUser) refreshConsultation();
-    } catch(e){
-      console.error(e);
     }
   }
 
@@ -1693,6 +1626,16 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     }
   }
 
+  async function supprimerEnregistrementAvecMessage(id, nom) {
+    await database.ref('records/' + id).remove();
+    await database.ref('documents/' + id).remove();
+    const msg = `La ligne pour ${nom} a été supprimée avec succès.`;
+    showBanner('ok', msg);
+    setTimeout(() => hideBanner(), 5000);
+    if(currentUser && currentUser.role === 'admin') refreshAdmin(); else if(currentUser) refreshUser();
+    if(currentConsultUser) refreshConsultation();
+  }
+
   async function envoyerWhatsAppAdmin(recordId) {
     try {
       const snapshot = await database.ref('records/' + recordId).once('value');
@@ -1718,17 +1661,7 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
 
       window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
 
-      await database.ref('records/' + recordId).update({
-        sent: true,
-        sentAt: Date.now()
-      });
-
-      showBanner('ok', `WhatsApp préparé pour ${record.nom}.`);
-      setTimeout(() => hideBanner(), 4000);
-
-      if(currentUser && currentUser.role === 'admin') refreshAdmin();
-      else if(currentUser) refreshUser();
-      if(currentConsultUser) refreshConsultation();
+      await supprimerEnregistrementAvecMessage(recordId, record.nom);
 
     } catch (error) {
       console.error(error);
@@ -1761,15 +1694,7 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
 
       window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
 
-      await database.ref('records/' + recordId).update({
-        sent: true,
-        sentAt: Date.now()
-      });
-
-      showBanner('ok', `WhatsApp préparé pour ${record.nom}.`);
-      setTimeout(() => hideBanner(), 4000);
-
-      refreshUser();
+      await supprimerEnregistrementAvecMessage(recordId, record.nom);
 
     } catch (error) {
       console.error(error);
@@ -1777,9 +1702,12 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     }
   }
 
-  async function supprimerEnregistrementConsultation(id, nom){
-    if(confirm(t('confirmDelete'))) {
-      await marquerSupprime(id);
+  async function supprimerEnregistrement(id){
+    if(confirm("Supprimer cet enregistrement ?")) {
+      await database.ref('records/' + id).remove();
+      await database.ref('documents/' + id).remove();
+      if(currentUser && currentUser.role === 'admin') refreshAdmin(); else if(currentUser) refreshUser();
+      if(currentConsultUser) refreshConsultation();
     }
   }
 
@@ -2025,7 +1953,6 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
       personnes,
       date,
       sent:false,
-      treated:false,
       signature: signatureData,
       timestamp: Date.now(),
       residenceName: residenceName || '',
@@ -2141,9 +2068,9 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
 
       const rulesSnapshot = await database.ref('rules/' + userId).once('value');
       if(rulesSnapshot.exists()){
-        currentRulesUser = rulesSnapshot.val();
+        customRulesText = rulesSnapshot.val();
       } else {
-        currentRulesUser = null;
+        customRulesText = null;
       }
 
       document.getElementById('loginCard').classList.add('hidden');
@@ -2221,24 +2148,9 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
 
           if(recordDate >= today && recordDate <= maxDate){
             const nbPers = r.personnes ? Object.keys(r.personnes).length + 1 : 1;
-            let statut, statutClass;
-
-            if(r.deleted){
-              statut = t('statutSupprime');
-              statutClass = 'statut-supprime';
-            } else if(r.treated){
-              statut = t('statutTraite');
-              statutClass = 'statut-ok';
-            } else {
-              statut = t('statutNonTraite');
-              statutClass = 'statut-attente';
-            }
-
-            const escapedNom = (r.nom || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-            let actionHtml = '';
-            if(!r.deleted){
-              actionHtml = `<button class="btn-delete" onclick="supprimerEnregistrementConsultation('${id}','${escapedNom}')">${t('deleteBtn')}</button>`;
-            }
+            const isTreated = r.sent === true;
+            const statut = isTreated ? t('statutTraite') : t('statutNonTraite');
+            const statutClass = isTreated ? 'statut-ok' : 'statut-attente';
 
             tbody.innerHTML += `<tr>
               <td>${count++}</td>
@@ -2248,14 +2160,13 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
               <td>${nbPers}</td>
               <td>${r.date}</td>
               <td class="${statutClass}">${statut}</td>
-              <td>${actionHtml}</td>
             </tr>`;
           }
         }
       }
 
       if(tbody.innerHTML === ''){
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#666;">${t('noRecords')}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#666;">${t('noRecords')}</td></tr>`;
       }
     } catch(e){
       console.error(e);
@@ -2362,10 +2273,9 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     let rulesHtml;
     if (customRulesText && customRulesText.trim() !== '') {
       rulesHtml = customRulesText.split('\n').filter(l => l.trim() !== '').map(l => `<li>${l}</li>`).join('');
-    } else if (currentRulesUser && currentRulesUser.trim() !== '') {
-      rulesHtml = currentRulesUser.split('\n').filter(l => l.trim() !== '').map(l => `<li>${l}</li>`).join('');
     } else {
-      rulesHtml = DEFAULT_RULES.map(l => `<li>${l}</li>`).join('');
+      const rules = DEFAULT_RULES[currentLang] || DEFAULT_RULES.fr;
+      rulesHtml = rules.map(l => `<li>${l}</li>`).join('');
     }
 
     return `
@@ -2428,7 +2338,7 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     generatePDFAndDownload(currentDocumentData, true);
   }
 
-  async function partagerWhatsApp() {
+  function partagerWhatsApp() {
     if (!currentDocumentData) return;
 
     const record = currentDocumentData;
@@ -2449,18 +2359,10 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
 
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
 
-    await database.ref('records/' + recordId).update({
-      sent: true,
-      sentAt: Date.now()
-    });
-
-    showBanner('ok', `WhatsApp préparé pour ${record.nom}.`);
-    setTimeout(() => hideBanner(), 4000);
-
-    if(currentUser && currentUser.role === 'admin') refreshAdmin();
-    else if(currentUser) refreshUser();
+    supprimerEnregistrementAvecMessage(recordId, record.nom);
 
     document.getElementById('docActions').classList.add('hidden');
+    document.getElementById('documentPreview').innerHTML = '<p style="text-align: center; color: #666;">Cet enregistrement a été supprimé.</p>';
     currentDocumentData = null;
   }
 
@@ -2475,4 +2377,3 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
 </script>
 </body>
 </html>
-```
