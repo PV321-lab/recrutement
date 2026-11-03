@@ -1,3 +1,5 @@
+Voici le code complet avec les modifications demandées : sélecteur de langue (FR/ES/EN/DE/AR) pour le formulaire invité avec traduction complète, et la vue consultation en lecture seule affichant les enregistrements en cours + 20 jours avec colonne de statut (envoyé/supprimé) et bouton supprimer.
+
 ```html
 <html lang="fr">
 <head>
@@ -221,7 +223,37 @@
     }
     .statut-ok { color: #0f9d58; font-weight: bold; }
     .statut-attente { color: #f4b400; font-weight: bold; }
+    .statut-supprime { color: #d93025; font-weight: bold; }
     .consult-btn { background: var(--info); margin-left: 10px; }
+    .lang-selector {
+      background: #fff;
+      padding: 15px;
+      border-radius: 8px;
+      border: 2px solid #007bff;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+    .lang-selector label {
+      margin: 0;
+      font-weight: 700;
+      color: #007bff;
+      font-size: 16px;
+    }
+    .lang-selector select {
+      margin: 0;
+      width: auto;
+      min-width: 200px;
+      padding: 10px 15px;
+      border: 2px solid #007bff;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    [dir="rtl"] .document-column { border-left: none; border-right: 2px solid #007bff; padding-left: 0; padding-right: 20px; }
+    [dir="rtl"] .rules-container ul { padding-right: 20px; padding-left: 0; }
+    [dir="rtl"] .doc-signature-box { direction: rtl; }
   </style>
 </head>
 <body>
@@ -394,37 +426,48 @@
     <div id="invitePanel" class="hidden">
       <div class="guest-form-container">
         <div class="toolbar" style="margin-bottom: 20px;">
-          <h3 style="margin: 0; flex-grow: 1;">Enregistrement Invité - Enregistrement des invités</h3>
+          <h3 style="margin: 0; flex-grow: 1;" id="inviteTitle">Enregistrement Invité - Enregistrement des invités</h3>
+        </div>
+
+        <div class="lang-selector">
+          <label id="langLabel">🌐 Langue / Language :</label>
+          <select id="langSelect" onchange="changeLanguage(this.value)">
+            <option value="fr">Français</option>
+            <option value="en">English</option>
+            <option value="es">Español</option>
+            <option value="de">Deutsch</option>
+            <option value="ar">العربية</option>
+          </select>
         </div>
 
         <div class="card">
           <form id="guestForm">
             <div class="row">
               <div class="col">
-                <label>Appartement</label>
+                <label id="lblAppart">Appartement</label>
                 <input type="text" id="invAppart" readonly />
               </div>
               <div class="col">
-                <label>Immeuble</label>
+                <label id="lblBat">Immeuble</label>
                 <input type="text" id="invBat" readonly />
               </div>
             </div>
 
-            <label>Date d'arrivée *</label>
+            <label id="lblDateArrivee">Date d'arrivée *</label>
             <input type="date" id="dateArrivee" required class="guest-input" />
             <div class="error-message" id="dateArriveeError">Veuillez sélectionner une date d'arrivée</div>
 
-            <label>Nombre des invités *</label>
+            <label id="lblNbPers">Nombre des invités *</label>
             <input type="number" id="nbPers" min="1" value="1" onchange="genererChamps()" required class="guest-input" />
             <div class="error-message" id="nbPersError">Veuillez entrer le nombre d'invités (minimum 1)</div>
 
-            <label>Nom et Prénom de la personne principale *</label>
+            <label id="lblNomPrincipal">Nom et Prénom de la personne principale *</label>
             <input type="text" id="nomPrincipal" required placeholder="Nom complet" class="guest-input" />
             <div class="error-message" id="nomPrincipalError">Veuillez entrer le nom et prénom</div>
 
             <div class="row doc-type-row">
               <div class="col">
-                <label>Type de document *</label>
+                <label id="lblTypeDocPrincipal">Type de document *</label>
                 <select id="typeDocPrincipal" required class="guest-input">
                   <option value="">Sélectionner</option>
                   <option value="Passeport">Passeport</option>
@@ -433,7 +476,7 @@
                 <div class="error-message" id="typeDocPrincipalError">Veuillez sélectionner un type de document</div>
               </div>
               <div class="col">
-                <label>Numéro de document *</label>
+                <label id="lblDocPrincipal">Numéro de document *</label>
                 <input type="text" id="docPrincipal" required placeholder="N° de document" class="guest-input" />
                 <div class="error-message" id="docPrincipalError">Veuillez entrer le numéro de document</div>
               </div>
@@ -441,7 +484,7 @@
 
             <div class="nationality-row">
               <div class="col">
-                <label>Nationalité *</label>
+                <label id="lblNationalitePrincipal">Nationalité *</label>
                 <input type="text" id="nationalitePrincipal" required placeholder="Nationalité" class="guest-input" />
                 <div class="error-message" id="nationalitePrincipalError">Veuillez entrer la nationalité</div>
               </div>
@@ -449,9 +492,9 @@
 
             <div id="personnes"></div>
 
-            <div class="rules-container">
-              <h4>Règlement intérieur à respecter :</h4>
-              <ul>
+            <div class="rules-container" id="rulesContainer">
+              <h4 id="rulesTitle">Règlement intérieur à respecter :</h4>
+              <ul id="rulesList">
                 <li><strong>1. Si vous êtes des Couples marocains: :</strong> selon la loi marocaine Ce logement autorise que les couples mariés . </li>
                 <li><strong>2. Tranquillité et bruit :</strong> Silence total obligatoire après 23h00. Pas de musique forte, cris ou nuisances sonores à toute heure.</li>
                 <li><strong>3. Tabagisme :</strong> Fumer est strictement interdit à l'intérieur. Autorisé uniquement en extérieur (terrasse ou jardin), avec obligation de nettoyer les mégots et cendres.</li>
@@ -462,16 +505,16 @@
             </div>
 
             <div class="signature-area">
-              <div class="signature-title">Signature *</div>
+              <div class="signature-title" id="lblSignature">Signature *</div>
               <canvas id="signatureCanvas" class="signature-canvas">
                 Votre navigateur ne supporte pas la signature.
               </canvas>
               <div class="error-message" id="signatureError">Veuillez signer le document</div>
               <div class="signature-controls">
-                <button type="button" id="clearBtn" class="btn" style="background: #e74c3c;">Effacer la signature</button>
+                <button type="button" id="clearBtn" class="btn" style="background: #e74c3c;" data-i18n="clear">Effacer la signature</button>
               </div>
               <div id="signaturePreview" class="signature-preview hidden"></div>
-              <p style="margin-top: 15px; font-size: 14px; color: #666;">
+              <p style="margin-top: 15px; font-size: 14px; color: #666;" id="signatureNote">
                 En signant, vous acceptez le règlement intérieur et consentez au traitement de vos données personnelles.
               </p>
             </div>
@@ -479,7 +522,7 @@
             <div class="accept-signature-container">
               <label style="display: flex; align-items: center; justify-content: center; margin-bottom: 15px;">
                 <input type="checkbox" id="acceptCheckbox" required style="margin-right: 10px; width: auto;">
-                <span style="font-size: 16px; font-weight: bold;">En utilisant cette application, vous acceptez que les informations fournies lors de votre première inscription soient traitées conformément à la réglementation marocaine sur la protection des données personnelles. Ces données sont exclusivement utilisées pour le processus initial et ne sont pas conservées. De plus, vous vous engagez à respecter l'ensemble du règlement intérieur de l'appartement et à valider votre acceptation par votre signature.</span>
+                <span style="font-size: 16px; font-weight: bold;" id="acceptText">En utilisant cette application, vous acceptez que les informations fournies lors de votre première inscription soient traitées conformément à la réglementation marocaine sur la protection des données personnelles. Ces données sont exclusivement utilisées pour le processus initial et ne sont pas conservées. De plus, vous vous engagez à respecter l'ensemble du règlement intérieur de l'appartement et à valider votre acceptation par votre signature.</span>
               </label>
               <div class="error-message" id="acceptCheckboxError" style="text-align: center;">Veuillez accepter les conditions</div>
               <div style="text-align: center;">
@@ -492,8 +535,8 @@
         <div id="successMessage" class="banner ok hidden">
           <div id="customSuccessMessageDisplay"></div>
           <br>
-          <strong>Note importante :</strong> En cas de demande des agents de sécurité, présentez ce document signé.
-          Seules les personnes enregistrées dans cette réservation sont autorisées à entrer.
+          <strong id="successNoteStrong">Note importante :</strong> <span id="successNote">En cas de demande des agents de sécurité, présentez ce document signé.
+          Seules les personnes enregistrées dans cette réservation sont autorisées à entrer.</span>
         </div>
       </div>
     </div>
@@ -501,15 +544,15 @@
     <div id="consultationPanel" class="hidden">
       <div class="card">
         <div class="toolbar">
-          <h3 style="margin:0;">Liste des enregistrements - Semaine en cours</h3>
-          <button onclick="fermerConsultation()" style="background: var(--err);">Fermer</button>
+          <h3 style="margin:0;" id="consultTitle">Liste des enregistrements - En cours & 20 prochains jours</h3>
+          <button onclick="fermerConsultation()" style="background: var(--err);" data-i18n="close">Fermer</button>
         </div>
         <div id="consultationList">
-          <p class="note" style="margin:15px 0;">Enregistrements à partir d'aujourd'hui :</p>
+          <p class="note" style="margin:15px 0;" id="consultNote">Enregistrements à partir d'aujourd'hui (lecture seule) :</p>
           <table id="tableConsultation">
             <thead>
               <tr>
-                <th>N°</th><th>Appart.</th><th>Imm.</th><th>Nom</th><th>Nb Pers.</th><th>Date</th><th>Statut</th>
+                <th>N°</th><th>Appart.</th><th>Imm.</th><th>Nom</th><th>Nb Pers.</th><th>Date</th><th>Statut</th><th>Action</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -537,6 +580,321 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 
 <script>
+  const TRANSLATIONS = {
+    fr: {
+      langLabel: "🌐 Langue / Language :",
+      inviteTitle: "Enregistrement Invité - Enregistrement des invités",
+      lblAppart: "Appartement",
+      lblBat: "Immeuble",
+      lblDateArrivee: "Date d'arrivée *",
+      errDateArrivee: "Veuillez sélectionner une date d'arrivée",
+      lblNbPers: "Nombre des invités *",
+      errNbPers: "Veuillez entrer le nombre d'invités (minimum 1)",
+      lblNomPrincipal: "Nom et Prénom de la personne principale *",
+      phNomPrincipal: "Nom complet",
+      errNomPrincipal: "Veuillez entrer le nom et prénom",
+      lblTypeDocPrincipal: "Type de document *",
+      errTypeDocPrincipal: "Veuillez sélectionner un type de document",
+      lblDocPrincipal: "Numéro de document *",
+      phDocPrincipal: "N° de document",
+      errDocPrincipal: "Veuillez entrer le numéro de document",
+      lblNationalitePrincipal: "Nationalité *",
+      phNationalitePrincipal: "Nationalité",
+      errNationalitePrincipal: "Veuillez entrer la nationalité",
+      optSelect: "Sélectionner",
+      optPasseport: "Passeport",
+      optCIN: "Carte d'identité",
+      rulesTitle: "Règlement intérieur à respecter :",
+      rules: [
+        "<strong>1. Si vous êtes des Couples marocains :</strong> selon la loi marocaine ce logement autorise que les couples mariés.",
+        "<strong>2. Tranquillité et bruit :</strong> Silence total obligatoire après 23h00. Pas de musique forte, cris ou nuisances sonores à toute heure.",
+        "<strong>3. Tabagisme :</strong> Fumer est strictement interdit à l'intérieur. Autorisé uniquement en extérieur (terrasse ou jardin), avec obligation de nettoyer les mégots et cendres.",
+        "<strong>4. Nombre de personnes :</strong> Maximum 5 personnes autorisées dans l'appartement.",
+        "<strong>5. Piscine :</strong> Douche obligatoire avant la baignade. Pas de verre ni objets fragiles autour de la piscine. Surveillance permanente des enfants par un adulte. Horaires : fermeture à 20h00. Pas de courses ni plongeons.",
+        "<strong>6. Propreté et entretien :</strong> Maintenir les lieux propres en permanence. Vider régulièrement les poubelles. Respecter les sols et surfaces (pas de traces, pas de nourriture hors cuisine)."
+      ],
+      lblSignature: "Signature *",
+      signatureCanvasMsg: "Votre navigateur ne supporte pas la signature.",
+      errSignature: "Veuillez signer le document",
+      clear: "Effacer la signature",
+      signatureNote: "En signant, vous acceptez le règlement intérieur et consentez au traitement de vos données personnelles.",
+      acceptText: "En utilisant cette application, vous acceptez que les informations fournies lors de votre première inscription soient traitées conformément à la réglementation marocaine sur la protection des données personnelles. Ces données sont exclusivement utilisées pour le processus initial et ne sont pas conservées. De plus, vous vous engagez à respecter l'ensemble du règlement intérieur de l'appartement et à valider votre acceptation par votre signature.",
+      errAccept: "Veuillez accepter les conditions",
+      registerBtn: "Enregistrer et valider",
+      successNoteStrong: "Note importante :",
+      successNote: "En cas de demande des agents de sécurité, présentez ce document signé. Seules les personnes enregistrées dans cette réservation sont autorisées à entrer.",
+      personTitle: "Personne",
+      personNom: "Nom & Prénom *",
+      personNomPh: "Nom complet personne",
+      personTypeDoc: "Type de document *",
+      personDoc: "Numéro de document *",
+      personDocPh: "Document personne",
+      personNationalite: "Nationalité *",
+      personNationalitePh: "Nationalité personne",
+      consultTitle: "Liste des enregistrements - En cours & 20 prochains jours",
+      consultNote: "Enregistrements à partir d'aujourd'hui (lecture seule) :",
+      close: "Fermer",
+      statutEnvoye: "✅ Envoyé",
+      statutEnAttente: "⏳ En attente",
+      statutSupprime: "🗑️ Supprimé",
+      noRecords: "Aucun enregistrement pour la période.",
+      deleteBtn: "Suppr.",
+      confirmDelete: "Supprimer cet enregistrement ?",
+      sendBtn: "Envoyer",
+      alreadySent: "Envoyé"
+    },
+    en: {
+      langLabel: "🌐 Language / Langue :",
+      inviteTitle: "Guest Registration - Enregistrement des invités",
+      lblAppart: "Apartment",
+      lblBat: "Building",
+      lblDateArrivee: "Arrival date *",
+      errDateArrivee: "Please select an arrival date",
+      lblNbPers: "Number of guests *",
+      errNbPers: "Please enter the number of guests (minimum 1)",
+      lblNomPrincipal: "Full name of main person *",
+      phNomPrincipal: "Full name",
+      errNomPrincipal: "Please enter the full name",
+      lblTypeDocPrincipal: "Document type *",
+      errTypeDocPrincipal: "Please select a document type",
+      lblDocPrincipal: "Document number *",
+      phDocPrincipal: "Document number",
+      errDocPrincipal: "Please enter the document number",
+      lblNationalitePrincipal: "Nationality *",
+      phNationalitePrincipal: "Nationality",
+      errNationalitePrincipal: "Please enter the nationality",
+      optSelect: "Select",
+      optPasseport: "Passport",
+      optCIN: "ID Card",
+      rulesTitle: "Internal rules to be respected:",
+      rules: [
+        "<strong>1. Moroccan couples:</strong> according to Moroccan law, this accommodation only allows married couples.",
+        "<strong>2. Quiet and noise:</strong> Total silence mandatory after 11:00 PM. No loud music, shouting or noise nuisance at any time.",
+        "<strong>3. Smoking:</strong> Smoking is strictly forbidden inside. Allowed only outside (terrace or garden), with obligation to clean cigarette butts and ashes.",
+        "<strong>4. Number of people:</strong> Maximum 5 people allowed in the apartment.",
+        "<strong>5. Swimming pool:</strong> Shower required before swimming. No glass or fragile objects around the pool. Permanent adult supervision of children. Hours: closes at 8:00 PM. No running or diving.",
+        "<strong>6. Cleanliness and maintenance:</strong> Keep the premises clean at all times. Empty trash regularly. Respect floors and surfaces (no marks, no food outside the kitchen)."
+      ],
+      lblSignature: "Signature *",
+      signatureCanvasMsg: "Your browser does not support signature.",
+      errSignature: "Please sign the document",
+      clear: "Clear signature",
+      signatureNote: "By signing, you accept the internal rules and consent to the processing of your personal data.",
+      acceptText: "By using this application, you agree that the information provided during your first registration will be processed in accordance with Moroccan personal data protection regulations. This data is exclusively used for the initial process and is not retained. Furthermore, you commit to respecting all internal rules of the apartment and to validate your acceptance by your signature.",
+      errAccept: "Please accept the conditions",
+      registerBtn: "Register and validate",
+      successNoteStrong: "Important note:",
+      successNote: "If requested by security agents, present this signed document. Only persons registered in this reservation are allowed to enter.",
+      personTitle: "Person",
+      personNom: "Name & Surname *",
+      personNomPh: "Full name person",
+      personTypeDoc: "Document type *",
+      personDoc: "Document number *",
+      personDocPh: "Document person",
+      personNationalite: "Nationality *",
+      personNationalitePh: "Nationality person",
+      consultTitle: "Records list - Current & next 20 days",
+      consultNote: "Records from today (read only):",
+      close: "Close",
+      statutEnvoye: "✅ Sent",
+      statutEnAttente: "⏳ Pending",
+      statutSupprime: "🗑️ Deleted",
+      noRecords: "No records for the period.",
+      deleteBtn: "Del.",
+      confirmDelete: "Delete this record?",
+      sendBtn: "Send",
+      alreadySent: "Sent"
+    },
+    es: {
+      langLabel: "🌐 Idioma / Language :",
+      inviteTitle: "Registro de Invitados - Enregistrement des invités",
+      lblAppart: "Apartamento",
+      lblBat: "Edificio",
+      lblDateArrivee: "Fecha de llegada *",
+      errDateArrivee: "Seleccione una fecha de llegada",
+      lblNbPers: "Número de invitados *",
+      errNbPers: "Introduzca el número de invitados (mínimo 1)",
+      lblNomPrincipal: "Nombre y apellidos de la persona principal *",
+      phNomPrincipal: "Nombre completo",
+      errNomPrincipal: "Introduzca el nombre y apellidos",
+      lblTypeDocPrincipal: "Tipo de documento *",
+      errTypeDocPrincipal: "Seleccione un tipo de documento",
+      lblDocPrincipal: "Número de documento *",
+      phDocPrincipal: "N° de documento",
+      errDocPrincipal: "Introduzca el número de documento",
+      lblNationalitePrincipal: "Nacionalidad *",
+      phNationalitePrincipal: "Nacionalidad",
+      errNationalitePrincipal: "Introduzca la nacionalidad",
+      optSelect: "Seleccionar",
+      optPasseport: "Pasaporte",
+      optCIN: "Documento de identidad",
+      rulesTitle: "Normas internas a respetar:",
+      rules: [
+        "<strong>1. Parejas marroquíes:</strong> según la ley marroquí, este alojamiento solo permite parejas casadas.",
+        "<strong>2. Tranquilidad y ruido:</strong> Silencio total obligatorio después de las 23:00. Sin música alta, gritos ni ruidos molestos a ninguna hora.",
+        "<strong>3. Tabaco:</strong> Fumar está estrictamente prohibido en el interior. Permitido solo en el exterior (terraza o jardín), con obligación de limpiar colillas y cenizas.",
+        "<strong>4. Número de personas:</strong> Máximo 5 personas permitidas en el apartamento.",
+        "<strong>5. Piscina:</strong> Ducha obligatoria antes del baño. Sin vasos ni objetos frágiles alrededor de la piscina. Vigilancia permanente de los niños por un adulto. Horario: cierre a las 20:00. Sin carreras ni saltos.",
+        "<strong>6. Limpieza y mantenimiento:</strong> Mantener las instalaciones limpias en todo momento. Vaciar la basura regularmente. Respetar suelos y superficies (sin marcas, sin comida fuera de la cocina)."
+      ],
+      lblSignature: "Firma *",
+      signatureCanvasMsg: "Su navegador no admite firma.",
+      errSignature: "Por favor firme el documento",
+      clear: "Borrar firma",
+      signatureNote: "Al firmar, acepta las normas internas y consiente el tratamiento de sus datos personales.",
+      acceptText: "Al utilizar esta aplicación, acepta que la información proporcionada durante su primer registro sea tratada de conformidad con la normativa marroquí sobre protección de datos personales. Estos datos se utilizan exclusivamente para el proceso inicial y no se conservan. Además, se compromete a respetar todas las normas internas del apartamento y a validar su aceptación con su firma.",
+      errAccept: "Por favor acepte las condiciones",
+      registerBtn: "Registrar y validar",
+      successNoteStrong: "Nota importante:",
+      successNote: "En caso de solicitud de los agentes de seguridad, presente este documento firmado. Solo las personas registradas en esta reserva están autorizadas a entrar.",
+      personTitle: "Persona",
+      personNom: "Nombre y apellidos *",
+      personNomPh: "Nombre completo persona",
+      personTypeDoc: "Tipo de documento *",
+      personDoc: "Número de documento *",
+      personDocPh: "Documento persona",
+      personNationalite: "Nacionalidad *",
+      personNationalitePh: "Nacionalidad persona",
+      consultTitle: "Lista de registros - En curso y próximos 20 días",
+      consultNote: "Registros a partir de hoy (solo lectura):",
+      close: "Cerrar",
+      statutEnvoye: "✅ Enviado",
+      statutEnAttente: "⏳ Pendiente",
+      statutSupprime: "🗑️ Eliminado",
+      noRecords: "Ningún registro para el período.",
+      deleteBtn: "Elim.",
+      confirmDelete: "¿Eliminar este registro?",
+      sendBtn: "Enviar",
+      alreadySent: "Enviado"
+    },
+    de: {
+      langLabel: "🌐 Sprache / Language :",
+      inviteTitle: "Gästeregistrierung - Enregistrement des invités",
+      lblAppart: "Wohnung",
+      lblBat: "Gebäude",
+      lblDateArrivee: "Ankunftsdatum *",
+      errDateArrivee: "Bitte wählen Sie ein Ankunftsdatum",
+      lblNbPers: "Anzahl der Gäste *",
+      errNbPers: "Bitte geben Sie die Anzahl der Gäste ein (mindestens 1)",
+      lblNomPrincipal: "Vor- und Nachname der Hauptperson *",
+      phNomPrincipal: "Vollständiger Name",
+      errNomPrincipal: "Bitte geben Sie den Namen ein",
+      lblTypeDocPrincipal: "Dokumenttyp *",
+      errTypeDocPrincipal: "Bitte wählen Sie einen Dokumenttyp",
+      lblDocPrincipal: "Dokumentnummer *",
+      phDocPrincipal: "Dokumentnummer",
+      errDocPrincipal: "Bitte geben Sie die Dokumentnummer ein",
+      lblNationalitePrincipal: "Staatsangehörigkeit *",
+      phNationalitePrincipal: "Staatsangehörigkeit",
+      errNationalitePrincipal: "Bitte geben Sie die Staatsangehörigkeit ein",
+      optSelect: "Auswählen",
+      optPasseport: "Reisepass",
+      optCIN: "Personalausweis",
+      rulesTitle: "Zu beachtende Hausordnung:",
+      rules: [
+        "<strong>1. Marokkanische Paare:</strong> Gemäß marokkanischem Recht sind in dieser Unterkunft nur verheiratete Paare erlaubt.",
+        "<strong>2. Ruhe und Lärm:</strong> Ab 23:00 Uhr absolute Ruhe. Keine laute Musik, kein Schreien oder Lärmbelästigung zu jeder Zeit.",
+        "<strong>3. Rauchen:</strong> Rauchen ist im Inneren streng verboten. Nur draußen (Terrasse oder Garten) erlaubt, mit der Pflicht, Zigarettenstummel und Asche zu reinigen.",
+        "<strong>4. Anzahl der Personen:</strong> Maximal 5 Personen in der Wohnung erlaubt.",
+        "<strong>5. Schwimmbad:</strong> Duschen vor dem Baden obligatorisch. Kein Glas oder zerbrechliche Gegenstände am Pool. Ständige Aufsicht der Kinder durch einen Erwachsenen. Öffnungszeiten: Schließung um 20:00 Uhr. Kein Rennen oder Springen.",
+        "<strong>6. Sauberkeit und Pflege:</strong> Die Räumlichkeiten stets sauber halten. Müll regelmäßig leeren. Böden und Oberflächen respektieren (keine Spuren, kein Essen außerhalb der Küche)."
+      ],
+      lblSignature: "Unterschrift *",
+      signatureCanvasMsg: "Ihr Browser unterstützt keine Unterschrift.",
+      errSignature: "Bitte unterschreiben Sie das Dokument",
+      clear: "Unterschrift löschen",
+      signatureNote: "Mit Ihrer Unterschrift akzeptieren Sie die Hausordnung und willigen in die Verarbeitung Ihrer personenbezogenen Daten ein.",
+      acceptText: "Durch die Nutzung dieser Anwendung erklären Sie sich damit einverstanden, dass die bei Ihrer ersten Registrierung angegebenen Informationen gemäß den marokkanischen Datenschutzvorschriften verarbeitet werden. Diese Daten werden ausschließlich für den Erstprozess verwendet und nicht gespeichert. Darüber hinaus verpflichten Sie sich, die gesamte Hausordnung der Wohnung zu respektieren und Ihre Zustimmung durch Ihre Unterschrift zu bestätigen.",
+      errAccept: "Bitte akzeptieren Sie die Bedingungen",
+      registerBtn: "Registrieren und bestätigen",
+      successNoteStrong: "Wichtiger Hinweis:",
+      successNote: "Auf Verlangen der Sicherheitskräfte legen Sie dieses unterschriebene Dokument vor. Nur die in dieser Reservierung registrierten Personen dürfen eintreten.",
+      personTitle: "Person",
+      personNom: "Name & Vorname *",
+      personNomPh: "Vollständiger Name Person",
+      personTypeDoc: "Dokumenttyp *",
+      personDoc: "Dokumentnummer *",
+      personDocPh: "Dokument Person",
+      personNationalite: "Staatsangehörigkeit *",
+      personNationalitePh: "Staatsangehörigkeit Person",
+      consultTitle: "Registrierungsliste - Aktuell & nächste 20 Tage",
+      consultNote: "Registrierungen ab heute (nur Lesen):",
+      close: "Schließen",
+      statutEnvoye: "✅ Gesendet",
+      statutEnAttente: "⏳ Ausstehend",
+      statutSupprime: "🗑️ Gelöscht",
+      noRecords: "Keine Registrierungen für den Zeitraum.",
+      deleteBtn: "Löschen",
+      confirmDelete: "Diese Registrierung löschen?",
+      sendBtn: "Senden",
+      alreadySent: "Gesendet"
+    },
+    ar: {
+      langLabel: "🌐 اللغة / Language :",
+      inviteTitle: "تسجيل الضيوف - Enregistrement des invités",
+      lblAppart: "الشقة",
+      lblBat: "العمارة",
+      lblDateArrivee: "تاريخ الوصول *",
+      errDateArrivee: "الرجاء اختيار تاريخ الوصول",
+      lblNbPers: "عدد الضيوف *",
+      errNbPers: "الرجاء إدخال عدد الضيوف (الحد الأدنى 1)",
+      lblNomPrincipal: "الاسم واللقب للشخص الرئيسي *",
+      phNomPrincipal: "الاسم الكامل",
+      errNomPrincipal: "الرجاء إدخال الاسم واللقب",
+      lblTypeDocPrincipal: "نوع الوثيقة *",
+      errTypeDocPrincipal: "الرجاء اختيار نوع الوثيقة",
+      lblDocPrincipal: "رقم الوثيقة *",
+      phDocPrincipal: "رقم الوثيقة",
+      errDocPrincipal: "الرجاء إدخال رقم الوثيقة",
+      lblNationalitePrincipal: "الجنسية *",
+      phNationalitePrincipal: "الجنسية",
+      errNationalitePrincipal: "الرجاء إدخال الجنسية",
+      optSelect: "اختر",
+      optPasseport: "جواز السفر",
+      optCIN: "بطاقة الهوية",
+      rulesTitle: "النظام الداخلي الواجب احترامه:",
+      rules: [
+        "<strong>1. الأزواج المغاربة:</strong> وفقًا للقانون المغربي، هذا السكن يسمح فقط بالأزواج المتزوجين.",
+        "<strong>2. الهدوء والضوضاء:</strong> الصمت التام إلزامي بعد الساعة 23:00. ممنوع الموسيقى العالية أو الصراخ أو الضوضاء في أي وقت.",
+        "<strong>3. التدخين:</strong> التدخين ممنوع منعًا باتًا في الداخل. مسموح فقط في الخارج (الشرفة أو الحديقة)، مع الالتزام بتنظيف أعقاب السجائر والرماد.",
+        "<strong>4. عدد الأشخاص:</strong> الحد الأقصى 5 أشخاص مسموح بهم في الشقة.",
+        "<strong>5. المسبح:</strong> الاستحمام إلزامي قبل السباحة. ممنوع الزجاج أو الأشياء القابلة للكسر حول المسبح. الإشراف الدائم على الأطفال من قبل شخص بالغ. التوقيت: الإغلاق الساعة 20:00. ممنوع الجري أو الغطس.",
+        "<strong>6. النظافة والصيانة:</strong> الحفاظ على نظافة المكان باستمرار. إفراغ القمامة بانتظام. احترام الأرضيات والأسطح (بدون آثار، بدون طعام خارج المطبخ)."
+      ],
+      lblSignature: "التوقيع *",
+      signatureCanvasMsg: "متصفحك لا يدعم التوقيع.",
+      errSignature: "الرجاء التوقيع على الوثيقة",
+      clear: "مسح التوقيع",
+      signatureNote: "بالتوقيع، فإنك تقبل النظام الداخلي وتوافق على معالجة بياناتك الشخصية.",
+      acceptText: "باستخدام هذا التطبيق، فإنك توافق على أن المعلومات المقدمة أثناء تسجيلك الأول ستتم معالجتها وفقًا للوائح المغربية لحماية البيانات الشخصية. تُستخدم هذه البيانات حصريًا للعملية الأولية ولا يتم الاحتفاظ بها. علاوة على ذلك، فإنك تلتزم باحترام النظام الداخلي بالكامل للشقة وتأكيد قبولك بتوقيعك.",
+      errAccept: "الرجاء قبول الشروط",
+      registerBtn: "تسجيل وتأكيد",
+      successNoteStrong: "ملاحظة مهمة:",
+      successNote: "في حالة طلب من رجال الأمن، قدم هذه الوثيقة الموقعة. فقط الأشخاص المسجلون في هذا الحجز مسموح لهم بالدخول.",
+      personTitle: "الشخص",
+      personNom: "الاسم واللقب *",
+      personNomPh: "الاسم الكامل للشخص",
+      personTypeDoc: "نوع الوثيقة *",
+      personDoc: "رقم الوثيقة *",
+      personDocPh: "وثيقة الشخص",
+      personNationalite: "الجنسية *",
+      personNationalitePh: "جنسية الشخص",
+      consultTitle: "قائمة التسجيلات - الحالية و20 يومًا القادمة",
+      consultNote: "التسجيلات من اليوم (قراءة فقط):",
+      close: "إغلاق",
+      statutEnvoye: "✅ تم الإرسال",
+      statutEnAttente: "⏳ في الانتظار",
+      statutSupprime: "🗑️ محذوف",
+      noRecords: "لا توجد تسجيلات للفترة.",
+      deleteBtn: "حذف",
+      confirmDelete: "حذف هذا التسجيل؟",
+      sendBtn: "إرسال",
+      alreadySent: "تم الإرسال"
+    }
+  };
+
+  let currentLang = 'fr';
+
   (function(){
     emailjs.init("IWJc8rbQr6EMWWQbs");
   })();
@@ -573,6 +931,7 @@
   let emailSettings = { enableEmail: 'non' };
   let customMessage = '';
   let residenceName = '';
+  let currentConsultUser = null;
 
   function encrypt(text) {
     if (!text) return '';
@@ -592,6 +951,101 @@
     } catch (e) {
       console.error("Decryption error:", e);
       return text;
+    }
+  }
+
+  function t(key) {
+    return TRANSLATIONS[currentLang] && TRANSLATIONS[currentLang][key] !== undefined
+      ? TRANSLATIONS[currentLang][key]
+      : (TRANSLATIONS.fr[key] !== undefined ? TRANSLATIONS.fr[key] : key);
+  }
+
+  function changeLanguage(lang) {
+    currentLang = lang;
+    applyLanguage();
+    genererChamps();
+  }
+
+  function applyLanguage() {
+    const tr = TRANSLATIONS[currentLang];
+    if (!tr) return;
+
+    const setText = (id, text) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = text;
+    };
+    const setHtml = (id, html) => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = html;
+    };
+    const setPh = (id, ph) => {
+      const el = document.getElementById(id);
+      if (el) el.placeholder = ph;
+    };
+
+    setText('langLabel', tr.langLabel);
+    setText('inviteTitle', tr.inviteTitle);
+    setText('lblAppart', tr.lblAppart);
+    setText('lblBat', tr.lblBat);
+    setText('lblDateArrivee', tr.lblDateArrivee);
+    setText('dateArriveeError', tr.errDateArrivee);
+    setText('lblNbPers', tr.lblNbPers);
+    setText('nbPersError', tr.errNbPers);
+    setText('lblNomPrincipal', tr.lblNomPrincipal);
+    setPh('nomPrincipal', tr.phNomPrincipal);
+    setText('nomPrincipalError', tr.errNomPrincipal);
+    setText('lblTypeDocPrincipal', tr.lblTypeDocPrincipal);
+    setText('typeDocPrincipalError', tr.errTypeDocPrincipal);
+    setText('lblDocPrincipal', tr.lblDocPrincipal);
+    setPh('docPrincipal', tr.phDocPrincipal);
+    setText('docPrincipalError', tr.errDocPrincipal);
+    setText('lblNationalitePrincipal', tr.lblNationalitePrincipal);
+    setPh('nationalitePrincipal', tr.phNationalitePrincipal);
+    setText('nationalitePrincipalError', tr.errNationalitePrincipal);
+
+    const typeDocSel = document.getElementById('typeDocPrincipal');
+    if (typeDocSel) {
+      const opts = typeDocSel.options;
+      if (opts[0]) opts[0].text = tr.optSelect;
+      if (opts[1]) opts[1].text = tr.optPasseport;
+      if (opts[2]) opts[2].text = tr.optCIN;
+    }
+
+    setText('rulesTitle', tr.rulesTitle);
+    const rulesList = document.getElementById('rulesList');
+    if (rulesList) {
+      rulesList.innerHTML = tr.rules.map(r => `<li>${r}</li>`).join('');
+    }
+
+    setText('lblSignature', tr.lblSignature);
+    const sigCanvas = document.getElementById('signatureCanvas');
+    if (sigCanvas && !hasSignature) {
+      sigCanvas.textContent = tr.signatureCanvasMsg;
+    }
+    setText('signatureError', tr.errSignature);
+    const clearBtnEl = document.getElementById('clearBtn');
+    if (clearBtnEl) clearBtnEl.textContent = tr.clear;
+    setText('signatureNote', tr.signatureNote);
+    setText('acceptText', tr.acceptText);
+    setText('acceptCheckboxError', tr.errAccept);
+    setText('registerBtn', tr.registerBtn);
+    setText('successNoteStrong', tr.successNoteStrong);
+    setText('successNote', tr.successNote);
+
+    setText('consultTitle', tr.consultTitle);
+    setText('consultNote', tr.consultNote);
+    const closeBtn = document.querySelector('#consultationPanel button[data-i18n="close"]');
+    if (closeBtn) closeBtn.textContent = tr.close;
+
+    document.documentElement.lang = currentLang === 'ar' ? 'ar' : currentLang;
+    document.documentElement.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
+
+    if (document.querySelector('#tableConsultation thead')) {
+      const ths = document.querySelectorAll('#tableConsultation thead th');
+      if (ths.length === 8) {
+        ths[6].textContent = currentLang === 'ar' ? 'الحالة' : (currentLang === 'en' ? 'Status' : (currentLang === 'es' ? 'Estado' : (currentLang === 'de' ? 'Status' : 'Statut')));
+        ths[7].textContent = currentLang === 'ar' ? 'إجراء' : (currentLang === 'en' ? 'Action' : (currentLang === 'es' ? 'Acción' : (currentLang === 'de' ? 'Aktion' : 'Action')));
+      }
     }
   }
 
@@ -1149,6 +1603,7 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     showBanner('ok', msg);
     setTimeout(() => hideBanner(), 5000);
     if(currentUser && currentUser.role === 'admin') refreshAdmin(); else if(currentUser) refreshUser();
+    if(currentConsultUser) refreshConsultation();
   }
 
   async function envoyerWhatsAppAdmin(recordId) {
@@ -1221,7 +1676,19 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     if(confirm("Supprimer cet enregistrement ?")) {
       await database.ref('records/' + id).remove();
       await database.ref('documents/' + id).remove();
-      if(currentUser.role === 'admin') refreshAdmin(); else refreshUser();
+      if(currentUser && currentUser.role === 'admin') refreshAdmin(); else if(currentUser) refreshUser();
+      if(currentConsultUser) refreshConsultation();
+    }
+  }
+
+  async function supprimerEnregistrementConsultation(id, nom){
+    if(confirm(t('confirmDelete'))) {
+      await database.ref('records/' + id).remove();
+      await database.ref('documents/' + id).remove();
+      const msg = `La ligne pour ${nom} a été supprimée avec succès.`;
+      showBanner('ok', msg);
+      setTimeout(() => hideBanner(), 5000);
+      refreshConsultation();
     }
   }
 
@@ -1336,7 +1803,7 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     
     const date = document.getElementById('dateArrivee').value;
     if(!date) {
-      showError('dateArriveeError', 'Veuillez sélectionner une date d\'arrivée');
+      showError('dateArriveeError', t('errDateArrivee'));
       isValid = false;
     } else {
       hideError('dateArriveeError');
@@ -1344,7 +1811,7 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     
     const nbPers = document.getElementById('nbPers').value;
     if(!nbPers || nbPers < 1) {
-      showError('nbPersError', 'Veuillez entrer le nombre d\'invités (minimum 1)');
+      showError('nbPersError', t('errNbPers'));
       isValid = false;
     } else {
       hideError('nbPersError');
@@ -1352,7 +1819,7 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     
     const nom = document.getElementById('nomPrincipal').value.trim();
     if(!nom) {
-      showError('nomPrincipalError', 'Veuillez entrer le nom et prénom');
+      showError('nomPrincipalError', t('errNomPrincipal'));
       isValid = false;
     } else {
       hideError('nomPrincipalError');
@@ -1360,7 +1827,7 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     
     const typeDoc = document.getElementById('typeDocPrincipal').value;
     if(!typeDoc) {
-      showError('typeDocPrincipalError', 'Veuillez sélectionner un type de document');
+      showError('typeDocPrincipalError', t('errTypeDocPrincipal'));
       isValid = false;
     } else {
       hideError('typeDocPrincipalError');
@@ -1368,7 +1835,7 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     
     const doc = document.getElementById('docPrincipal').value.trim();
     if(!doc) {
-      showError('docPrincipalError', 'Veuillez entrer le numéro de document');
+      showError('docPrincipalError', t('errDocPrincipal'));
       isValid = false;
     } else {
       hideError('docPrincipalError');
@@ -1376,7 +1843,7 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     
     const nationalite = document.getElementById('nationalitePrincipal').value.trim();
     if(!nationalite) {
-      showError('nationalitePrincipalError', 'Veuillez entrer la nationalité');
+      showError('nationalitePrincipalError', t('errNationalitePrincipal'));
       isValid = false;
     } else {
       hideError('nationalitePrincipalError');
@@ -1390,25 +1857,25 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
       const nationaliteVal = (document.getElementById(`pers${i}Nationalite`)?.value || '').trim();
       
       if(!nomVal){
-        showBanner('err', `Veuillez renseigner le nom pour la personne ${i}`);
+        showBanner('err', `${t('personTitle')} ${i} : ${t('personNom')}`);
         isValid = false;
       }
       if(!docVal){
-        showBanner('err', `Veuillez renseigner le document pour la personne ${i}`);
+        showBanner('err', `${t('personTitle')} ${i} : ${t('personDoc')}`);
         isValid = false;
       }
       if(!typeDocVal){
-        showBanner('err', `Veuillez sélectionner le type de document pour la personne ${i}`);
+        showBanner('err', `${t('personTitle')} ${i} : ${t('personTypeDoc')}`);
         isValid = false;
       }
       if(!nationaliteVal){
-        showBanner('err', `Veuillez renseigner la nationalité pour la personne ${i}`);
+        showBanner('err', `${t('personTitle')} ${i} : ${t('personNationalite')}`);
         isValid = false;
       }
     }
     
     if(!hasSignature) {
-      showError('signatureError', 'Veuillez signer le document');
+      showError('signatureError', t('errSignature'));
       canvas.classList.add('error-border');
       isValid = false;
     } else {
@@ -1416,7 +1883,7 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     }
     
     if(!acceptCheckbox.checked) {
-      showError('acceptCheckboxError', 'Veuillez accepter les conditions');
+      showError('acceptCheckboxError', t('errAccept'));
       isValid = false;
     } else {
       hideError('acceptCheckboxError');
@@ -1469,12 +1936,13 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
       sent:false,
       signature: signatureData,
       timestamp: Date.now(),
-      residenceName: residenceName || ''
+      residenceName: residenceName || '',
+      language: currentLang
     };
 
     try {
       registerBtn.disabled = true;
-      registerBtn.textContent = '⏳ Enregistrement...';
+      registerBtn.textContent = '⏳ ' + t('registerBtn');
 
       const newRecordRef = database.ref('records').push();
       await newRecordRef.set(rec);
@@ -1511,12 +1979,12 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
 
       generatePDFAndDownload(rec, true);
       
-      registerBtn.textContent = 'Enregistrer et valider';
+      registerBtn.textContent = t('registerBtn');
       registerBtn.disabled = false;
       
     } catch (error) {
       showBanner('err',"Erreur lors de l'enregistrement. Réessayez.");
-      registerBtn.textContent = 'Enregistrer et valider';
+      registerBtn.textContent = t('registerBtn');
       registerBtn.disabled = false;
     }
   }
@@ -1587,6 +2055,7 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
       const today = new Date().toISOString().split('T')[0];
       document.getElementById('dateArrivee').value = today;
       
+      applyLanguage();
       genererChamps();
       initCanvas();
       setupSignatureEvents();
@@ -1613,46 +2082,14 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
         return;
       }
 
+      currentConsultUser = { id: userId, appart: user.appart, bat: user.bat };
+
       document.getElementById('loginCard').classList.add('hidden');
       document.getElementById('consultationPanel').classList.remove('hidden');
       document.getElementById('documentColumn').classList.add('hidden');
       
-      const snapRecords = await database.ref('records').once('value');
-      const records = snapRecords.val() || {};
-      const tbody = document.querySelector('#tableConsultation tbody');
-      tbody.innerHTML = '';
-      
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      let count = 1;
-      const sortedKeys = Object.keys(records).sort((a,b) => records[b].timestamp - records[a].timestamp);
-      
-      for(let id of sortedKeys){
-        const r = records[id];
-        if(r.appart === user.appart && r.bat === user.bat){
-          const recordDate = new Date(r.date);
-          recordDate.setHours(0, 0, 0, 0);
-          
-          if(recordDate >= today){
-            const nbPers = r.personnes ? Object.keys(r.personnes).length + 1 : 1;
-            const statut = r.sent ? '<span class="statut-ok">✅ Envoyé</span>' : '<span class="statut-attente">⏳ En attente</span>';
-            tbody.innerHTML += `<tr>
-              <td>${count++}</td>
-              <td>${r.appart}</td>
-              <td>${r.bat}</td>
-              <td>${r.nom}</td>
-              <td>${nbPers}</td>
-              <td>${r.date}</td>
-              <td>${statut}</td>
-            </tr>`;
-          }
-        }
-      }
-      
-      if(tbody.innerHTML === ''){
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#666;">Aucun enregistrement pour la semaine en cours.</td></tr>`;
-      }
+      applyLanguage();
+      await refreshConsultation();
       
       hideBanner();
       
@@ -1661,10 +2098,73 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     }
   }
 
+  async function refreshConsultation(){
+    if(!currentConsultUser) return;
+    try {
+      const snapRecords = await database.ref('records').once('value');
+      const records = snapRecords.val() || {};
+      const tbody = document.querySelector('#tableConsultation tbody');
+      tbody.innerHTML = '';
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const maxDate = new Date(today);
+      maxDate.setDate(maxDate.getDate() + 20);
+      
+      let count = 1;
+      const sortedKeys = Object.keys(records).sort((a,b) => records[b].timestamp - records[a].timestamp);
+      
+      for(let id of sortedKeys){
+        const r = records[id];
+        if(r.appart === currentConsultUser.appart && r.bat === currentConsultUser.bat){
+          const recordDate = new Date(r.date);
+          recordDate.setHours(0, 0, 0, 0);
+          
+          if(recordDate >= today && recordDate <= maxDate){
+            const nbPers = r.personnes ? Object.keys(r.personnes).length + 1 : 1;
+            let statut, statutClass;
+            
+            if(r.deleted){
+              statut = t('statutSupprime');
+              statutClass = 'statut-supprime';
+            } else if(r.sent){
+              statut = t('statutEnvoye');
+              statutClass = 'statut-ok';
+            } else {
+              statut = t('statutEnAttente');
+              statutClass = 'statut-attente';
+            }
+            
+            const delBtnLabel = t('deleteBtn');
+            const escapedNom = (r.nom || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            
+            tbody.innerHTML += `<tr>
+              <td>${count++}</td>
+              <td>${r.appart}</td>
+              <td>${r.bat}</td>
+              <td>${r.nom}</td>
+              <td>${nbPers}</td>
+              <td>${r.date}</td>
+              <td class="${statutClass}">${statut}</td>
+              <td><button class="btn-delete" onclick="supprimerEnregistrementConsultation('${id}','${escapedNom}')">${delBtnLabel}</button></td>
+            </tr>`;
+          }
+        }
+      }
+      
+      if(tbody.innerHTML === ''){
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#666;">${t('noRecords')}</td></tr>`;
+      }
+    } catch(e){
+      console.error(e);
+    }
+  }
+
   function fermerConsultation(){
     document.getElementById('consultationPanel').classList.add('hidden');
     document.getElementById('documentColumn').classList.remove('hidden');
     document.getElementById('loginCard').classList.remove('hidden');
+    currentConsultUser = null;
     showBanner('info', "Vous pouvez vous connecter.");
   }
 
@@ -1672,19 +2172,20 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     const nb = Math.max(1, parseInt(document.getElementById('nbPers').value || '1', 10));
     const cont = document.getElementById('personnes');
     cont.innerHTML = '';
+    const tr = TRANSLATIONS[currentLang];
     
     for(let i=2; i<=nb; i++){
       const group = document.createElement('div');
       group.className = 'person-group';
       
       const title = document.createElement('h4');
-      title.textContent = `Personne ${i}`;
+      title.textContent = `${tr ? tr.personTitle : 'Personne'} ${i}`;
       title.style.marginBottom = '10px';
       title.style.fontWeight = 'bold';
       group.appendChild(title);
       
       const nomLab = document.createElement('label');
-      nomLab.textContent = 'Nom & Prénom *';
+      nomLab.textContent = tr ? tr.personNom : 'Nom & Prénom *';
       group.appendChild(nomLab);
       
       const nomInp = document.createElement('input');
@@ -1692,11 +2193,11 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
       nomInp.id = `pers${i}Nom`;
       nomInp.required = true;
       nomInp.className = 'guest-input';
-      nomInp.placeholder = `Nom complet personne ${i}`;
+      nomInp.placeholder = tr ? tr.personNomPh + ' ' + i : `Nom complet personne ${i}`;
       group.appendChild(nomInp);
       
       const docTypeLab = document.createElement('label');
-      docTypeLab.textContent = 'Type de document *';
+      docTypeLab.textContent = tr ? tr.personTypeDoc : 'Type de document *';
       docTypeLab.style.marginTop = '10px';
       group.appendChild(docTypeLab);
       
@@ -1705,14 +2206,14 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
       docTypeInp.required = true;
       docTypeInp.className = 'guest-input';
       docTypeInp.innerHTML = `
-        <option value="">Sélectionner</option>
-        <option value="Passeport">Passeport</option>
-        <option value="Carte d'identité">Carte d'identité</option>
+        <option value="">${tr ? tr.optSelect : 'Sélectionner'}</option>
+        <option value="Passeport">${tr ? tr.optPasseport : 'Passeport'}</option>
+        <option value="Carte d'identité">${tr ? tr.optCIN : "Carte d'identité"}</option>
       `;
       group.appendChild(docTypeInp);
       
       const docLab = document.createElement('label');
-      docLab.textContent = 'Numéro de document *';
+      docLab.textContent = tr ? tr.personDoc : 'Numéro de document *';
       docLab.style.marginTop = '10px';
       group.appendChild(docLab);
       
@@ -1721,11 +2222,11 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
       docInp.id = `pers${i}Doc`;
       docInp.required = true;
       docInp.className = 'guest-input';
-      docInp.placeholder = `Document personne ${i}`;
+      docInp.placeholder = tr ? tr.personDocPh + ' ' + i : `Document personne ${i}`;
       group.appendChild(docInp);
       
       const nationaliteLab = document.createElement('label');
-      nationaliteLab.textContent = 'Nationalité *';
+      nationaliteLab.textContent = tr ? tr.personNationalite : 'Nationalité *';
       nationaliteLab.style.marginTop = '10px';
       group.appendChild(nationaliteLab);
       
@@ -1734,7 +2235,7 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
       nationaliteInp.id = `pers${i}Nationalite`;
       nationaliteInp.required = true;
       nationaliteInp.className = 'guest-input';
-      nationaliteInp.placeholder = `Nationalité personne ${i}`;
+      nationaliteInp.placeholder = tr ? tr.personNationalitePh + ' ' + i : `Nationalité personne ${i}`;
       group.appendChild(nationaliteInp);
       
       cont.appendChild(group);
