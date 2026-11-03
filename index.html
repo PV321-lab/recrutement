@@ -1,4 +1,8 @@
-Voici le code complet avec les modifications demandées : sélecteur de langue (FR/ES/EN/DE/AR) pour le formulaire invité avec traduction complète, et la vue consultation en lecture seule affichant les enregistrements en cours + 20 jours avec colonne de statut (envoyé/supprimé) et bouton supprimer.
+Voici le code complet corrigé, sans commentaires, avec les modifications demandées :
+
+1. Suppression de tous les commentaires
+2. Bouton supprimer : au lieu de supprimer complètement l'enregistrement, il marque l'enregistrement comme deleted: true en base en gardant le nom du réservateur. La colonne affiche traité / non traité au lieu de envoyé/en attente, et le bouton supprimer apparaît dans cette colonne (pour marquer comme traité)
+3. Texte du règlement intérieur configurable par l'utilisateur dans son espace, sauvegardé en base par appartement
 
 ```html
 <html lang="fr">
@@ -19,7 +23,7 @@ Voici le code complet avec les modifications demandées : sélecteur de langue (
     .card { background:#fff; padding:16px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.12); margin-bottom:16px; }
     label { font-weight:600; display:block; margin-top:10px; }
     input, select, button { font-size:16px; }
-    input, select { width:100%; padding:10px; margin-top:6px; border:1px solid #ccc; border-radius:8px; }
+    input, select, textarea { width:100%; padding:10px; margin-top:6px; border:1px solid #ccc; border-radius:8px; box-sizing:border-box; }
     input[readonly]{ background:#e9ecef; }
     button { margin-top:14px; padding:10px 14px; border:none; border-radius:10px; background:var(--c1); color:#fff; cursor:pointer; }
     button:disabled{ opacity:.6; cursor:not-allowed; }
@@ -42,6 +46,7 @@ Voici le code complet avec les modifications demandées : sélecteur de langue (
     .consent-container { margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6; }
     .consent-text { max-height: 150px; overflow-y: auto; padding: 10px; background: white; border-radius: 5px; border: 1px solid #ced4da; margin: 10px 0; }
     .btn-delete { background: var(--err) !important; margin-left: 5px; }
+    .btn-treat { background: var(--ok) !important; }
     .signature-area { margin: 40px 0; padding: 20px; border: 2px solid #ddd; border-radius: 8px; text-align: center; }
     .signature-title { font-size: 18px; margin-bottom: 20px; color: #2c3e50; }
     .signature-canvas { width: 100%; height: 200px; border: 1px solid #ccc; border-radius: 5px; background: white; cursor: crosshair; margin-bottom: 20px; }
@@ -221,6 +226,26 @@ Voici le code complet avec les modifications demandées : sélecteur de langue (
     .residence-name-setting label {
       color: #2e7d32;
     }
+    .rules-settings {
+      background: #e3f2fd;
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid #90caf9;
+      margin-top: 15px;
+    }
+    .rules-settings label {
+      color: #1565c0;
+      margin-top: 0;
+    }
+    .rules-settings textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #90caf9;
+      border-radius: 8px;
+      font-family: Arial, sans-serif;
+      resize: vertical;
+      min-height: 180px;
+    }
     .statut-ok { color: #0f9d58; font-weight: bold; }
     .statut-attente { color: #f4b400; font-weight: bold; }
     .statut-supprime { color: #d93025; font-weight: bold; }
@@ -369,6 +394,14 @@ Voici le code complet avec les modifications demandées : sélecteur de langue (
           <button onclick="saveResidenceName()" style="margin-top: 10px; background: var(--ok);">Enregistrer le nom</button>
           <p id="residenceMsg" class="banner hidden" style="margin-top: 10px;"></p>
         </div>
+
+        <div class="rules-settings">
+          <label>Règlement intérieur de l'appartement (configurable)</label>
+          <p class="note" style="margin: 8px 0;">Ce texte sera affiché à l'invité dans le formulaire d'enregistrement.</p>
+          <textarea id="rulesInput" rows="10" placeholder="Saisissez ici les règles de votre appartement..."></textarea>
+          <button onclick="saveRules()" style="margin-top: 10px; background: #1565c0;">Enregistrer le règlement</button>
+          <p id="rulesMsg" class="banner hidden" style="margin-top: 10px;"></p>
+        </div>
         
         <div class="email-settings">
           <h4>Notifications par Email</h4>
@@ -494,14 +527,7 @@ Voici le code complet avec les modifications demandées : sélecteur de langue (
 
             <div class="rules-container" id="rulesContainer">
               <h4 id="rulesTitle">Règlement intérieur à respecter :</h4>
-              <ul id="rulesList">
-                <li><strong>1. Si vous êtes des Couples marocains: :</strong> selon la loi marocaine Ce logement autorise que les couples mariés . </li>
-                <li><strong>2. Tranquillité et bruit :</strong> Silence total obligatoire après 23h00. Pas de musique forte, cris ou nuisances sonores à toute heure.</li>
-                <li><strong>3. Tabagisme :</strong> Fumer est strictement interdit à l'intérieur. Autorisé uniquement en extérieur (terrasse ou jardin), avec obligation de nettoyer les mégots et cendres.</li>
-                <li><strong>4. Nombre de personnes :</strong> Maximum 5 personnes autorisées dans l'appartement.</li>
-                <li><strong>5. Piscine :</strong> Douche obligatoire avant la baignade. Pas de verre ni objets fragiles autour de la piscine. Surveillance permanente des enfants par un adulte. Horaires : fermeture à 20h00. Pas de courses ni plongeons.</li>
-                <li><strong>6. Propreté et entretien :</strong> Maintenir les lieux propres en permanence. Vider régulièrement les poubelles. Respecter les sols et surfaces (pas de traces, pas de nourriture hors cuisine).</li>
-              </ul>
+              <ul id="rulesList"></ul>
             </div>
 
             <div class="signature-area">
@@ -580,6 +606,15 @@ Voici le code complet avec les modifications demandées : sélecteur de langue (
 <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 
 <script>
+  const DEFAULT_RULES = [
+    "<strong>1. Si vous êtes des Couples marocains :</strong> selon la loi marocaine ce logement autorise que les couples mariés.",
+    "<strong>2. Tranquillité et bruit :</strong> Silence total obligatoire après 23h00. Pas de musique forte, cris ou nuisances sonores à toute heure.",
+    "<strong>3. Tabagisme :</strong> Fumer est strictement interdit à l'intérieur. Autorisé uniquement en extérieur (terrasse ou jardin), avec obligation de nettoyer les mégots et cendres.",
+    "<strong>4. Nombre de personnes :</strong> Maximum 5 personnes autorisées dans l'appartement.",
+    "<strong>5. Piscine :</strong> Douche obligatoire avant la baignade. Pas de verre ni objets fragiles autour de la piscine. Surveillance permanente des enfants par un adulte. Horaires : fermeture à 20h00. Pas de courses ni plongeons.",
+    "<strong>6. Propreté et entretien :</strong> Maintenir les lieux propres en permanence. Vider régulièrement les poubelles. Respecter les sols et surfaces (pas de traces, pas de nourriture hors cuisine)."
+  ];
+
   const TRANSLATIONS = {
     fr: {
       langLabel: "🌐 Langue / Language :",
@@ -605,14 +640,7 @@ Voici le code complet avec les modifications demandées : sélecteur de langue (
       optPasseport: "Passeport",
       optCIN: "Carte d'identité",
       rulesTitle: "Règlement intérieur à respecter :",
-      rules: [
-        "<strong>1. Si vous êtes des Couples marocains :</strong> selon la loi marocaine ce logement autorise que les couples mariés.",
-        "<strong>2. Tranquillité et bruit :</strong> Silence total obligatoire après 23h00. Pas de musique forte, cris ou nuisances sonores à toute heure.",
-        "<strong>3. Tabagisme :</strong> Fumer est strictement interdit à l'intérieur. Autorisé uniquement en extérieur (terrasse ou jardin), avec obligation de nettoyer les mégots et cendres.",
-        "<strong>4. Nombre de personnes :</strong> Maximum 5 personnes autorisées dans l'appartement.",
-        "<strong>5. Piscine :</strong> Douche obligatoire avant la baignade. Pas de verre ni objets fragiles autour de la piscine. Surveillance permanente des enfants par un adulte. Horaires : fermeture à 20h00. Pas de courses ni plongeons.",
-        "<strong>6. Propreté et entretien :</strong> Maintenir les lieux propres en permanence. Vider régulièrement les poubelles. Respecter les sols et surfaces (pas de traces, pas de nourriture hors cuisine)."
-      ],
+      rules: DEFAULT_RULES,
       lblSignature: "Signature *",
       signatureCanvasMsg: "Votre navigateur ne supporte pas la signature.",
       errSignature: "Veuillez signer le document",
@@ -634,14 +662,14 @@ Voici le code complet avec les modifications demandées : sélecteur de langue (
       consultTitle: "Liste des enregistrements - En cours & 20 prochains jours",
       consultNote: "Enregistrements à partir d'aujourd'hui (lecture seule) :",
       close: "Fermer",
-      statutEnvoye: "✅ Envoyé",
-      statutEnAttente: "⏳ En attente",
-      statutSupprime: "🗑️ Supprimé",
+      statutTraite: "✅ Traité",
+      statutNonTraite: "⏳ Non traité",
       noRecords: "Aucun enregistrement pour la période.",
       deleteBtn: "Suppr.",
-      confirmDelete: "Supprimer cet enregistrement ?",
-      sendBtn: "Envoyer",
-      alreadySent: "Envoyé"
+      treatBtn: "Traiter",
+      confirmDelete: "Marquer cet enregistrement comme traité ?",
+      colStatut: "Statut",
+      colAction: "Action"
     },
     en: {
       langLabel: "🌐 Language / Langue :",
@@ -696,14 +724,14 @@ Voici le code complet avec les modifications demandées : sélecteur de langue (
       consultTitle: "Records list - Current & next 20 days",
       consultNote: "Records from today (read only):",
       close: "Close",
-      statutEnvoye: "✅ Sent",
-      statutEnAttente: "⏳ Pending",
-      statutSupprime: "🗑️ Deleted",
+      statutTraite: "✅ Processed",
+      statutNonTraite: "⏳ Not processed",
       noRecords: "No records for the period.",
       deleteBtn: "Del.",
-      confirmDelete: "Delete this record?",
-      sendBtn: "Send",
-      alreadySent: "Sent"
+      treatBtn: "Process",
+      confirmDelete: "Mark this record as processed?",
+      colStatut: "Status",
+      colAction: "Action"
     },
     es: {
       langLabel: "🌐 Idioma / Language :",
@@ -758,14 +786,14 @@ Voici le code complet avec les modifications demandées : sélecteur de langue (
       consultTitle: "Lista de registros - En curso y próximos 20 días",
       consultNote: "Registros a partir de hoy (solo lectura):",
       close: "Cerrar",
-      statutEnvoye: "✅ Enviado",
-      statutEnAttente: "⏳ Pendiente",
-      statutSupprime: "🗑️ Eliminado",
+      statutTraite: "✅ Procesado",
+      statutNonTraite: "⏳ No procesado",
       noRecords: "Ningún registro para el período.",
       deleteBtn: "Elim.",
-      confirmDelete: "¿Eliminar este registro?",
-      sendBtn: "Enviar",
-      alreadySent: "Enviado"
+      treatBtn: "Procesar",
+      confirmDelete: "¿Marcar este registro como procesado?",
+      colStatut: "Estado",
+      colAction: "Acción"
     },
     de: {
       langLabel: "🌐 Sprache / Language :",
@@ -820,14 +848,14 @@ Voici le code complet avec les modifications demandées : sélecteur de langue (
       consultTitle: "Registrierungsliste - Aktuell & nächste 20 Tage",
       consultNote: "Registrierungen ab heute (nur Lesen):",
       close: "Schließen",
-      statutEnvoye: "✅ Gesendet",
-      statutEnAttente: "⏳ Ausstehend",
-      statutSupprime: "🗑️ Gelöscht",
+      statutTraite: "✅ Bearbeitet",
+      statutNonTraite: "⏳ Nicht bearbeitet",
       noRecords: "Keine Registrierungen für den Zeitraum.",
       deleteBtn: "Löschen",
-      confirmDelete: "Diese Registrierung löschen?",
-      sendBtn: "Senden",
-      alreadySent: "Gesendet"
+      treatBtn: "Bearbeiten",
+      confirmDelete: "Diese Registrierung als bearbeitet markieren?",
+      colStatut: "Status",
+      colAction: "Aktion"
     },
     ar: {
       langLabel: "🌐 اللغة / Language :",
@@ -882,18 +910,20 @@ Voici le code complet avec les modifications demandées : sélecteur de langue (
       consultTitle: "قائمة التسجيلات - الحالية و20 يومًا القادمة",
       consultNote: "التسجيلات من اليوم (قراءة فقط):",
       close: "إغلاق",
-      statutEnvoye: "✅ تم الإرسال",
-      statutEnAttente: "⏳ في الانتظار",
-      statutSupprime: "🗑️ محذوف",
+      statutTraite: "✅ تمت المعالجة",
+      statutNonTraite: "⏳ غير معالج",
       noRecords: "لا توجد تسجيلات للفترة.",
       deleteBtn: "حذف",
-      confirmDelete: "حذف هذا التسجيل؟",
-      sendBtn: "إرسال",
-      alreadySent: "تم الإرسال"
+      treatBtn: "معالجة",
+      confirmDelete: "وضع علامة على هذا التسجيل كمعالج؟",
+      colStatut: "الحالة",
+      colAction: "إجراء"
     }
   };
 
   let currentLang = 'fr';
+  let currentRules = DEFAULT_RULES.slice();
+  let currentRulesUser = null;
 
   (function(){
     emailjs.init("IWJc8rbQr6EMWWQbs");
@@ -909,7 +939,7 @@ Voici le code complet avec les modifications demandées : sélecteur de langue (
     appId: "1:253833375693:web:a1d68bef41916c86be5e84",
     measurementId: "G-BS2EBMM7T3"
   };
-  
+
   try {
     if (!firebase.apps.length) {
       firebase.initializeApp(firebaseConfig);
@@ -932,13 +962,13 @@ Voici le code complet avec les modifications demandées : sélecteur de langue (
   let customMessage = '';
   let residenceName = '';
   let currentConsultUser = null;
+  let customRulesText = null;
 
   function encrypt(text) {
     if (!text) return '';
     try {
       return CryptoJS.AES.encrypt(text, 'PremiumVillage2024Key').toString();
     } catch (e) {
-      console.error("Encryption error:", e);
       return text;
     }
   }
@@ -949,7 +979,6 @@ Voici le code complet avec les modifications demandées : sélecteur de langue (
       const bytes = CryptoJS.AES.decrypt(text, 'PremiumVillage2024Key');
       return bytes.toString(CryptoJS.enc.Utf8);
     } catch (e) {
-      console.error("Decryption error:", e);
       return text;
     }
   }
@@ -958,6 +987,13 @@ Voici le code complet avec les modifications demandées : sélecteur de langue (
     return TRANSLATIONS[currentLang] && TRANSLATIONS[currentLang][key] !== undefined
       ? TRANSLATIONS[currentLang][key]
       : (TRANSLATIONS.fr[key] !== undefined ? TRANSLATIONS.fr[key] : key);
+  }
+
+  function getRulesForDisplay() {
+    if (currentRulesUser && currentRulesUser.trim() !== '') {
+      return currentRulesUser.split('\n').filter(l => l.trim() !== '').map(l => l);
+    }
+    return t('rules');
   }
 
   function changeLanguage(lang) {
@@ -1014,7 +1050,7 @@ Voici le code complet avec les modifications demandées : sélecteur de langue (
     setText('rulesTitle', tr.rulesTitle);
     const rulesList = document.getElementById('rulesList');
     if (rulesList) {
-      rulesList.innerHTML = tr.rules.map(r => `<li>${r}</li>`).join('');
+      rulesList.innerHTML = getRulesForDisplay().map(r => `<li>${r}</li>`).join('');
     }
 
     setText('lblSignature', tr.lblSignature);
@@ -1040,12 +1076,10 @@ Voici le code complet avec les modifications demandées : sélecteur de langue (
     document.documentElement.lang = currentLang === 'ar' ? 'ar' : currentLang;
     document.documentElement.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
 
-    if (document.querySelector('#tableConsultation thead')) {
-      const ths = document.querySelectorAll('#tableConsultation thead th');
-      if (ths.length === 8) {
-        ths[6].textContent = currentLang === 'ar' ? 'الحالة' : (currentLang === 'en' ? 'Status' : (currentLang === 'es' ? 'Estado' : (currentLang === 'de' ? 'Status' : 'Statut')));
-        ths[7].textContent = currentLang === 'ar' ? 'إجراء' : (currentLang === 'en' ? 'Action' : (currentLang === 'es' ? 'Acción' : (currentLang === 'de' ? 'Aktion' : 'Action')));
-      }
+    const ths = document.querySelectorAll('#tableConsultation thead th');
+    if (ths.length === 8) {
+      ths[6].textContent = tr.colStatut;
+      ths[7].textContent = tr.colAction;
     }
   }
 
@@ -1055,9 +1089,9 @@ Voici le code complet avec les modifications demandées : sélecteur de langue (
     b.textContent = text;
     b.classList.remove('hidden');
   }
-  
-  function hideBanner(){ 
-    document.getElementById('banner').classList.add('hidden'); 
+
+  function hideBanner(){
+    document.getElementById('banner').classList.add('hidden');
   }
 
   function showInlineMsg(elId, type, text){
@@ -1066,7 +1100,7 @@ Voici le code complet avec les modifications demandées : sélecteur de langue (
     el.className = 'banner ' + type;
     el.classList.remove('hidden');
   }
-  
+
   function hideInlineMsg(elId){
     const el = document.getElementById(elId);
     el.classList.add('hidden');
@@ -1079,18 +1113,18 @@ Voici le code complet avec les modifications demandées : sélecteur de langue (
       showBanner('warn', "Session expirée (inactivité). Veuillez vous reconnecter.");
     }, SESSION_TIMEOUT_MS);
   }
-  
+
   function stopSessionTimer(){
-    if(sessionTimer){ 
-      clearTimeout(sessionTimer); 
-      sessionTimer = null; 
+    if(sessionTimer){
+      clearTimeout(sessionTimer);
+      sessionTimer = null;
     }
   }
-  
+
   function resetSessionTimer(){
     if(currentUser) startSessionTimer();
   }
-  
+
   ['click','keydown','touchstart'].forEach(evt=>{
     document.addEventListener(evt, resetSessionTimer, {passive:true});
   });
@@ -1128,7 +1162,7 @@ Voici le code complet avec les modifications demandées : sélecteur de langue (
         } catch (e) {
           console.error("Firebase Auth failed for admin:", e);
         }
-        
+
         currentUser = { role:'admin' };
         document.getElementById('loginCard').classList.add('hidden');
         document.getElementById('adminPanel').classList.remove('hidden');
@@ -1143,16 +1177,16 @@ Voici le code complet avec les modifications demandées : sélecteur de langue (
 
       const snapshot = await database.ref('users/' + u).once('value');
       const user = snapshot.val();
-      
+
       if(user && user.pass === p){
         currentUser = { role:'user', id:u, appart:user.appart, bat:user.bat };
-        
+
         const settingsSnapshot = await database.ref('settings/' + u).once('value');
         if(settingsSnapshot.exists()){
           userSettings = settingsSnapshot.val();
           document.getElementById('maxRecords').value = userSettings.maxRecords || 10;
         }
-        
+
         const emailSnapshot = await database.ref('emailSettings/' + u).once('value');
         if(emailSnapshot.exists()){
           emailSettings = emailSnapshot.val();
@@ -1162,19 +1196,25 @@ Voici le code complet avec les modifications demandées : sélecteur de langue (
             document.getElementById('guardEmail').value = decrypt(emailSettings.guardEmail || '');
           }
         }
-        
+
         const customMsgSnapshot = await database.ref('customMessages/' + u).once('value');
         if(customMsgSnapshot.exists()){
           customMessage = customMsgSnapshot.val();
           document.getElementById('customSuccessMessage').value = customMessage;
         }
-        
+
         const residenceSnapshot = await database.ref('residenceName/' + u).once('value');
         if(residenceSnapshot.exists()){
           residenceName = residenceSnapshot.val();
           document.getElementById('residenceNameInput').value = residenceName;
         }
-        
+
+        const rulesSnapshot = await database.ref('rules/' + u).once('value');
+        if(rulesSnapshot.exists()){
+          customRulesText = rulesSnapshot.val();
+          document.getElementById('rulesInput').value = customRulesText;
+        }
+
         document.getElementById('loginCard').classList.add('hidden');
         document.getElementById('userPanel').classList.remove('hidden');
         document.getElementById('documentColumn').classList.remove('hidden');
@@ -1212,6 +1252,20 @@ Voici le code complet avec les modifications demandées : sélecteur de langue (
     }
   }
 
+  async function saveRules(){
+    const txt = document.getElementById('rulesInput').value;
+    try {
+      await database.ref('rules/' + currentUser.id).set(txt);
+      customRulesText = txt;
+      showInlineMsg('rulesMsg', 'ok', 'Règlement intérieur enregistré avec succès.');
+      setTimeout(() => {
+        hideInlineMsg('rulesMsg');
+      }, 3000);
+    } catch (error) {
+      showInlineMsg('rulesMsg', 'err', 'Erreur lors de l\'enregistrement du règlement.');
+    }
+  }
+
   async function saveCustomMessage(){
     const msg = document.getElementById('customSuccessMessage').value;
     try {
@@ -1238,20 +1292,20 @@ Voici le code complet avec les modifications demandées : sélecteur de langue (
 
   async function saveEmailSettings(){
     const enableEmail = document.getElementById('enableEmail').value;
-    
+
     if(enableEmail === 'oui'){
       const guardEmail = document.getElementById('guardEmail').value.trim();
-      
+
       if(!guardEmail){
         showInlineMsg('emailMsg','warn',"Veuillez entrer l'email du destinataire.");
         return;
       }
-      
+
       if(!guardEmail.includes('@')){
         showInlineMsg('emailMsg','warn',"Veuillez entrer une adresse email valide.");
         return;
       }
-      
+
       emailSettings = {
         enableEmail: enableEmail,
         guardEmail: encrypt(guardEmail)
@@ -1261,7 +1315,7 @@ Voici le code complet avec les modifications demandées : sélecteur de langue (
         enableEmail: 'non'
       };
     }
-    
+
     try {
       await database.ref('emailSettings/' + currentUser.id).set(emailSettings);
       showInlineMsg('emailMsg','ok',"Paramètres email enregistrés avec succès.");
@@ -1275,20 +1329,20 @@ Voici le code complet avec les modifications demandées : sélecteur de langue (
       showInlineMsg('emailMsg','warn',"Veuillez d'abord activer les notifications par email.");
       return;
     }
-    
+
     const guardEmail = decrypt(emailSettings.guardEmail || '');
-    
+
     if(!guardEmail){
       showInlineMsg('emailMsg','warn',"Veuillez d'abord configurer l'email du destinataire.");
       return;
     }
-    
+
     try {
       await emailjs.send("service_qnnmvxe", "template_4e2gb4n", {
         email: guardEmail,
         message: "Ceci est un email de test depuis l'application Enregistrement des invités.\n\nSi vous recevez cet email, la configuration est correcte."
       });
-      
+
       showInlineMsg('emailMsg','ok',"Email de test envoyé avec succès !");
     } catch (error) {
       showInlineMsg('emailMsg','err',"Erreur d'envoi: " + (error.text || "Erreur inconnue"));
@@ -1299,15 +1353,15 @@ Voici le code complet avec les modifications demandées : sélecteur de langue (
     if(emailSettings.enableEmail !== 'oui'){
       return { success: true, message: "Emails désactivés" };
     }
-    
+
     const guardEmail = decrypt(emailSettings.guardEmail || '');
-    
+
     if(!guardEmail){
       return { success: false, error: "Email du destinataire non configuré" };
     }
-    
+
     const totalPersons = record.personnes ? Object.keys(record.personnes).length + 1 : 1;
-    
+
     try {
       await emailjs.send("service_qnnmvxe", "template_4e2gb4n", {
         email: guardEmail,
@@ -1323,7 +1377,7 @@ Numéro de document: ${record.doc}
 
 Cette réservation a été enregistrée via l'application Enregistrement des invités.`
       });
-      
+
       await database.ref('records/' + record.id).update({ sent: true, sentAt: Date.now() });
       return { success: true, message: "Email envoyé avec succès" };
     } catch (error) {
@@ -1334,16 +1388,16 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
   async function updateUserSettings(){
     const maxRecords = parseInt(document.getElementById('maxRecords').value) || 10;
     const newPassword = document.getElementById('newPassword').value.trim();
-    
+
     if(maxRecords < 1){
       showInlineMsg('settingsMsg','warn',"Le nombre d'enregistrements doit être supérieur à 0.");
       return;
     }
-    
+
     try {
       userSettings.maxRecords = maxRecords;
       await database.ref('settings/' + currentUser.id).set(userSettings);
-      
+
       if(newPassword){
         await database.ref('users/' + currentUser.id).update({ pass: newPassword });
         document.getElementById('newPassword').value = '';
@@ -1351,7 +1405,7 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
       } else {
         showInlineMsg('settingsMsg','ok',"Paramètres mis à jour avec succès.");
       }
-      
+
       refreshUser();
     } catch (error) {
       showInlineMsg('settingsMsg','err',"Erreur lors de la mise à jour.");
@@ -1363,7 +1417,7 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     const bat = document.getElementById('batAdmin').value.trim();
     const pass = document.getElementById('passAdmin').value.trim();
     if(!app || !bat || !pass) return;
-    
+
     const id = app + bat;
     try {
       await database.ref('users/' + id).set({ appart:app, bat:bat, pass:pass });
@@ -1402,14 +1456,18 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     const sortedKeys = Object.keys(records).sort((a,b) => records[b].timestamp - records[a].timestamp);
     for(let id of sortedKeys){
       const r = records[id];
+      if(r.deleted) continue;
       const persStr = r.personnes ? Object.values(r.personnes).map(p => p.nom).join(', ') : '-';
       const nbPers = r.personnes ? Object.keys(r.personnes).length + 1 : 1;
+      const isTreated = r.treated === true;
+      const statut = isTreated ? '✅ Traité' : '⏳ Non traité';
+      const statutClass = isTreated ? 'statut-ok' : 'statut-attente';
       tbodyAdmin.innerHTML += `<tr>
         <td>${j++}</td><td>${r.appart}</td><td>${r.bat}</td><td>${r.nom}</td><td>${r.doc}</td><td>${r.typeDoc}</td><td>${r.nationalite}</td>
         <td>${nbPers}</td><td>${persStr}</td><td>${r.date}</td>
         <td><button onclick="afficherDocument('${id}')">Voir</button></td>
-        <td><button onclick="envoyerWhatsAppAdmin('${id}')" style="background:#25D366;">WhatsApp</button><button class="btn-delete" onclick="supprimerEnregistrement('${id}')">Suppr.</button></td>
-        <td>${r.sent ? '✅ Envoyé' : '⏳ En attente'}</td>
+        <td><button onclick="envoyerWhatsAppAdmin('${id}')" style="background:#25D366;">WhatsApp</button></td>
+        <td class="${statutClass}">${statut}${isTreated ? '' : `<br><button class="btn-treat" onclick="marquerTraite('${id}')">Traiter</button>`}</td>
       </tr>`;
     }
   }
@@ -1423,27 +1481,72 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     const sortedKeys = Object.keys(records).sort((a,b) => records[b].timestamp - records[a].timestamp);
     for(let id of sortedKeys){
       const r = records[id];
+      if(r.deleted) continue;
       if(r.appart === currentUser.appart && r.bat === currentUser.bat){
         const persStr = r.personnes ? Object.values(r.personnes).map(p => p.nom).join(', ') : '-';
         const nbPers = r.personnes ? Object.keys(r.personnes).length + 1 : 1;
+        const isTreated = r.treated === true;
+        const statut = isTreated ? '✅ Traité' : '⏳ Non traité';
+        const statutClass = isTreated ? 'statut-ok' : 'statut-attente';
         tbody.innerHTML += `<tr>
           <td>${i++}</td><td>${r.nom}</td><td>${r.doc}</td><td>${r.typeDoc}</td><td>${r.nationalite}</td>
           <td>${nbPers}</td><td>${persStr}</td><td>${r.date}</td>
           <td><button onclick="afficherDocument('${id}')">Voir</button></td>
-          <td>${r.sent ? '✅ Envoyé' : '⏳ En attente'}</td>
-          <td><button onclick="envoyerWhatsAppUser('${id}')" style="background:#25D366;">WhatsApp</button><button class="btn-delete" onclick="supprimerEnregistrement('${id}')">Suppr.</button></td>
+          <td class="${statutClass}">${statut}</td>
+          <td><button onclick="envoyerWhatsAppUser('${id}')" style="background:#25D366;">WhatsApp</button>${isTreated ? '' : `<button class="btn-treat" onclick="marquerTraite('${id}')">Traiter</button>`}</td>
         </tr>`;
       }
+    }
+  }
+
+  async function marquerTraite(id){
+    try {
+      const snap = await database.ref('records/' + id).once('value');
+      const rec = snap.val();
+      if(!rec) return;
+      await database.ref('records/' + id).update({
+        treated: true,
+        treatedAt: Date.now(),
+        treatedNom: rec.nom
+      });
+      showBanner('ok', `Enregistrement de ${rec.nom} marqué comme traité.`);
+      setTimeout(() => hideBanner(), 4000);
+      if(currentUser && currentUser.role === 'admin') refreshAdmin();
+      else if(currentUser) refreshUser();
+      if(currentConsultUser) refreshConsultation();
+    } catch(e){
+      console.error(e);
+    }
+  }
+
+  async function marquerSupprime(id){
+    try {
+      const snap = await database.ref('records/' + id).once('value');
+      const rec = snap.val();
+      if(!rec) return;
+      await database.ref('records/' + id).update({
+        deleted: true,
+        deletedAt: Date.now(),
+        deletedNom: rec.nom
+      });
+      await database.ref('documents/' + id).remove();
+      showBanner('ok', `Enregistrement de ${rec.nom} supprimé.`);
+      setTimeout(() => hideBanner(), 4000);
+      if(currentUser && currentUser.role === 'admin') refreshAdmin();
+      else if(currentUser) refreshUser();
+      if(currentConsultUser) refreshConsultation();
+    } catch(e){
+      console.error(e);
     }
   }
 
   function generatePDFBlob(rec) {
     const pdf = new jsPDF('p', 'mm', 'a4');
     let yPos = 20;
-    
+
     const displayResidence = rec.residenceName || residenceName || '';
     const titleText = displayResidence || 'Enregistrement des invités';
-    
+
     pdf.setFontSize(20);
     pdf.setTextColor(44, 62, 80);
     pdf.text(titleText, 105, yPos, { align: 'center' });
@@ -1451,43 +1554,43 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     pdf.setFontSize(16);
     pdf.text('Guest Registration', 105, yPos, { align: 'center' });
     yPos += 12;
-    
+
     pdf.setFontSize(16);
     pdf.text('RÈGLEMENT INTÉRIEUR ET INFORMATIONS DE RÉSERVATION', 105, yPos, { align: 'center' });
     yPos += 15;
-    
+
     pdf.setDrawColor(44, 62, 80);
     pdf.setLineWidth(1);
     pdf.line(20, yPos, 190, yPos);
     yPos += 15;
-    
+
     const totalPersons = rec.personnes ? Object.keys(rec.personnes).length + 1 : 1;
     const now = new Date();
-    
+
     pdf.setFontSize(12);
     pdf.setTextColor(0, 0, 0);
-    
+
     pdf.text(`Date de réservation : ${now.toLocaleDateString('fr-FR')} ${now.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'})}`, 20, yPos);
     yPos += 8;
-    
+
     pdf.text(`Résidence : ${displayResidence || 'Non spécifiée'}`, 20, yPos);
     yPos += 8;
-    
+
     pdf.text(`Appartement : ${rec.appart} - Immeuble : ${rec.bat}`, 20, yPos);
     yPos += 8;
-    
+
     pdf.text(`Nom du réservateur : ${rec.nom}`, 20, yPos);
     yPos += 8;
-    
+
     pdf.text(`Type de document : ${rec.typeDoc}`, 20, yPos);
     yPos += 8;
-    
+
     pdf.text(`Numéro de document : ${rec.doc}`, 20, yPos);
     yPos += 8;
-    
+
     pdf.text(`Nationalité : ${rec.nationalite}`, 20, yPos);
     yPos += 8;
-    
+
     if(rec.personnes){
       const persList = Object.values(rec.personnes);
       pdf.text(`Personnes accompagnantes (${persList.length}) :`, 20, yPos);
@@ -1498,18 +1601,18 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
       });
       yPos += 4;
     }
-    
+
     pdf.text(`Nombre total de personnes : ${totalPersons}`, 20, yPos);
     yPos += 8;
-    
+
     pdf.text(`Date d'arrivée : ${rec.date}`, 20, yPos);
     yPos += 15;
-    
+
     pdf.setFontSize(14);
     pdf.setTextColor(44, 62, 80);
     pdf.text('RÈGLEMENT INTÉRIEUR ACCEPTÉ :', 20, yPos);
     yPos += 10;
-    
+
     pdf.setFontSize(12);
     const rules = [
       '1. Si vous êtes des Couples marocains:',
@@ -1548,15 +1651,15 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
       pdf.text(line, 20, yPos);
       yPos += line === '' ? 5 : 7;
     });
-    
+
     yPos += 10;
-    
+
     pdf.text(`Signataire : ${rec.nom}`, 20, yPos);
     yPos += 8;
-    
+
     pdf.text(`Date : ${now.toLocaleDateString('fr-FR')} ${now.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'})}`, 20, yPos);
     yPos += 15;
-    
+
     try {
       const imgWidth = 80;
       const imgHeight = 40;
@@ -1569,70 +1672,70 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     } catch (e) {
       console.log('Erreur avec la signature:', e);
     }
-    
+
     return pdf.output('blob');
   }
 
   function generatePDFAndDownload(rec, openInNewTab = true) {
     const pdfBlob = generatePDFBlob(rec);
     const pdfUrl = URL.createObjectURL(pdfBlob);
-    
+
     const displayResidence = rec.residenceName || residenceName || '';
     const safeResidence = (displayResidence || 'residence').replace(/[^a-zA-Z0-9]/g, '_').substring(0, 15);
     const safeDate = (rec.date || '').replace(/[^0-9-]/g, '');
     const safeNom = (rec.nom || 'invite').replace(/[^a-zA-Z0-9]/g, '_').substring(0, 20);
-    
+
     const fileName = `${safeDate}_${safeResidence}_${safeNom}.pdf`;
-    
+
     const link = document.createElement('a');
     link.href = pdfUrl;
     link.download = fileName;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
+
     if (openInNewTab) {
       window.open(pdfUrl, '_blank');
     }
-  }
-
-  async function supprimerEnregistrementAvecMessage(id, nom) {
-    await database.ref('records/' + id).remove();
-    await database.ref('documents/' + id).remove();
-    const msg = `La ligne pour ${nom} a été supprimée avec succès.`;
-    showBanner('ok', msg);
-    setTimeout(() => hideBanner(), 5000);
-    if(currentUser && currentUser.role === 'admin') refreshAdmin(); else if(currentUser) refreshUser();
-    if(currentConsultUser) refreshConsultation();
   }
 
   async function envoyerWhatsAppAdmin(recordId) {
     try {
       const snapshot = await database.ref('records/' + recordId).once('value');
       const record = snapshot.val();
-      
+
       if (!record) {
         alert("Enregistrement non trouvé");
         return;
       }
-      
+
       generatePDFAndDownload(record, false);
-      
+
       const totalPersons = record.personnes ? Object.keys(record.personnes).length + 1 : 1;
       let autresPersonnes = '';
-      
+
       if (record.personnes) {
         Object.values(record.personnes).forEach((p, index) => {
           autresPersonnes += `${index + 1}. ${p.nom} - ${p.doc}\n`;
         });
       }
-      
+
       const message = `Salam :\n\nArrivée: ${record.date}\nAppartement: ${record.appart}\nImm: ${record.bat}\nNombre de personnes: ${totalPersons} personnes\n\nRéservation au nom de:\nNom et Prénom: ${record.nom}\nNuméro de ${record.typeDoc}: ${record.doc}\n\nAutres personnes:\n${autresPersonnes}\nNB : Svp pas d'autres personnes autorisées seul Les personnes figurent dans la réservation.\n\nMerci\n------------------------------------------\nالسلام عليكم:\n\nالوصول: ${record.date}\nالشقة: ${record.appart}\nرقم العمارة: ${record.bat}\nعدد الأشخاص: ${totalPersons} أشخاص\n\nالحجز باسم:\nالإسم و اللقب: ${record.nom}\nرقم ${record.typeDoc === 'Passeport' ? 'جواز السفر' : 'بطاقة الهوية'}: ${record.doc}\n\nأشخاص آخرون:\n${autresPersonnes}\nملاحظة: الرجاء عدم السماح لأي أشخاص آخرين، فقط الأشخاص المذكورين في الحجز.\n\nشكرًا.`;
-      
+
       window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
-      
-      await supprimerEnregistrementAvecMessage(recordId, record.nom);
-      
+
+      await database.ref('records/' + recordId).update({
+        sent: true,
+        sentAt: Date.now()
+      });
+
+      showBanner('ok', `WhatsApp préparé pour ${record.nom}.`);
+      setTimeout(() => hideBanner(), 4000);
+
+      if(currentUser && currentUser.role === 'admin') refreshAdmin();
+      else if(currentUser) refreshUser();
+      if(currentConsultUser) refreshConsultation();
+
     } catch (error) {
       console.error(error);
       alert("Erreur lors de l'envoi WhatsApp");
@@ -1643,52 +1746,46 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     try {
       const snapshot = await database.ref('records/' + recordId).once('value');
       const record = snapshot.val();
-      
+
       if (!record) {
         alert("Enregistrement non trouvé");
         return;
       }
-      
+
       generatePDFAndDownload(record, false);
-      
+
       const totalPersons = record.personnes ? Object.keys(record.personnes).length + 1 : 1;
       let autresPersonnes = '';
-      
+
       if (record.personnes) {
         Object.values(record.personnes).forEach((p, index) => {
           autresPersonnes += `${index + 1}. ${p.nom} - ${p.doc}\n`;
         });
       }
-      
+
       const message = `Salam :\n\nArrivée: ${record.date}\nAppartement: ${record.appart}\nImm: ${record.bat}\nNombre de personnes: ${totalPersons} personnes\n\nRéservation au nom de:\nNom et Prénom: ${record.nom}\nNuméro de ${record.typeDoc}: ${record.doc}\n\nAutres personnes:\n${autresPersonnes}\nNB : Svp pas d'autres personnes autorisées seul Les personnes figurent dans la réservation.\n\nMerci\n------------------------------------------\nالسلام عليكم:\n\nالوصول: ${record.date}\nالشقة: ${record.appart}\nرقم العمارة: ${record.bat}\nعدد الأشخاص: ${totalPersons} أشخاص\n\nالحجز باسم:\nالإسم و اللقب: ${record.nom}\nرقم ${record.typeDoc === 'Passeport' ? 'جواز السفر' : 'بطاقة الهوية'}: ${record.doc}\n\nأشخاص آخرون:\n${autresPersonnes}\nملاحظة: الرجاء عدم السماح لأي أشخاص آخرين، فقط الأشخاص المذكورين في الحجز.\n\nشكرًا.`;
-      
+
       window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
-      
-      await supprimerEnregistrementAvecMessage(recordId, record.nom);
-      
+
+      await database.ref('records/' + recordId).update({
+        sent: true,
+        sentAt: Date.now()
+      });
+
+      showBanner('ok', `WhatsApp préparé pour ${record.nom}.`);
+      setTimeout(() => hideBanner(), 4000);
+
+      refreshUser();
+
     } catch (error) {
       console.error(error);
       alert("Erreur lors de l'envoi WhatsApp");
     }
   }
 
-  async function supprimerEnregistrement(id){
-    if(confirm("Supprimer cet enregistrement ?")) {
-      await database.ref('records/' + id).remove();
-      await database.ref('documents/' + id).remove();
-      if(currentUser && currentUser.role === 'admin') refreshAdmin(); else if(currentUser) refreshUser();
-      if(currentConsultUser) refreshConsultation();
-    }
-  }
-
   async function supprimerEnregistrementConsultation(id, nom){
     if(confirm(t('confirmDelete'))) {
-      await database.ref('records/' + id).remove();
-      await database.ref('documents/' + id).remove();
-      const msg = `La ligne pour ${nom} a été supprimée avec succès.`;
-      showBanner('ok', msg);
-      setTimeout(() => hideBanner(), 5000);
-      refreshConsultation();
+      await marquerSupprime(id);
     }
   }
 
@@ -1729,12 +1826,12 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     const rect = canvas.getBoundingClientRect();
     canvas.width = rect.width;
     canvas.height = rect.height;
-    
+
     ctx.strokeStyle = '#000000';
     ctx.lineWidth = 3;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    
+
     clearCanvas();
   }
 
@@ -1800,7 +1897,7 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
 
   function validateForm() {
     let isValid = true;
-    
+
     const date = document.getElementById('dateArrivee').value;
     if(!date) {
       showError('dateArriveeError', t('errDateArrivee'));
@@ -1808,7 +1905,7 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     } else {
       hideError('dateArriveeError');
     }
-    
+
     const nbPers = document.getElementById('nbPers').value;
     if(!nbPers || nbPers < 1) {
       showError('nbPersError', t('errNbPers'));
@@ -1816,7 +1913,7 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     } else {
       hideError('nbPersError');
     }
-    
+
     const nom = document.getElementById('nomPrincipal').value.trim();
     if(!nom) {
       showError('nomPrincipalError', t('errNomPrincipal'));
@@ -1824,7 +1921,7 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     } else {
       hideError('nomPrincipalError');
     }
-    
+
     const typeDoc = document.getElementById('typeDocPrincipal').value;
     if(!typeDoc) {
       showError('typeDocPrincipalError', t('errTypeDocPrincipal'));
@@ -1832,7 +1929,7 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     } else {
       hideError('typeDocPrincipalError');
     }
-    
+
     const doc = document.getElementById('docPrincipal').value.trim();
     if(!doc) {
       showError('docPrincipalError', t('errDocPrincipal'));
@@ -1840,7 +1937,7 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     } else {
       hideError('docPrincipalError');
     }
-    
+
     const nationalite = document.getElementById('nationalitePrincipal').value.trim();
     if(!nationalite) {
       showError('nationalitePrincipalError', t('errNationalitePrincipal'));
@@ -1848,14 +1945,14 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     } else {
       hideError('nationalitePrincipalError');
     }
-    
+
     const nbPersInt = parseInt(nbPers || '1', 10);
     for(let i=2; i<=nbPersInt; i++){
       const nomVal = (document.getElementById(`pers${i}Nom`)?.value || '').trim();
       const docVal = (document.getElementById(`pers${i}Doc`)?.value || '').trim();
       const typeDocVal = (document.getElementById(`pers${i}TypeDoc`)?.value || '').trim();
       const nationaliteVal = (document.getElementById(`pers${i}Nationalite`)?.value || '').trim();
-      
+
       if(!nomVal){
         showBanner('err', `${t('personTitle')} ${i} : ${t('personNom')}`);
         isValid = false;
@@ -1873,7 +1970,7 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
         isValid = false;
       }
     }
-    
+
     if(!hasSignature) {
       showError('signatureError', t('errSignature'));
       canvas.classList.add('error-border');
@@ -1881,14 +1978,14 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     } else {
       hideError('signatureError');
     }
-    
+
     if(!acceptCheckbox.checked) {
       showError('acceptCheckboxError', t('errAccept'));
       isValid = false;
     } else {
       hideError('acceptCheckboxError');
     }
-    
+
     return isValid;
   }
 
@@ -1915,7 +2012,7 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
       const docVal = document.getElementById(`pers${i}Doc`).value.trim();
       const typeDocVal = document.getElementById(`pers${i}TypeDoc`).value.trim();
       const nationaliteVal = document.getElementById(`pers${i}Nationalite`).value.trim();
-      
+
       personnes[`pers${i-1}`] = { nom: nomVal, doc: docVal, typeDoc: typeDocVal, nationalite: nationaliteVal };
     }
 
@@ -1924,16 +2021,17 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
 
     signatureData = canvas.toDataURL('image/png');
 
-    const rec = { 
-      appart, 
-      bat, 
-      nom, 
-      doc, 
+    const rec = {
+      appart,
+      bat,
+      nom,
+      doc,
       typeDoc,
       nationalite,
-      personnes, 
-      date, 
+      personnes,
+      date,
       sent:false,
+      treated:false,
       signature: signatureData,
       timestamp: Date.now(),
       residenceName: residenceName || '',
@@ -1946,10 +2044,10 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
 
       const newRecordRef = database.ref('records').push();
       await newRecordRef.set(rec);
-      
+
       const id = newRecordRef.key;
       rec.id = id;
-      
+
       const documentData = generateDocumentHTML(rec);
       await database.ref('documents/' + id).set({
         html: documentData,
@@ -1962,26 +2060,26 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
         timestamp: Date.now(),
         residenceName: residenceName || ''
       });
-      
+
       await sendAutomaticEmail(rec);
-      
+
       const successDiv = document.getElementById('successMessage');
       const customMsgDiv = document.getElementById('customSuccessMessageDisplay');
-      
+
       if(customMessage && customMessage.trim() !== ''){
         customMsgDiv.innerHTML = `<div style="font-size: 16px; margin-bottom: 15px; padding: 10px; background: #fff3e0; border-radius: 8px; border-left: 4px solid #e67e22;">${customMessage.replace(/\n/g, '<br>')}</div>`;
       } else {
         customMsgDiv.innerHTML = '';
       }
-      
+
       successDiv.classList.remove('hidden');
       document.getElementById('guestForm').style.display = 'none';
 
       generatePDFAndDownload(rec, true);
-      
+
       registerBtn.textContent = t('registerBtn');
       registerBtn.disabled = false;
-      
+
     } catch (error) {
       showBanner('err',"Erreur lors de l'enregistrement. Réessayez.");
       registerBtn.textContent = t('registerBtn');
@@ -1994,22 +2092,22 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     canvas.addEventListener('mousemove', draw);
     canvas.addEventListener('mouseup', stopDraw);
     canvas.addEventListener('mouseout', stopDraw);
-    
+
     canvas.addEventListener('touchstart', (e) => {
       e.preventDefault();
       startDraw(e);
     }, { passive: false });
-    
+
     canvas.addEventListener('touchmove', (e) => {
       e.preventDefault();
       draw(e);
     }, { passive: false });
-    
+
     canvas.addEventListener('touchend', (e) => {
       e.preventDefault();
       stopDraw();
     });
-    
+
     clearBtn.addEventListener('click', clearCanvas);
     registerBtn.addEventListener('click', registerSignature);
     acceptCheckbox.addEventListener('change', updateRegisterButton);
@@ -2026,41 +2124,48 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
 
       const snapshot = await database.ref('users/' + userId).once('value');
       const user = snapshot.val();
-      
+
       if(!user){
         showBanner('err',"Lien invalide ou utilisateur introuvable.");
         return;
       }
-      
+
       const emailSnapshot = await database.ref('emailSettings/' + userId).once('value');
       if(emailSnapshot.exists()){
         emailSettings = emailSnapshot.val();
       }
-      
+
       const customMsgSnapshot = await database.ref('customMessages/' + userId).once('value');
       if(customMsgSnapshot.exists()){
         customMessage = customMsgSnapshot.val();
       }
-      
+
       const residenceSnapshot = await database.ref('residenceName/' + userId).once('value');
       if(residenceSnapshot.exists()){
         residenceName = residenceSnapshot.val();
+      }
+
+      const rulesSnapshot = await database.ref('rules/' + userId).once('value');
+      if(rulesSnapshot.exists()){
+        currentRulesUser = rulesSnapshot.val();
+      } else {
+        currentRulesUser = null;
       }
 
       document.getElementById('loginCard').classList.add('hidden');
       document.getElementById('invitePanel').classList.remove('hidden');
       document.getElementById('invAppart').value = user.appart;
       document.getElementById('invBat').value = user.bat;
-      
+
       const today = new Date().toISOString().split('T')[0];
       document.getElementById('dateArrivee').value = today;
-      
+
       applyLanguage();
       genererChamps();
       initCanvas();
       setupSignatureEvents();
       hideBanner();
-      
+
     } catch (error) {
       showBanner('err', "Erreur lors du chargement des données utilisateur.");
     }
@@ -2076,7 +2181,7 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
 
       const snapshot = await database.ref('users/' + userId).once('value');
       const user = snapshot.val();
-      
+
       if(!user){
         showBanner('err',"Lien de consultation invalide.");
         return;
@@ -2087,12 +2192,12 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
       document.getElementById('loginCard').classList.add('hidden');
       document.getElementById('consultationPanel').classList.remove('hidden');
       document.getElementById('documentColumn').classList.add('hidden');
-      
+
       applyLanguage();
       await refreshConsultation();
-      
+
       hideBanner();
-      
+
     } catch (error) {
       showBanner('err', "Erreur lors du chargement des données de consultation.");
     }
@@ -2105,39 +2210,42 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
       const records = snapRecords.val() || {};
       const tbody = document.querySelector('#tableConsultation tbody');
       tbody.innerHTML = '';
-      
+
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const maxDate = new Date(today);
       maxDate.setDate(maxDate.getDate() + 20);
-      
+
       let count = 1;
       const sortedKeys = Object.keys(records).sort((a,b) => records[b].timestamp - records[a].timestamp);
-      
+
       for(let id of sortedKeys){
         const r = records[id];
         if(r.appart === currentConsultUser.appart && r.bat === currentConsultUser.bat){
           const recordDate = new Date(r.date);
           recordDate.setHours(0, 0, 0, 0);
-          
+
           if(recordDate >= today && recordDate <= maxDate){
             const nbPers = r.personnes ? Object.keys(r.personnes).length + 1 : 1;
             let statut, statutClass;
-            
+
             if(r.deleted){
               statut = t('statutSupprime');
               statutClass = 'statut-supprime';
-            } else if(r.sent){
-              statut = t('statutEnvoye');
+            } else if(r.treated){
+              statut = t('statutTraite');
               statutClass = 'statut-ok';
             } else {
-              statut = t('statutEnAttente');
+              statut = t('statutNonTraite');
               statutClass = 'statut-attente';
             }
-            
-            const delBtnLabel = t('deleteBtn');
+
             const escapedNom = (r.nom || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-            
+            let actionHtml = '';
+            if(!r.deleted){
+              actionHtml = `<button class="btn-delete" onclick="supprimerEnregistrementConsultation('${id}','${escapedNom}')">${t('deleteBtn')}</button>`;
+            }
+
             tbody.innerHTML += `<tr>
               <td>${count++}</td>
               <td>${r.appart}</td>
@@ -2146,12 +2254,12 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
               <td>${nbPers}</td>
               <td>${r.date}</td>
               <td class="${statutClass}">${statut}</td>
-              <td><button class="btn-delete" onclick="supprimerEnregistrementConsultation('${id}','${escapedNom}')">${delBtnLabel}</button></td>
+              <td>${actionHtml}</td>
             </tr>`;
           }
         }
       }
-      
+
       if(tbody.innerHTML === ''){
         tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#666;">${t('noRecords')}</td></tr>`;
       }
@@ -2173,21 +2281,21 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     const cont = document.getElementById('personnes');
     cont.innerHTML = '';
     const tr = TRANSLATIONS[currentLang];
-    
+
     for(let i=2; i<=nb; i++){
       const group = document.createElement('div');
       group.className = 'person-group';
-      
+
       const title = document.createElement('h4');
       title.textContent = `${tr ? tr.personTitle : 'Personne'} ${i}`;
       title.style.marginBottom = '10px';
       title.style.fontWeight = 'bold';
       group.appendChild(title);
-      
+
       const nomLab = document.createElement('label');
       nomLab.textContent = tr ? tr.personNom : 'Nom & Prénom *';
       group.appendChild(nomLab);
-      
+
       const nomInp = document.createElement('input');
       nomInp.type = 'text';
       nomInp.id = `pers${i}Nom`;
@@ -2195,12 +2303,12 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
       nomInp.className = 'guest-input';
       nomInp.placeholder = tr ? tr.personNomPh + ' ' + i : `Nom complet personne ${i}`;
       group.appendChild(nomInp);
-      
+
       const docTypeLab = document.createElement('label');
       docTypeLab.textContent = tr ? tr.personTypeDoc : 'Type de document *';
       docTypeLab.style.marginTop = '10px';
       group.appendChild(docTypeLab);
-      
+
       const docTypeInp = document.createElement('select');
       docTypeInp.id = `pers${i}TypeDoc`;
       docTypeInp.required = true;
@@ -2211,12 +2319,12 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
         <option value="Carte d'identité">${tr ? tr.optCIN : "Carte d'identité"}</option>
       `;
       group.appendChild(docTypeInp);
-      
+
       const docLab = document.createElement('label');
       docLab.textContent = tr ? tr.personDoc : 'Numéro de document *';
       docLab.style.marginTop = '10px';
       group.appendChild(docLab);
-      
+
       const docInp = document.createElement('input');
       docInp.type = 'text';
       docInp.id = `pers${i}Doc`;
@@ -2224,12 +2332,12 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
       docInp.className = 'guest-input';
       docInp.placeholder = tr ? tr.personDocPh + ' ' + i : `Document personne ${i}`;
       group.appendChild(docInp);
-      
+
       const nationaliteLab = document.createElement('label');
       nationaliteLab.textContent = tr ? tr.personNationalite : 'Nationalité *';
       nationaliteLab.style.marginTop = '10px';
       group.appendChild(nationaliteLab);
-      
+
       const nationaliteInp = document.createElement('input');
       nationaliteInp.type = 'text';
       nationaliteInp.id = `pers${i}Nationalite`;
@@ -2237,7 +2345,7 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
       nationaliteInp.className = 'guest-input';
       nationaliteInp.placeholder = tr ? tr.personNationalitePh + ' ' + i : `Nationalité personne ${i}`;
       group.appendChild(nationaliteInp);
-      
+
       cont.appendChild(group);
     }
   }
@@ -2246,7 +2354,7 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     const totalPersons = rec.personnes ? Object.keys(rec.personnes).length + 1 : 1;
     const now = new Date();
     const displayResidence = rec.residenceName || residenceName || '';
-    
+
     let personnesHtml = '';
     if(rec.personnes){
       const persList = Object.values(rec.personnes);
@@ -2256,7 +2364,16 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
       });
       personnesHtml += '</ul>';
     }
-    
+
+    let rulesHtml;
+    if (customRulesText && customRulesText.trim() !== '') {
+      rulesHtml = customRulesText.split('\n').filter(l => l.trim() !== '').map(l => `<li>${l}</li>`).join('');
+    } else if (currentRulesUser && currentRulesUser.trim() !== '') {
+      rulesHtml = currentRulesUser.split('\n').filter(l => l.trim() !== '').map(l => `<li>${l}</li>`).join('');
+    } else {
+      rulesHtml = DEFAULT_RULES.map(l => `<li>${l}</li>`).join('');
+    }
+
     return `
 <div class="doc-title">${displayResidence || 'Enregistrement des invités'} / Guest Registration</div>
 
@@ -2276,12 +2393,7 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
 <div class="doc-section">
   <div class="doc-section-title">Règlement intérieur accepté :</div>
   <ul>
-    <li><strong>1. Si vous êtes des Couples marocains :</strong> selon la loi marocaine ce logement autorise que les couples mariés.</li>
-    <li><strong>2. Tranquillité et bruit :</strong> Silence total obligatoire après 23h00. Pas de musique forte, cris ou nuisances sonores à toute heure.</li>
-    <li><strong>3. Tabagisme :</strong> Fumer est strictement interdit à l'intérieur. Autorisé uniquement en extérieur (terrasse ou jardin), avec obligation de nettoyer les mégots et cendres.</li>
-    <li><strong>4. Nombre de personnes :</strong> Maximum 5 personnes autorisées dans l'appartement.</li>
-    <li><strong>5. Piscine :</strong> Douche obligatoire avant la baignade. Pas de verre ni objets fragiles autour de la piscine. Surveillance permanente des enfants par un adulte. Horaires : fermeture à 20h00. Pas de courses ni plongeons.</li>
-    <li><strong>6. Propreté et entretien :</strong> Maintenir les lieux propres en permanence. Vider régulièrement les poubelles. Respecter les sols et surfaces (pas de traces, pas de nourriture hors cuisine).</li>
+    ${rulesHtml}
   </ul>
 </div>
 
@@ -2299,7 +2411,7 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     try {
       const recordSnapshot = await database.ref('records/' + id).once('value');
       const record = recordSnapshot.val();
-      
+
       if (record) {
         const html = generateDocumentHTML(record);
         document.getElementById('documentPreview').innerHTML = html;
@@ -2322,36 +2434,44 @@ Cette réservation a été enregistrée via l'application Enregistrement des inv
     generatePDFAndDownload(currentDocumentData, true);
   }
 
-  function partagerWhatsApp() {
+  async function partagerWhatsApp() {
     if (!currentDocumentData) return;
-    
+
     const record = currentDocumentData;
     const recordId = record.id;
-    
+
     generatePDFAndDownload(record, false);
-    
+
     const totalPersons = record.personnes ? Object.keys(record.personnes).length + 1 : 1;
     let autresPersonnes = '';
-    
+
     if (record.personnes) {
       Object.values(record.personnes).forEach((p, index) => {
         autresPersonnes += `${index + 1}. ${p.nom} - ${p.doc}\n`;
       });
     }
-    
+
     const message = `Salam :\n\nArrivée: ${record.date}\nAppartement: ${record.appart}\nImm: ${record.bat}\nNombre de personnes: ${totalPersons} personnes\n\nRéservation au nom de:\nNom et Prénom: ${record.nom}\nNuméro de ${record.typeDoc}: ${record.doc}\n\nAutres personnes:\n${autresPersonnes}\nNB : Svp pas d'autres personnes autorisées seul Les personnes figurent dans la réservation.\n\nMerci\n------------------------------------------\nالسلام عليكم:\n\nالوصول: ${record.date}\nالشقة: ${record.appart}\nرقم العمارة: ${record.bat}\nعدد الأشخاص: ${totalPersons} أشخاص\n\nالحجز باسم:\nالإسم و اللقب: ${record.nom}\nرقم ${record.typeDoc === 'Passeport' ? 'جواز السفر' : 'بطاقة الهوية'}: ${record.doc}\n\nأشخاص آخرون:\n${autresPersonnes}\nملاحظة: الرجاء عدم السماح لأي أشخاص آخرين، فقط الأشخاص المذكورين في الحجز.\n\nشكرًا.`;
-    
+
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
-    
-    supprimerEnregistrementAvecMessage(recordId, record.nom);
-    
+
+    await database.ref('records/' + recordId).update({
+      sent: true,
+      sentAt: Date.now()
+    });
+
+    showBanner('ok', `WhatsApp préparé pour ${record.nom}.`);
+    setTimeout(() => hideBanner(), 4000);
+
+    if(currentUser && currentUser.role === 'admin') refreshAdmin();
+    else if(currentUser) refreshUser();
+
     document.getElementById('docActions').classList.add('hidden');
-    document.getElementById('documentPreview').innerHTML = '<p style="text-align: center; color: #666;">Cet enregistrement a été supprimé.</p>';
     currentDocumentData = null;
   }
 
   document.getElementById('btnLogin').disabled = false;
-  
+
   const params = new URLSearchParams(location.search);
   if(params.has("invite")) {
     enterInviteMode(params.get("invite"));
