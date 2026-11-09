@@ -384,6 +384,15 @@ th{background:var(--c1);color:#fff;}
 <br>
 <strong data-i18n="noteImportant">Note importante :</strong> <span data-i18n="noteImportantText">En cas de demande des agents de sécurité, présentez ce document signé. Seules les personnes enregistrées dans cette réservation sont autorisées à entrer.</span>
 </div>
+
+<div id="inlineDocumentContainer" class="hidden">
+<div class="card">
+<h3 data-i18n="signedDocTitle">Document Signé - Enregistrement des invités</h3>
+<div id="inlineDocumentPreview" class="document-preview"></div>
+<div class="doc-actions">
+<button onclick="downloadInlineDocument()" style="background:var(--ok);" data-i18n="downloadPdfBtn">Télécharger PDF</button>
+</div>
+</div>
 </div>
 </div>
 </div>
@@ -443,6 +452,7 @@ let emailSettings = { enableEmail: 'non' };
 let customMessage = '';
 let residenceName = '';
 let currentLang = 'fr';
+let inlineDocumentData = null;
 
 const TRANSLATIONS = {
 fr: {
@@ -3644,6 +3654,9 @@ function setLanguage(lang) {
   applyTranslations();
   if (document.getElementById('invitePanel').classList.contains('hidden') === false) {
     genererChamps();
+    if (inlineDocumentData) {
+      renderInlineDocument(inlineDocumentData);
+    }
   }
 }
 
@@ -4491,6 +4504,14 @@ function updateRegisterButton() {
   registerBtn.disabled = !(hasSignature && isAccepted);
 }
 
+function renderInlineDocument(rec) {
+  const lang = rec.lang || currentLang;
+  const T = TRANSLATIONS[lang] || TRANSLATIONS.fr;
+  const html = generateDocumentHTML(rec, lang);
+  document.getElementById('inlineDocumentPreview').innerHTML = html;
+  document.getElementById('inlineDocumentContainer').classList.remove('hidden');
+}
+
 async function registerSignature() {
   if(!validateForm()) {
     return;
@@ -4544,7 +4565,7 @@ async function registerSignature() {
     const id = newRecordRef.key;
     rec.id = id;
     
-    const documentData = generateDocumentHTML(rec);
+    const documentData = generateDocumentHTML(rec, currentLang);
     await database.ref('documents/' + id).set({
       html: documentData,
       recordId: id,
@@ -4572,6 +4593,9 @@ async function registerSignature() {
     successDiv.classList.remove('hidden');
     document.getElementById('guestForm').style.display = 'none';
 
+    inlineDocumentData = rec;
+    renderInlineDocument(rec);
+
     generatePDFAndDownload(rec, true, currentLang);
     
     registerBtn.textContent = t('registerBtn');
@@ -4582,6 +4606,11 @@ async function registerSignature() {
     registerBtn.textContent = t('registerBtn');
     registerBtn.disabled = false;
   }
+}
+
+function downloadInlineDocument() {
+  if (!inlineDocumentData) return;
+  generatePDFAndDownload(inlineDocumentData, true, inlineDocumentData.lang || currentLang);
 }
 
 function setupSignatureEvents() {
@@ -4801,8 +4830,8 @@ function genererChamps(){
   }
 }
 
-function generateDocumentHTML(rec) {
-  const lang = rec.lang || currentLang;
+function generateDocumentHTML(rec, langOverride) {
+  const lang = langOverride || rec.lang || currentLang;
   const T = TRANSLATIONS[lang] || TRANSLATIONS.fr;
   const totalPersons = rec.personnes ? Object.keys(rec.personnes).length + 1 : 1;
   const now = new Date();
@@ -4810,7 +4839,7 @@ function generateDocumentHTML(rec) {
   const rulesListHtml = T.rules.map(r => `<li><strong>${r.strong}</strong>${r.text}</li>`).join('');
   
   return `
-<div class="doc-title">${displayResidence || 'Enregistrement des invités'} / Guest Registration</div>
+<div class="doc-title">${displayResidence || T.appMainTitle}</div>
 
 <div class="doc-info">
 <p><strong>${T.pdfDateLabel} :</strong> ${now.toLocaleDateString()}</p>
@@ -4846,7 +4875,7 @@ async function afficherDocument(id) {
     const record = recordSnapshot.val();
     
     if (record) {
-      const html = generateDocumentHTML(record);
+      const html = generateDocumentHTML(record, record.lang || currentLang);
       document.getElementById('documentPreview').innerHTML = html;
       currentDocumentData = record;
       currentDocumentData.id = id;
