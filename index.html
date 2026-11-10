@@ -247,7 +247,7 @@ th{background:var(--c1);color:#fff;}
 <table id="tableReadonlyPending">
 <thead>
 <tr>
-<th>N°</th><th data-i18n="thAppartShort">Appart.</th><th data-i18n="thBat">Immeuble</th><th data-i18n="thName">Nom</th><th data-i18n="thDocType">Type Doc</th><th data-i18n="thDoc">Document</th><th data-i18n="thNationality">Nationalité</th><th data-i18n="thNbPers">Nb Pers.</th><th data-i18n="thDate">Date</th>
+<th>N°</th><th data-i18n="thName">Nom</th><th data-i18n="thDate">Date</th>
 </tr>
 </thead>
 <tbody></tbody>
@@ -257,7 +257,7 @@ th{background:var(--c1);color:#fff;}
 <table id="tableReadonlySent">
 <thead>
 <tr>
-<th>N°</th><th data-i18n="thAppartShort">Appart.</th><th data-i18n="thBat">Immeuble</th><th data-i18n="thName">Nom</th><th data-i18n="thDocType">Type Doc</th><th data-i18n="thDoc">Document</th><th data-i18n="thNationality">Nationalité</th><th data-i18n="thNbPers">Nb Pers.</th><th data-i18n="thDate">Date</th>
+<th>N°</th><th data-i18n="thName">Nom</th><th data-i18n="thDate">Date</th>
 </tr>
 </thead>
 <tbody></tbody>
@@ -4731,8 +4731,8 @@ async function registerSignature() {
     inlineDocumentData = rec;
     renderInlineDocument(rec);
 
-    generatePDFAndDownload(rec, true, currentLang);
-    generateRulesPDFAndDownload(rec, false, currentLang);
+    generatePDFAndDownload(rec, true, rec.lang);
+    generateRulesPDFAndDownload(rec, false, rec.lang);
 
     registerBtn.textContent = t('registerBtn');
     registerBtn.disabled = false;
@@ -4887,16 +4887,14 @@ async function refreshReadonly(userId, appart, bat){
   tbodySent.innerHTML = '';
   let i = 1;
   for(const r of pending){
-    const nbPers = r.personnes ? Object.keys(r.personnes).length + 1 : 1;
     tbodyPending.innerHTML += `<tr>
-      <td>${i++}</td><td>${r.appart}</td><td>${r.bat}</td><td>${r.nom}</td><td>${r.typeDoc || '-'}</td><td>${r.doc}</td><td>${r.nationalite || '-'}</td><td>${nbPers}</td><td>${r.date}</td>
+      <td>${i++}</td><td>${r.nom}</td><td>${r.date}</td>
     </tr>`;
   }
   let j = 1;
   for(const r of sent){
-    const nbPers = r.nbPers || (r.personnes ? Object.keys(r.personnes).length + 1 : 1);
     tbodySent.innerHTML += `<tr>
-      <td>${j++}</td><td>${r.appart}</td><td>${r.bat}</td><td>${r.nom}</td><td>${r.typeDoc || '-'}</td><td>${r.doc}</td><td>${r.nationalite || '-'}</td><td>${nbPers}</td><td>${r.date}</td>
+      <td>${j++}</td><td>${r.nom}</td><td>${r.date}</td>
     </tr>`;
   }
 
