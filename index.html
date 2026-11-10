@@ -247,17 +247,29 @@ th{background:var(--c1);color:#fff;}
 <table id="tableReadonlyPending">
 <thead>
 <tr>
-<th>N°</th><th data-i18n="thAppartShort">Appart.</th><th data-i18n="thBat">Immeuble</th><th data-i18n="thName">Nom</th><th data-i18n="thDocType">Type Doc</th><th data-i18n="thDoc">Document</th><th data-i18n="thNationality">Nationalité</th><th data-i18n="thNbPers">Nb Pers.</th><th data-i18n="thDate">Date</th><th data-i18n="thDocument">Document</th>
+<th>N°</th><th data-i18n="thAppartShort">Appart.</th><th data-i18n="thBat">Immeuble</th><th data-i18n="thName">Nom</th><th data-i18n="thDocType">Type Doc</th><th data-i18n="thDoc">Document</th><th data-i18n="thNationality">Nationalité</th><th data-i18n="thNbPers">Nb Pers.</th><th data-i18n="thDate">Date</th>
 </tr>
 </thead>
 <tbody></tbody>
 </table>
 
-<div class="section-title-ro sent" data-i18n="sectionSent">Enregistrements déjà envoyés</div>
+<div class="section-title-ro sent" data-i18n="sectionSent">Enregistrements traités / envoyés</div>
 <table id="tableReadonlySent">
 <thead>
 <tr>
-<th>N°</th><th data-i18n="thAppartShort">Appart.</th><th data-i18n="thBat">Immeuble</th><th data-i18n="thName">Nom</th><th data-i18n="thDocType">Type Doc</th><th data-i18n="thDoc">Document</th><th data-i18n="thNationality">Nationalité</th><th data-i18n="thNbPers">Nb Pers.</th><th data-i18n="thDate">Date</th><th data-i18n="thDocument">Document</th>
+<th>N°</th><th data-i18n="thAppartShort">Appart.</th><th data-i18n="thBat">Immeuble</th><th data-i18n="thName">Nom</th><th data-i18n="thDocType">Type Doc</th><th data-i18n="thDoc">Document</th><th data-i18n="thNationality">Nationalité</th><th data-i18n="thNbPers">Nb Pers.</th><th data-i18n="thDate">Date</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+
+<div class="section-title-ro" data-i18n="sectionHistory">Historique des suppressions</div>
+<table id="tableReadonlyHistory">
+<thead>
+<tr>
+<th data-i18n="thDate">Date</th>
+<th data-i18n="thName">Nom</th>
+<th data-i18n="thAction">Action</th>
 </tr>
 </thead>
 <tbody></tbody>
@@ -453,6 +465,7 @@ let customMessage = '';
 let residenceName = '';
 let currentLang = 'fr';
 let inlineDocumentData = null;
+let currentReadonlyParams = null;
 
 const TRANSLATIONS = {
 fr: {
@@ -509,7 +522,8 @@ genLinkBtn: "Générer lien invité",
 genReadonlyLinkBtn: "Générer lien lecture seule",
 readonlyTitle: "Enregistrements (lecture seule)",
 sectionPending: "Enregistrements en cours",
-sectionSent: "Enregistrements déjà envoyés",
+sectionSent: "Enregistrements traités / envoyés",
+sectionHistory: "Historique des suppressions",
 guestFormTitle: "Enregistrement Invité",
 arrivalDateLabel: "Date d'arrivée *",
 errArrivalDate: "Veuillez sélectionner une date d'arrivée",
@@ -641,7 +655,8 @@ genLinkBtn: "Generate Guest Link",
 genReadonlyLinkBtn: "Generate Read-only Link",
 readonlyTitle: "Records (Read-only)",
 sectionPending: "Ongoing Records",
-sectionSent: "Already Sent Records",
+sectionSent: "Processed / Sent Records",
+sectionHistory: "Deletion History",
 guestFormTitle: "Guest Registration",
 arrivalDateLabel: "Arrival Date *",
 errArrivalDate: "Please select an arrival date",
@@ -772,7 +787,8 @@ genLinkBtn: "إنشاء رابط الضيف",
 genReadonlyLinkBtn: "إنشاء رابط للقراءة فقط",
 readonlyTitle: "التسجيلات (قراءة فقط)",
 sectionPending: "التسجيلات الجارية",
-sectionSent: "التسجيلات المرسلة",
+sectionSent: "التسجيلات المعالجة / المرسلة",
+sectionHistory: "سجل الحذف",
 guestFormTitle: "تسجيل ضيف",
 arrivalDateLabel: "تاريخ الوصول *",
 errArrivalDate: "يرجى اختيار تاريخ الوصول",
@@ -903,7 +919,8 @@ genLinkBtn: "Generar Enlace de Invitado",
 genReadonlyLinkBtn: "Generar Enlace de Solo Lectura",
 readonlyTitle: "Registros (Solo Lectura)",
 sectionPending: "Registros en Curso",
-sectionSent: "Registros Ya Enviados",
+sectionSent: "Registros Procesados / Enviados",
+sectionHistory: "Historial de Eliminación",
 guestFormTitle: "Registro de Invitado",
 arrivalDateLabel: "Fecha de Llegada *",
 errArrivalDate: "Seleccione una fecha de llegada",
@@ -1034,7 +1051,8 @@ genLinkBtn: "Genera Link Ospite",
 genReadonlyLinkBtn: "Genera Link Sola Lettura",
 readonlyTitle: "Registrazioni (Sola Lettura)",
 sectionPending: "Registrazioni in Corso",
-sectionSent: "Registrazioni Già Inviate",
+sectionSent: "Registrazioni Trattate / Inviate",
+sectionHistory: "Cronologia Eliminazioni",
 guestFormTitle: "Registrazione Ospite",
 arrivalDateLabel: "Data di Arrivo *",
 errArrivalDate: "Seleziona una data di arrivo",
@@ -1165,7 +1183,8 @@ genLinkBtn: "Gastlink generieren",
 genReadonlyLinkBtn: "Nur-Lese-Link generieren",
 readonlyTitle: "Registrierungen (Nur Lesen)",
 sectionPending: "Laufende Registrierungen",
-sectionSent: "Bereits gesendete Registrierungen",
+sectionSent: "Bearbeitete / Gesendete Registrierungen",
+sectionHistory: "Löschungsverlauf",
 guestFormTitle: "Gästeregistrierung",
 arrivalDateLabel: "Ankunftsdatum *",
 errArrivalDate: "Bitte wählen Sie ein Ankunftsdatum",
@@ -1296,7 +1315,8 @@ genLinkBtn: "Gastenlink genereren",
 genReadonlyLinkBtn: "Alleen-lezen link genereren",
 readonlyTitle: "Registraties (alleen lezen)",
 sectionPending: "Lopende registraties",
-sectionSent: "Reeds verzonden registraties",
+sectionSent: "Verwerkte / Verzonden registraties",
+sectionHistory: "Verwijderingsgeschiedenis",
 guestFormTitle: "Gastenregistratie",
 arrivalDateLabel: "Aankomstdatum *",
 errArrivalDate: "Selecteer een aankomstdatum",
@@ -1427,7 +1447,8 @@ genLinkBtn: "Gerar Link de Convidado",
 genReadonlyLinkBtn: "Gerar Link de Apenas Leitura",
 readonlyTitle: "Registos (Apenas Leitura)",
 sectionPending: "Registos em Curso",
-sectionSent: "Registos Já Enviados",
+sectionSent: "Registos Processados / Enviados",
+sectionHistory: "Histórico de Eliminação",
 guestFormTitle: "Registo de Convidado",
 arrivalDateLabel: "Data de Chegada *",
 errArrivalDate: "Selecione uma data de chegada",
@@ -1558,7 +1579,8 @@ genLinkBtn: "Generuj Link Gościa",
 genReadonlyLinkBtn: "Generuj Link Tylko do Odczytu",
 readonlyTitle: "Rejestracje (Tylko Odczyt)",
 sectionPending: "Rejestracje w Toku",
-sectionSent: "Rejestracje Już Wysłane",
+sectionSent: "Rejestracje Przetworzone / Wysłane",
+sectionHistory: "Historia Usunięć",
 guestFormTitle: "Rejestracja Gościa",
 arrivalDateLabel: "Data Przyjazdu *",
 errArrivalDate: "Wybierz datę przyjazdu",
@@ -1689,7 +1711,8 @@ genLinkBtn: "Создать ссылку для гостя",
 genReadonlyLinkBtn: "Создать ссылку только для чтения",
 readonlyTitle: "Регистрации (только чтение)",
 sectionPending: "Текущие регистрации",
-sectionSent: "Уже отправленные регистрации",
+sectionSent: "Обработанные / Отправленные регистрации",
+sectionHistory: "История удалений",
 guestFormTitle: "Регистрация гостя",
 arrivalDateLabel: "Дата прибытия *",
 errArrivalDate: "Выберите дату прибытия",
@@ -1820,7 +1843,8 @@ genLinkBtn: "Misafir Bağlantısı Oluştur",
 genReadonlyLinkBtn: "Salt Okunur Bağlantı Oluştur",
 readonlyTitle: "Kayıtlar (Salt Okunur)",
 sectionPending: "Devam Eden Kayıtlar",
-sectionSent: "Zaten Gönderilmiş Kayıtlar",
+sectionSent: "İşlenmiş / Gönderilmiş Kayıtlar",
+sectionHistory: "Silme Geçmişi",
 guestFormTitle: "Misafir Kaydı",
 arrivalDateLabel: "Varış Tarihi *",
 errArrivalDate: "Lütfen varış tarihi seçin",
@@ -1951,7 +1975,8 @@ genLinkBtn: "Δημιουργία Συνδέσμου Επισκέπτη",
 genReadonlyLinkBtn: "Δημιουργία Συνδέσμου Μόνο Ανάγνωσης",
 readonlyTitle: "Εγγραφές (Μόνο Ανάγνωση)",
 sectionPending: "Εγγραφές σε Εξέλιξη",
-sectionSent: "Ήδη Απεσταλμένες Εγγραφές",
+sectionSent: "Επεξεργασμένες / Απεσταλμένες Εγγραφές",
+sectionHistory: "Ιστορικό Διαγραφών",
 guestFormTitle: "Εγγραφή Επισκέπτη",
 arrivalDateLabel: "Ημερομηνία Άφιξης *",
 errArrivalDate: "Επιλέξτε ημερομηνία άφιξης",
@@ -2082,7 +2107,8 @@ genLinkBtn: "Generera Gästlänk",
 genReadonlyLinkBtn: "Generera Skrivskyddad Länk",
 readonlyTitle: "Registreringar (Skrivskyddad)",
 sectionPending: "Pågående Registreringar",
-sectionSent: "Redan Skickade Registreringar",
+sectionSent: "Bearbetade / Skickade Registreringar",
+sectionHistory: "Borttagningshistorik",
 guestFormTitle: "Gästregistrering",
 arrivalDateLabel: "Ankomstdatum *",
 errArrivalDate: "Välj ett ankomstdatum",
@@ -2213,7 +2239,8 @@ genLinkBtn: "Generer Gæstelink",
 genReadonlyLinkBtn: "Generer Skrivebeskyttet Link",
 readonlyTitle: "Registreringer (Skrivebeskyttet)",
 sectionPending: "Igangværende Registreringer",
-sectionSent: "Allerede Sendte Registreringer",
+sectionSent: "Behandlede / Sendte Registreringer",
+sectionHistory: "Sletningshistorik",
 guestFormTitle: "Gæsteregistrering",
 arrivalDateLabel: "Ankomstdato *",
 errArrivalDate: "Vælg en ankomstdato",
@@ -2344,7 +2371,8 @@ genLinkBtn: "Generer Gjestelenke",
 genReadonlyLinkBtn: "Generer Skrivebeskyttet Lenke",
 readonlyTitle: "Registreringer (Skrivebeskyttet)",
 sectionPending: "Pågående Registreringer",
-sectionSent: "Allerede Sendte Registreringer",
+sectionSent: "Behandlede / Sendte Registreringer",
+sectionHistory: "Slettingshistorikk",
 guestFormTitle: "Gjestregistrering",
 arrivalDateLabel: "Ankomstdato *",
 errArrivalDate: "Velg en ankomstdato",
@@ -2475,7 +2503,8 @@ genLinkBtn: "Luo Vieraslinkki",
 genReadonlyLinkBtn: "Luo Vain Luku -linkki",
 readonlyTitle: "Rekisteröinnit (Vain Luku)",
 sectionPending: "Käynnissä Olevat Rekisteröinnit",
-sectionSent: "Jo Lähetetyt Rekisteröinnit",
+sectionSent: "Käsitellyt / Lähetetyt Rekisteröinnit",
+sectionHistory: "Poistohistoria",
 guestFormTitle: "Vierasrekisteröinti",
 arrivalDateLabel: "Saapumispäivä *",
 errArrivalDate: "Valitse saapumispäivä",
@@ -2606,7 +2635,8 @@ genLinkBtn: "Generovat Odkaz pro Hosty",
 genReadonlyLinkBtn: "Generovat Odkaz pouze pro Čtení",
 readonlyTitle: "Registrace (Pouze pro Čtení)",
 sectionPending: "Probíhající Registrace",
-sectionSent: "Již Odeslané Registrace",
+sectionSent: "Zpracované / Odeslané Registrace",
+sectionHistory: "Historie Smazání",
 guestFormTitle: "Registrace Hostů",
 arrivalDateLabel: "Datum Příjezdu *",
 errArrivalDate: "Vyberte datum příjezdu",
@@ -2737,7 +2767,8 @@ genLinkBtn: "Vendéglink Generálása",
 genReadonlyLinkBtn: "Csak Olvasható Link Generálása",
 readonlyTitle: "Regisztrációk (Csak Olvasható)",
 sectionPending: "Folyamatban Lévő Regisztrációk",
-sectionSent: "Már Elküldött Regisztrációk",
+sectionSent: "Feldolgozott / Elküldött Regisztrációk",
+sectionHistory: "Törlési Előzmények",
 guestFormTitle: "Vendégregisztráció",
 arrivalDateLabel: "Érkezési Dátum *",
 errArrivalDate: "Válasszon érkezési dátumot",
@@ -2868,7 +2899,8 @@ genLinkBtn: "Generează Link Oaspete",
 genReadonlyLinkBtn: "Generează Link Doar Citire",
 readonlyTitle: "Înregistrări (Doar Citire)",
 sectionPending: "Înregistrări în Curs",
-sectionSent: "Înregistrări Deja Trimise",
+sectionSent: "Înregistrări Procesate / Trimise",
+sectionHistory: "Istoric Ștergeri",
 guestFormTitle: "Înregistrare Oaspete",
 arrivalDateLabel: "Data Sosirii *",
 errArrivalDate: "Selectați o dată de sosire",
@@ -2999,7 +3031,8 @@ genLinkBtn: "Створити Посилання для Гостя",
 genReadonlyLinkBtn: "Створити Посилання Лише для Читання",
 readonlyTitle: "Реєстрації (Лише для Читання)",
 sectionPending: "Поточні Реєстрації",
-sectionSent: "Вже Надіслані Реєстрації",
+sectionSent: "Оброблені / Надіслані Реєстрації",
+sectionHistory: "Історія Видалень",
 guestFormTitle: "Реєстрація Гостя",
 arrivalDateLabel: "Дата Прибуття *",
 errArrivalDate: "Виберіть дату прибуття",
@@ -3130,7 +3163,8 @@ genLinkBtn: "ゲストリンクを生成",
 genReadonlyLinkBtn: "読み取り専用リンクを生成",
 readonlyTitle: "登録（読み取り専用）",
 sectionPending: "進行中の登録",
-sectionSent: "送信済みの登録",
+sectionSent: "処理済み / 送信済みの登録",
+sectionHistory: "削除履歴",
 guestFormTitle: "ゲスト登録",
 arrivalDateLabel: "到着日 *",
 errArrivalDate: "到着日を選択してください",
@@ -3261,7 +3295,8 @@ genLinkBtn: "生成宾客链接",
 genReadonlyLinkBtn: "生成只读链接",
 readonlyTitle: "登记（只读）",
 sectionPending: "进行中的登记",
-sectionSent: "已发送的登记",
+sectionSent: "已处理 / 已发送的登记",
+sectionHistory: "删除历史",
 guestFormTitle: "宾客登记",
 arrivalDateLabel: "到达日期 *",
 errArrivalDate: "请选择到达日期",
@@ -3392,7 +3427,8 @@ genLinkBtn: "게스트 링크 생성",
 genReadonlyLinkBtn: "읽기 전용 링크 생성",
 readonlyTitle: "등록 (읽기 전용)",
 sectionPending: "진행 중인 등록",
-sectionSent: "이미 전송된 등록",
+sectionSent: "처리됨 / 전송됨 등록",
+sectionHistory: "삭제 기록",
 guestFormTitle: "게스트 등록",
 arrivalDateLabel: "도착 날짜 *",
 errArrivalDate: "도착 날짜를 선택하세요",
@@ -3523,7 +3559,8 @@ genLinkBtn: "अतिथि लिंक बनाएं",
 genReadonlyLinkBtn: "केवल पढ़ने योग्य लिंक बनाएं",
 readonlyTitle: "पंजीकरण (केवल पढ़ने योग्य)",
 sectionPending: "चल रहे पंजीकरण",
-sectionSent: "पहले ही भेजे गए पंजीकरण",
+sectionSent: "संसाधित / भेजे गए पंजीकरण",
+sectionHistory: "हटाने का इतिहास",
 guestFormTitle: "अतिथि पंजीकरण",
 arrivalDateLabel: "आगमन तिथि *",
 errArrivalDate: "कृपया आगमन तिथि चुनें",
@@ -4074,7 +4111,7 @@ function generatePDFBlob(rec, langOverride) {
   let yPos = 20;
   
   const displayResidence = rec.residenceName || residenceName || '';
-  const titleText = displayResidence || 'Enregistrement des invités';
+  const titleText = displayResidence || T.appMainTitle;
   
   pdf.setFontSize(20);
   pdf.setTextColor(44, 62, 80);
@@ -4215,6 +4252,17 @@ async function marquerEnvoye(id) {
   await database.ref('sentRecords').push(logData);
 }
 
+async function saveToHistory(rec) {
+  await database.ref('history').push({
+    date: rec.date,
+    nom: rec.nom,
+    appart: rec.appart,
+    bat: rec.bat,
+    deletedAt: Date.now(),
+    recordId: rec.id || ''
+  });
+}
+
 async function envoyerWhatsAppAdmin(recordId) {
   try {
     const snapshot = await database.ref('records/' + recordId).once('value');
@@ -4293,9 +4341,23 @@ async function envoyerWhatsAppUser(recordId) {
 
 async function supprimerEnregistrement(id){
   if(confirm("Supprimer cet enregistrement ?")) {
+    const snapshot = await database.ref('records/' + id).once('value');
+    const rec = snapshot.val();
+    if (rec) {
+      await saveToHistory({...rec, id});
+    }
     await database.ref('records/' + id).remove();
     await database.ref('documents/' + id).remove();
     if(currentUser.role === 'admin') refreshAdmin(); else refreshUser();
+  }
+}
+
+async function supprimerHistorique(id){
+  if(confirm("Supprimer définitivement de l'historique ?")) {
+    await database.ref('history/' + id).remove();
+    if (currentReadonlyParams) {
+      await refreshReadonly(currentReadonlyParams.userId, currentReadonlyParams.appart, currentReadonlyParams.bat);
+    }
   }
 }
 
@@ -4506,7 +4568,6 @@ function updateRegisterButton() {
 
 function renderInlineDocument(rec) {
   const lang = rec.lang || currentLang;
-  const T = TRANSLATIONS[lang] || TRANSLATIONS.fr;
   const html = generateDocumentHTML(rec, lang);
   document.getElementById('inlineDocumentPreview').innerHTML = html;
   document.getElementById('inlineDocumentContainer').classList.remove('hidden');
@@ -4711,6 +4772,8 @@ async function enterReadonlyMode(userId){
     currentLang = detectLanguage();
     applyTranslations();
 
+    currentReadonlyParams = { userId, appart: user.appart, bat: user.bat };
+
     document.getElementById('loginCard').classList.add('hidden');
     document.getElementById('readonlyPanel').classList.remove('hidden');
     document.getElementById('readonlyResidence').textContent = residenceName ? `Résidence : ${residenceName} — Appartement ${user.appart} / Immeuble ${user.bat}` : `Appartement ${user.appart} / Immeuble ${user.bat}`;
@@ -4744,7 +4807,6 @@ async function refreshReadonly(userId, appart, bat){
     const nbPers = r.personnes ? Object.keys(r.personnes).length + 1 : 1;
     tbodyPending.innerHTML += `<tr>
       <td>${i++}</td><td>${r.appart}</td><td>${r.bat}</td><td>${r.nom}</td><td>${r.typeDoc || '-'}</td><td>${r.doc}</td><td>${r.nationalite || '-'}</td><td>${nbPers}</td><td>${r.date}</td>
-      <td><button onclick="afficherDocument('${r.id}')">Voir</button></td>
     </tr>`;
   }
   let j = 1;
@@ -4752,7 +4814,21 @@ async function refreshReadonly(userId, appart, bat){
     const nbPers = r.personnes ? Object.keys(r.personnes).length + 1 : 1;
     tbodySent.innerHTML += `<tr>
       <td>${j++}</td><td>${r.appart}</td><td>${r.bat}</td><td>${r.nom}</td><td>${r.typeDoc || '-'}</td><td>${r.doc}</td><td>${r.nationalite || '-'}</td><td>${nbPers}</td><td>${r.date}</td>
-      <td><button onclick="afficherDocument('${r.id}')">Voir</button></td>
+    </tr>`;
+  }
+
+  const histSnap = await database.ref('history').once('value');
+  const history = histSnap.val() || {};
+  const tbodyHistory = document.querySelector('#tableReadonlyHistory tbody');
+  tbodyHistory.innerHTML = '';
+  const histKeys = Object.keys(history).sort((a,b) => history[b].deletedAt - history[a].deletedAt);
+  for(const id of histKeys){
+    const h = history[id];
+    if(h.appart !== appart || h.bat !== bat) continue;
+    tbodyHistory.innerHTML += `<tr>
+      <td>${h.date || '-'}</td>
+      <td>${h.nom || '-'}</td>
+      <td><button class="btn-delete" onclick="supprimerHistorique('${id}')" data-i18n="thAction">Supprimer</button></td>
     </tr>`;
   }
 }
