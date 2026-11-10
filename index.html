@@ -269,7 +269,6 @@ th{background:var(--c1);color:#fff;}
 <tr>
 <th data-i18n="thDate">Date</th>
 <th data-i18n="thName">Nom</th>
-<th data-i18n="thAction">Action</th>
 </tr>
 </thead>
 <tbody></tbody>
@@ -4230,10 +4229,80 @@ function generatePDFAndDownload(rec, openInNewTab = true, langOverride) {
   }
 }
 
+function generateRulesPDFBlob(rec, langOverride) {
+  const lang = langOverride || rec.lang || currentLang;
+  const T = TRANSLATIONS[lang] || TRANSLATIONS.fr;
+  const pdf = new jsPDF('p', 'mm', 'a4');
+  let yPos = 20;
+  const displayResidence = rec.residenceName || residenceName || '';
+  const titleText = displayResidence || T.appMainTitle;
+  pdf.setFontSize(20);
+  pdf.setTextColor(44, 62, 80);
+  pdf.text(titleText, 105, yPos, { align: 'center' });
+  yPos += 8;
+  pdf.setFontSize(13);
+  pdf.text(T.rulesTitle, 105, yPos, { align: 'center' });
+  yPos += 10;
+  pdf.setDrawColor(44, 62, 80);
+  pdf.setLineWidth(1);
+  pdf.line(20, yPos, 190, yPos);
+  yPos += 12;
+  pdf.setFontSize(11);
+  pdf.setTextColor(0, 0, 0);
+  T.pdfRules.forEach(line => {
+    if (yPos > 260) { pdf.addPage(); yPos = 20; }
+    const split = pdf.splitTextToSize(line, 170);
+    split.forEach(s => {
+      if (yPos > 270) { pdf.addPage(); yPos = 20; }
+      pdf.text(s, 20, yPos);
+      yPos += 5;
+    });
+    if (line === '') yPos += 2;
+  });
+  yPos += 10;
+  if (yPos > 235) { pdf.addPage(); yPos = 20; }
+  const now = new Date();
+  pdf.setFontSize(11);
+  pdf.text(`${T.pdfNomLabel} : ${rec.nom}`, 20, yPos);
+  yPos += 7;
+  pdf.text(`${T.pdfArrivalLabel} : ${rec.date}`, 20, yPos);
+  yPos += 7;
+  pdf.text(`${T.pdfDateLabel} : ${now.toLocaleDateString()}`, 20, yPos);
+  yPos += 10;
+  try {
+    if (rec.signature && rec.signature.startsWith('data:image')) {
+      pdf.addImage(rec.signature, 'PNG', 20, yPos, 80, 40);
+      pdf.setDrawColor(0, 0, 0);
+      pdf.setLineWidth(1);
+      pdf.rect(20, yPos, 80, 40);
+    }
+  } catch (e) {}
+  return pdf.output('blob');
+}
+
+function generateRulesPDFAndDownload(rec, openInNewTab, langOverride) {
+  const pdfBlob = generateRulesPDFBlob(rec, langOverride);
+  const pdfUrl = URL.createObjectURL(pdfBlob);
+  const displayResidence = rec.residenceName || residenceName || '';
+  const safeResidence = (displayResidence || 'residence').replace(/[^a-zA-Z0-9]/g, '_').substring(0, 15);
+  const safeDate = (rec.date || '').replace(/[^0-9-]/g, '');
+  const safeNom = (rec.nom || 'invite').replace(/[^a-zA-Z0-9]/g, '_').substring(0, 20);
+  const fileName = `Reglement_${safeDate}_${safeResidence}_${safeNom}.pdf`;
+  const link = document.createElement('a');
+  link.href = pdfUrl;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  if (openInNewTab) {
+    window.open(pdfUrl, '_blank');
+  }
+}
+
 async function marquerEnvoye(id) {
-  await database.ref('records/' + id).update({ sent: true, sentAt: Date.now() });
   const snap = await database.ref('records/' + id).once('value');
   const rec = snap.val();
+  if (!rec) return;
   const totalPersons = rec.personnes ? Object.keys(rec.personnes).length + 1 : 1;
   const logData = {
     recordId: id,
@@ -4246,10 +4315,15 @@ async function marquerEnvoye(id) {
     date: rec.date,
     nbPers: totalPersons,
     personnes: rec.personnes || {},
+    signature: rec.signature || '',
+    residenceName: rec.residenceName || '',
+    lang: rec.lang || 'fr',
     sentAt: Date.now(),
     sent: true
   };
   await database.ref('sentRecords').push(logData);
+  await database.ref('records/' + id).remove();
+  await database.ref('documents/' + id).remove();
 }
 
 async function saveToHistory(rec) {
@@ -4658,7 +4732,8 @@ async function registerSignature() {
     renderInlineDocument(rec);
 
     generatePDFAndDownload(rec, true, currentLang);
-    
+    generateRulesPDFAndDownload(rec, false, currentLang);
+
     registerBtn.textContent = t('registerBtn');
     registerBtn.disabled = false;
     
@@ -4789,15 +4864,23 @@ async function refreshReadonly(userId, appart, bat){
   const snap = await database.ref('records').once('value');
   const records = snap.val() || {};
   const pending = [];
-  const sent = [];
   const keys = Object.keys(records).sort((a,b) => records[b].timestamp - records[a].timestamp);
   for(const id of keys){
     const r = records[id];
     if(r.appart !== appart || r.bat !== bat) continue;
-    const item = { id, ...r };
-    if(r.sent) sent.push(item); else pending.push(item);
+    pending.push({ id, ...r });
   }
-  
+
+  const sentSnap = await database.ref('sentRecords').once('value');
+  const sentRecords = sentSnap.val() || {};
+  const sent = [];
+  const sentKeys = Object.keys(sentRecords).sort((a,b) => sentRecords[b].sentAt - sentRecords[a].sentAt);
+  for(const id of sentKeys){
+    const r = sentRecords[id];
+    if(r.appart !== appart || r.bat !== bat) continue;
+    sent.push({ id, ...r });
+  }
+
   const tbodyPending = document.querySelector('#tableReadonlyPending tbody');
   const tbodySent = document.querySelector('#tableReadonlySent tbody');
   tbodyPending.innerHTML = '';
@@ -4811,7 +4894,7 @@ async function refreshReadonly(userId, appart, bat){
   }
   let j = 1;
   for(const r of sent){
-    const nbPers = r.personnes ? Object.keys(r.personnes).length + 1 : 1;
+    const nbPers = r.nbPers || (r.personnes ? Object.keys(r.personnes).length + 1 : 1);
     tbodySent.innerHTML += `<tr>
       <td>${j++}</td><td>${r.appart}</td><td>${r.bat}</td><td>${r.nom}</td><td>${r.typeDoc || '-'}</td><td>${r.doc}</td><td>${r.nationalite || '-'}</td><td>${nbPers}</td><td>${r.date}</td>
     </tr>`;
@@ -4828,7 +4911,6 @@ async function refreshReadonly(userId, appart, bat){
     tbodyHistory.innerHTML += `<tr>
       <td>${h.date || '-'}</td>
       <td>${h.nom || '-'}</td>
-      <td><button class="btn-delete" onclick="supprimerHistorique('${id}')" data-i18n="thAction">Supprimer</button></td>
     </tr>`;
   }
 }
